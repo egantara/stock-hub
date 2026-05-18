@@ -1,12 +1,16 @@
 import axios from 'axios'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+)
 
 export default async function handler(req, res) {
 
   try {
 
     const body = req.body
-
-    console.log(body)
 
     const message =
       body.message?.text
@@ -18,11 +22,39 @@ export default async function handler(req, res) {
       return res.status(200).send('ok')
     }
 
+    // COMMAND:
+    // /stock sku qty
+
+    if (message.startsWith('/stock')) {
+
+      const split = message.split(' ')
+
+      const sku = split[1]
+      const qty = parseInt(split[2])
+
+      await supabase
+        .from('stocks')
+        .upsert({
+          sku,
+          stock: qty
+        })
+
+      await axios.post(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+        {
+          chat_id: chatId,
+          text: `✅ Stock ${sku} diupdate jadi ${qty}`
+        }
+      )
+
+      return res.status(200).send('ok')
+    }
+
     await axios.post(
       `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
       {
         chat_id: chatId,
-        text: `Kamu bilang: ${message}`
+        text: 'Command tidak dikenal'
       }
     )
 
@@ -30,7 +62,7 @@ export default async function handler(req, res) {
 
   } catch (err) {
 
-    console.log(err.response?.data || err.message)
+    console.log(err)
 
     return res.status(500).send('error')
   }
