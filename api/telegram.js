@@ -22,8 +22,9 @@ export default async function handler(req, res) {
       return res.status(200).send('ok')
     }
 
-    // COMMAND:
-    // /stock sku qty
+    // =========================
+    // UPDATE STOCK
+    // =========================
 
     if (message.startsWith('/stock')) {
 
@@ -39,30 +40,6 @@ export default async function handler(req, res) {
           stock: qty
         })
 
-        if (message.startsWith('/stock'))
-          if (message.startsWith('/cek')) {
-
-  const split = message.split(' ')
-
-  const sku = split[1]
-
-  const { data } = await supabase
-    .from('stocks')
-    .select('*')
-    .eq('sku', sku)
-    .single()
-
-  await axios.post(
-    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-    {
-      chat_id: chatId,
-      text: `📦 Stock ${sku}: ${data?.stock || 0}`
-    }
-  )
-
-  return res.status(200).send('ok')
-}
-
       await axios.post(
         `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
         {
@@ -73,6 +50,37 @@ export default async function handler(req, res) {
 
       return res.status(200).send('ok')
     }
+
+    // =========================
+    // CEK STOCK
+    // =========================
+
+    if (message.startsWith('/cek')) {
+
+      const split = message.split(' ')
+
+      const sku = split[1]
+
+      const { data } = await supabase
+        .from('stocks')
+        .select('*')
+        .eq('sku', sku)
+        .single()
+
+      await axios.post(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+        {
+          chat_id: chatId,
+          text: `📦 Stock ${sku}: ${data?.stock || 0}`
+        }
+      )
+
+      return res.status(200).send('ok')
+    }
+
+    // =========================
+    // DEFAULT
+    // =========================
 
     await axios.post(
       `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
