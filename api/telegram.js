@@ -35,7 +35,8 @@ export default async function handler(req, res) {
           'Command:\n' +
           '/cek sku\n' +
           '/update sku stock\n' +
-          '/minus sku qty'
+          '/minus sku qty\n' +
+          '/plus sku qty'
       }
     )
 
@@ -91,7 +92,6 @@ export default async function handler(req, res) {
     const stock =
       parseInt(split[2])
 
-    // cek existing
     const { data: existing } =
       await supabase
         .from('stocks')
@@ -173,6 +173,54 @@ export default async function handler(req, res) {
         chat_id: chatId,
         text:
           `➖ Stock ${sku}\n` +
+          `${currentStock} → ${newStock}`
+      }
+    )
+
+    return res.status(200).send('ok')
+  }
+
+  // =========================
+  // /plus
+  // =========================
+
+  if (message.startsWith('/plus')) {
+
+    const split =
+      message.split(' ')
+
+    const sku =
+      split[1]
+
+    const qty =
+      parseInt(split[2])
+
+    const { data } =
+      await supabase
+        .from('stocks')
+        .select('*')
+        .eq('sku', sku)
+        .single()
+
+    const currentStock =
+      data?.stock || 0
+
+    const newStock =
+      currentStock + qty
+
+    await supabase
+      .from('stocks')
+      .update({
+        stock: newStock
+      })
+      .eq('sku', sku)
+
+    await axios.post(
+      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+      {
+        chat_id: chatId,
+        text:
+          `➕ Stock ${sku}\n` +
           `${currentStock} → ${newStock}`
       }
     )
