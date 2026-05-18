@@ -34,7 +34,7 @@ async function getSheetData() {
         process.env.GOOGLE_SHEET_ID,
 
       range:
-        'MASTER_STOCK!A:H'
+        'Stock ALL!A:L'
     })
 
   return response.data.values
@@ -103,17 +103,30 @@ export default async function handler(req, res) {
 
       const row = rows[i]
 
+      // =========================
+      // MAPPING GOOGLE SHEET
+      // =========================
+
+      const skuInduk =
+        row[2]
+
       const sku =
         row[3]
+
+      const namaProduk =
+        row[4]
 
       const stock =
         parseInt(row[5]) || 0
 
-      const shopeeModelId =
+      const shopeeId =
         row[6]
 
       const tokopediaId =
         row[7]
+
+      const variasi =
+        row[8]
 
       if (!sku) continue
 
@@ -129,9 +142,16 @@ export default async function handler(req, res) {
         await supabase
           .from('stocks')
           .update({
-            stock: stock,
+            sku_induk:
+              skuInduk,
+            nama_produk:
+              namaProduk,
+            variasi:
+              variasi,
+            stock:
+              stock,
             shopee_model_id:
-              shopeeModelId,
+              shopeeId,
             tokopedia_product_id:
               tokopediaId
           })
@@ -143,10 +163,18 @@ export default async function handler(req, res) {
           .from('stocks')
           .insert([
             {
-              sku: sku,
-              stock: stock,
+              sku_induk:
+                skuInduk,
+              sku:
+                sku,
+              nama_produk:
+                namaProduk,
+              variasi:
+                variasi,
+              stock:
+                stock,
               shopee_model_id:
-                shopeeModelId,
+                shopeeId,
               tokopedia_product_id:
                 tokopediaId
             }
@@ -208,7 +236,9 @@ export default async function handler(req, res) {
         chat_id: chatId,
         text:
           `📦 SKU: ${data.sku}\n` +
-          `Stock: ${data.stock}`
+          `📝 Nama: ${data.nama_produk}\n` +
+          `🎨 Variasi: ${data.variasi}\n` +
+          `📦 Stock: ${data.stock}`
       }
     )
 
