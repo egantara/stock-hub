@@ -748,8 +748,8 @@ export default async function handler(
           '🎉 Export Shopee & Tiktok selesai\n\n' +
 
           `Shopee: ${shopee.updated}\n` +
-          `TikTok LIVE: ${live.updated}\n` +
-          `TikTok INACTIVE: ${inactive.updated}`
+          `Tiktok Live: ${live.updated}\n` +
+          `Tiktok Inactive: ${inactive.updated}`
         )
 
         continue
