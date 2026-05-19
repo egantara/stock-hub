@@ -32,13 +32,18 @@ export async function exportTiktok({
 
       {
         defval: '',
-        raw: false
+        raw: true
       }
     )
 
   console.log(
     'TIKTOK TEMPLATE ROWS:',
     rows.length
+  )
+
+  console.log(
+    'SUPABASE SAMPLE:',
+    data[0]
   )
 
   let updated = 0
@@ -58,6 +63,7 @@ export async function exportTiktok({
         row['sku_id'] || ''
       )
         .replace(/\.0$/, '')
+        .replace(/\s/g, '')
         .trim()
 
     // =========================
@@ -79,23 +85,32 @@ export async function exportTiktok({
       continue
     }
 
+    console.log(
+      'SEARCH SKU:',
+      templateSkuId
+    )
+
     // =========================
     // MATCH SUPABASE
     // =========================
 
     const product =
-      data.find(item =>
+      data.find(item => {
 
-        String(
-          item.tiktok_sku_id || ''
-        )
-          .replace(/\.0$/, '')
-          .trim()
+        const dbSku =
+          String(
+            item.tiktok_sku_id || ''
+          )
+            .replace(/\.0$/, '')
+            .replace(/\s/g, '')
+            .trim()
 
-        ===
+        return dbSku === templateSkuId
+      })
 
-        templateSkuId
-      )
+    // =========================
+    // NOT FOUND
+    // =========================
 
     if (!product) {
 
