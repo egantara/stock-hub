@@ -15,11 +15,8 @@ export async function exportTiktok({
   const workbook =
     XLSX.readFile(templatePath)
 
-  const sheetName =
-    'Template'
-
   const worksheet =
-    workbook.Sheets[sheetName]
+    workbook.Sheets['Template']
 
   // =========================
   // RAW ARRAY
@@ -42,38 +39,117 @@ export async function exportTiktok({
     rows.length
   )
 
+  // =========================
+  // FIND HEADER ROW
+  // =========================
+
+  let headerRowIndex = -1
+
+  for (let i = 0; i < rows.length; i++) {
+
+    const row =
+      rows[i].map(v =>
+        String(v).trim()
+      )
+
+    if (
+      row.includes('SKU ID') &&
+      row.includes('Quantity')
+    ) {
+
+      headerRowIndex = i
+      break
+    }
+  }
+
+  if (headerRowIndex === -1) {
+
+    throw new Error(
+      'HEADER ROW NOT FOUND'
+    )
+  }
+
+  console.log(
+    'HEADER ROW:',
+    headerRowIndex
+  )
+
+  const headers =
+    rows[headerRowIndex]
+
+  // =========================
+  // FIND COLUMN INDEX
+  // =========================
+
+  const skuCol =
+    headers.findIndex(h =>
+
+      String(h)
+        .trim()
+        .toLowerCase()
+        .includes('sku')
+    )
+
+  const qtyCol =
+    headers.findIndex(h =>
+
+      String(h)
+        .trim()
+        .toLowerCase()
+        .includes('quantity')
+    )
+
+  console.log(
+    'SKU COL:',
+    skuCol
+  )
+
+  console.log(
+    'QTY COL:',
+    qtyCol
+  )
+
+  if (
+    skuCol === -1 ||
+    qtyCol === -1
+  ) {
+
+    throw new Error(
+      'COLUMN NOT FOUND'
+    )
+  }
+
   let updated = 0
 
   // =========================
-  // START FROM ROW 6
+  // START AFTER HEADER
   // =========================
 
-  for (let i = 5; i < rows.length; i++) {
+  for (
+    let i = headerRowIndex + 1;
+    i < rows.length;
+    i++
+  ) {
 
     const row =
       rows[i]
 
-    // COLUMN D = sku_id
     const templateSkuId =
       String(
-        row[3] || ''
+        row[skuCol] || ''
       )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
         .trim()
 
-    if (!templateSkuId) {
+    if (
+      !templateSkuId ||
+      templateSkuId === 'Mandatory' ||
+      templateSkuId === 'Uneditable'
+    ) {
+
       continue
     }
-
-    console.log(
-      'SEARCH:',
-      templateSkuId
-    )
-
-    // =========================
-    // MATCH SUPABASE
-    // =========================
 
     const product =
       data.find(item => {
@@ -99,11 +175,7 @@ export async function exportTiktok({
       continue
     }
 
-    // =========================
-    // COLUMN G = quantity
-    // =========================
-
-    row[6] =
+    row[qtyCol] =
       Number(product.stock || 0)
 
     updated++
@@ -121,7 +193,7 @@ export async function exportTiktok({
   )
 
   // =========================
-  // ARRAY TO SHEET
+  // SAVE FILE
   // =========================
 
   const newWorksheet =
@@ -129,7 +201,7 @@ export async function exportTiktok({
       rows
     )
 
-  workbook.Sheets[sheetName] =
+  workbook.Sheets['Template'] =
     newWorksheet
 
   XLSX.writeFile(
