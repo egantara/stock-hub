@@ -31,6 +31,7 @@ export async function exportTiktok({
       worksheet,
 
       {
+        range: 2,
         defval: '',
         raw: true
       }
@@ -70,17 +71,7 @@ export async function exportTiktok({
     // SKIP FAKE HEADER ROW
     // =========================
 
-    if (
-
-      !templateSkuId ||
-
-      templateSkuId === 'SKU ID' ||
-
-      templateSkuId === 'Mandatory' ||
-
-      templateSkuId === 'Uneditable'
-
-    ) {
+    if (!templateSkuId) {
 
       continue
     }
