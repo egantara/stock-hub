@@ -474,7 +474,8 @@ export default async function handler(req, res) {
 
       const workbook =
         XLSX.readFile(
-          './templates/template-shopee.xlsx'
+          process.cwd() +
+          '/templates/template-shopee.xlsx'
         )
 
       const sheetName =
