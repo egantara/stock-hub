@@ -55,7 +55,7 @@ export async function exportTiktok({
 
     const templateSkuId =
       String(
-        row['SKU ID'] || ''
+        row['sku_id'] || ''
       )
         .replace(/\.0$/, '')
         .trim()
@@ -96,7 +96,7 @@ export async function exportTiktok({
     // UPDATE STOCK
     // =========================
 
-    row['Quantity'] =
+    row['quantity'] =
       Number(product.stock || 0)
 
     updated++
