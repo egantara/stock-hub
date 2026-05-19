@@ -13,7 +13,14 @@ export async function exportTiktok({
   // =========================
 
   const workbook =
-    XLSX.readFile(templatePath)
+    XLSX.readFile(
+
+      templatePath,
+
+      {
+        dense: true
+      }
+    )
 
   const worksheet =
     workbook.Sheets['Template']
