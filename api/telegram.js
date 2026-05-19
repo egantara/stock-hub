@@ -616,7 +616,7 @@ export default async function handler(
           chatId,
 
           `✅ Tiktok Live selesai\n` +
-          `Updated:${live.updated}`
+          `Updated: ${live.updated}`
         )
 
         // INACTIVE
@@ -649,7 +649,7 @@ export default async function handler(
           chatId,
 
           `✅ Tiktok Inactive selesai\n` +
-          `Updated:${inactive.updated}`
+          `Updated: ${inactive.updated}`
         )
 
         continue
@@ -667,10 +667,7 @@ export default async function handler(
 
           chatId,
 
-          '⏳ Exporting ALL Marketplace Files...\n\n' +
-
-          '1. Shopee\n' +
-          '2. TikTok'
+          '⏳ Exporting Shopee & Tiktok Files...'
         )
 
         const { data } =
@@ -748,11 +745,11 @@ export default async function handler(
 
           chatId,
 
-          '🎉 Export ALL selesai\n\n' +
+          '🎉 Export Shopee & Tiktok selesai\n\n' +
 
-          `Shopee:${shopee.updated}\n` +
-          `TikTok LIVE:${live.updated}\n` +
-          `TikTok INACTIVE:${inactive.updated}`
+          `Shopee: ${shopee.updated}\n` +
+          `TikTok LIVE: ${live.updated}\n` +
+          `TikTok INACTIVE: ${inactive.updated}`
         )
 
         continue
