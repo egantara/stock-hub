@@ -60,7 +60,22 @@ export async function exportTiktok({
         .replace(/\.0$/, '')
         .trim()
 
-    if (!templateSkuId) {
+    // =========================
+    // SKIP FAKE HEADER ROW
+    // =========================
+
+    if (
+
+      !templateSkuId ||
+
+      templateSkuId === 'SKU ID' ||
+
+      templateSkuId === 'Mandatory' ||
+
+      templateSkuId === 'Uneditable'
+
+    ) {
+
       continue
     }
 

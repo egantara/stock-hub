@@ -590,7 +590,7 @@ export default async function handler(
 
         await sendTelegram(
           chatId,
-          '⏳ Exporting TikTok LIVE...'
+          '⏳ Exporting Tiktok Live...'
         )
 
         const live =
@@ -615,7 +615,7 @@ export default async function handler(
 
           chatId,
 
-          `✅ TikTok LIVE selesai\n` +
+          `✅ Tiktok Live selesai\n` +
           `Updated:${live.updated}`
         )
 
@@ -623,7 +623,7 @@ export default async function handler(
 
         await sendTelegram(
           chatId,
-          '⏳ Exporting TikTok INACTIVE...'
+          '⏳ Exporting Tiktok Inactive...'
         )
 
         const inactive =
@@ -648,7 +648,7 @@ export default async function handler(
 
           chatId,
 
-          `✅ TikTok INACTIVE selesai\n` +
+          `✅ Tiktok Inactive selesai\n` +
           `Updated:${inactive.updated}`
         )
 
