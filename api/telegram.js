@@ -389,7 +389,7 @@ export default async function handler(
 
           chatId,
 
-          `Stock ${sku} ditambah\n\n` +
+          `✅Stock ${sku} ditambah\n\n` +
           `${item.stock} → ${newStock}`
         )
 
@@ -457,8 +457,7 @@ export default async function handler(
 
           chatId,
 
-          `✅ Stock dikurangi\n\n` +
-          `${sku}\n` +
+          `✅Stock ${sku} ditambah\n\n` +
           `${item.stock} → ${newStock}`
         )
 
@@ -520,8 +519,7 @@ export default async function handler(
 
           chatId,
 
-          `✅ Stock diubah\n\n` +
-          `${sku}\n` +
+          `✅Stock ${sku} diubah\n\n` +
           `${item.stock} → ${qty}`
         )
 
