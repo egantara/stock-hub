@@ -1,7 +1,7 @@
 import axios from 'axios'
 import fs from 'fs'
 import FormData from 'form-data'
-import archiver from 'archiver'
+import AdmZip from 'adm-zip'
 
 import { createClient }
 from '@supabase/supabase-js'
@@ -88,60 +88,26 @@ async function sendFile(
 }
 
 // =========================
-// CREATE ZIP
+// ADM ZIP
 // =========================
-
-async function createZip(
+function createZip(
   files,
   zipPath
 ) {
 
-  return new Promise(
+  const zip =
+    new AdmZip()
 
-    (resolve, reject) => {
+  for (const file of files) {
 
-      const output =
-        fs.createWriteStream(
-          zipPath
-        )
+    zip.addLocalFile(
+      file.path,
+      '',
+      file.name
+    )
+  }
 
-      const archive =
-        archiver(
-          'zip',
-          {
-            zlib: {
-              level: 9
-            }
-          }
-        )
-
-      output.on(
-        'close',
-        () => resolve()
-      )
-
-      archive.on(
-        'error',
-        err => reject(err)
-      )
-
-      archive.pipe(output)
-
-      for (const file of files) {
-
-        archive.file(
-
-          file.path,
-
-          {
-            name: file.name
-          }
-        )
-      }
-
-      archive.finalize()
-    }
-  )
+  zip.writeZip(zipPath)
 }
 
 // =========================
