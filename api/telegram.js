@@ -204,10 +204,6 @@ export default async function handler(req, res) {
 
         if (!sku) continue
 
-        // =========================
-        // CHECK EXISTING
-        // =========================
-
         const { data: existing } =
           await supabase
             .from('stocks')
@@ -294,10 +290,6 @@ export default async function handler(req, res) {
         totalSync++
       }
 
-      // =========================
-      // DONE
-      // =========================
-
       await sendTelegram(
         chatId,
 
@@ -341,9 +333,7 @@ export default async function handler(req, res) {
         chatId,
 
         `📦 SKU: ${data.sku}\n` +
-        `Stock: ${data.stock}\n\n` +
-        `Shopee Product ID:\n${data.shopee_product_id}\n\n` +
-        `Shopee Model ID:\n${data.shopee_model_id}`
+        `Stock: ${data.stock}`
       )
 
       return res.status(200).send('ok')
@@ -457,7 +447,8 @@ export default async function handler(req, res) {
     }
 
     // =========================
-    // EXPORT SHOPEE XLSX
+    // EXPORT SHOPEE
+    // TEMPLATE PATCH MODE
     // =========================
 
     if (message === '/exportshopee') {
@@ -466,7 +457,6 @@ export default async function handler(req, res) {
         await supabase
           .from('stocks')
           .select('*')
-          .order('sku')
 
       if (!data || data.length === 0) {
 
@@ -479,54 +469,81 @@ export default async function handler(req, res) {
       }
 
       // =========================
-      // FORMAT XLSX
-      // =========================
-
-      const rows = data.map(item => ({
-
-        'Kode Produk':
-          item.shopee_product_id || '',
-
-        'Nama Produk':
-          item.nama_produk || '',
-
-        'Kode Variasi':
-          item.shopee_model_id || '',
-
-        'Nama Variasi':
-          item.variasi || '',
-
-        'SKU Induk':
-          item.sku_induk || '',
-
-        'SKU':
-          item.sku || '',
-
-        'Harga':
-          item.harga || 0,
-
-        'GTIN':
-          '',
-
-        'Stok':
-          item.stock || 0
-      }))
-
-      // =========================
-      // CREATE XLSX
+      // LOAD TEMPLATE
       // =========================
 
       const workbook =
-        XLSX.utils.book_new()
+        XLSX.readFile(
+          './templates/template-shopee.xlsx'
+        )
+
+      const sheetName =
+        workbook.SheetNames[0]
 
       const worksheet =
-        XLSX.utils.json_to_sheet(rows)
+        workbook.Sheets[sheetName]
 
-      XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        'Shopee'
-      )
+      // =========================
+      // GET RANGE
+      // =========================
+
+      const range =
+        XLSX.utils.decode_range(
+          worksheet['!ref']
+        )
+
+      // =========================
+      // LOOP TEMPLATE ROW
+      // =========================
+
+      for (
+        let row = 2;
+        row <= range.e.r + 1;
+        row++
+      ) {
+
+        // =========================
+        // SKU = KOLOM F
+        // =========================
+
+        const skuCell =
+          worksheet[`F${row}`]
+
+        if (!skuCell) continue
+
+        const sku =
+          skuCell.v
+            ?.toString()
+            .trim()
+
+        if (!sku) continue
+
+        // =========================
+        // FIND PRODUCT
+        // =========================
+
+        const product =
+          data.find(
+            item =>
+              item.sku === sku
+          )
+
+        if (!product) continue
+
+        // =========================
+        // UPDATE STOCK ONLY
+        // KOLOM I
+        // =========================
+
+        worksheet[`I${row}`] = {
+          t: 'n',
+          v: product.stock || 0
+        }
+      }
+
+      // =========================
+      // EXPORT FILE
+      // =========================
 
       const filePath =
         '/tmp/shopee-stock.xlsx'
