@@ -1,19 +1,20 @@
-import { google } from 'googleapis'
-
-// =========================
-// GET SHEET DATA
-// =========================
+import { google }
+from 'googleapis'
 
 export async function getSheetData() {
 
-  const credentials =
-    JSON.parse(
-      process.env.GOOGLE_SERVICE_ACCOUNT
-    )
-
   const auth =
     new google.auth.GoogleAuth({
-      credentials,
+
+      credentials: {
+        client_email:
+          process.env.GOOGLE_CLIENT_EMAIL,
+
+        private_key:
+          process.env.GOOGLE_PRIVATE_KEY
+            .replace(/\\n/g, '\n')
+      },
+
       scopes: [
         'https://www.googleapis.com/auth/spreadsheets.readonly'
       ]
@@ -27,8 +28,9 @@ export async function getSheetData() {
 
   const response =
     await sheets.spreadsheets.values.get({
+
       spreadsheetId:
-        process.env.GOOGLE_SHEET_ID,
+        process.env.SPREADSHEET_ID,
 
       range:
         'Stock ALL!A:Z'

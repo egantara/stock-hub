@@ -1,9 +1,5 @@
 import XLSX from 'xlsx'
 
-// =========================
-// EXPORT SHOPEE
-// =========================
-
 export async function exportShopee({
   data,
   templatePath,
@@ -19,56 +15,50 @@ export async function exportShopee({
   const worksheet =
     workbook.Sheets[sheetName]
 
-  const range =
-    XLSX.utils.decode_range(
-      worksheet['!ref']
+  const rows =
+    XLSX.utils.sheet_to_json(
+      worksheet,
+      {
+        defval: ''
+      }
     )
 
   let updated = 0
 
-  // START ROW 2
+  for (const row of rows) {
 
-  for (
-    let row = 2;
-    row <= range.e.r + 1;
-    row++
-  ) {
+    const modelId =
+      String(
+        row['Kode Variasi'] || ''
+      ).trim()
 
-    // F = SKU
-
-    const skuCell =
-      worksheet[`F${row}`]
-
-    if (!skuCell) continue
-
-    const sku =
-      skuCell.v
-        ?.toString()
-        .trim()
-
-    if (!sku) continue
-
-    // FIND PRODUCT
+    if (!modelId) continue
 
     const product =
-      data.find(
-        item =>
-          item.sku === sku
+      data.find(item =>
+
+        String(
+          item.shopee_model_id || ''
+        ).trim()
+
+        === modelId
       )
 
     if (!product) continue
 
-    // I = STOCK
-
-    worksheet[`I${row}`] = {
-      t: 'n',
-      v: product.stock || 0
-    }
+    row['Stok'] =
+      product.stock || 0
 
     updated++
   }
 
-  // WRITE FILE
+  const newSheet =
+    XLSX.utils.json_to_sheet(
+      rows
+    )
+
+  workbook.Sheets[sheetName] =
+    newSheet
 
   XLSX.writeFile(
     workbook,

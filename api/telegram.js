@@ -32,7 +32,7 @@ const processedUpdates =
   new Set()
 
 // =========================
-// SEND TELEGRAM
+// TELEGRAM SEND MESSAGE
 // =========================
 
 async function sendTelegram(
@@ -41,7 +41,9 @@ async function sendTelegram(
 ) {
 
   await axios.post(
+
     `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+
     {
       chat_id: chatId,
       text
@@ -50,7 +52,7 @@ async function sendTelegram(
 }
 
 // =========================
-// SEND FILE
+// TELEGRAM SEND FILE
 // =========================
 
 async function sendFile(
@@ -72,8 +74,11 @@ async function sendFile(
   )
 
   await axios.post(
+
     `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
+
     formData,
+
     {
       headers:
         formData.getHeaders()
@@ -95,12 +100,12 @@ export default async function handler(
     const body =
       req.body
 
-    // =========================
-    // ANTI TELEGRAM RETRY
-    // =========================
-
     const updateId =
       body.update_id
+
+    // =========================
+    // ANTI RETRY
+    // =========================
 
     if (
       processedUpdates.has(updateId)
@@ -133,6 +138,7 @@ export default async function handler(
     if (message === '/start') {
 
       await sendTelegram(
+
         chatId,
 
         '🚀 Inventory Bot Active\n\n' +
@@ -140,10 +146,6 @@ export default async function handler(
         'Commands:\n\n' +
 
         '/syncsheet\n' +
-        '/cek sku\n' +
-        '/plus sku qty\n' +
-        '/minus sku qty\n' +
-        '/set sku qty\n\n' +
 
         '/exportshopee\n' +
         '/exporttiktoklive\n' +
@@ -163,9 +165,10 @@ export default async function handler(
     if (message === '/syncsheet') {
 
       await sendTelegram(
+
         chatId,
 
-        '⏳ Syncing Google Sheet...\n\n' +
+        '⏳ Syncing Sheet...\n\n' +
 
         'Google Sheet\n' +
         '↓\n' +
@@ -189,7 +192,7 @@ export default async function handler(
       const tiktokSkuIndex =
         headers.indexOf('tiktok_sku_id')
 
-      let totalSync = 0
+      let total = 0
 
       for (
         let i = 1;
@@ -201,7 +204,7 @@ export default async function handler(
           rows[i]
 
         const sku =
-          row[skuIndex] || ''
+          row[skuIndex]
 
         if (!sku) continue
 
@@ -245,14 +248,180 @@ export default async function handler(
             ])
         }
 
-        totalSync++
+        total++
       }
 
       await sendTelegram(
+
         chatId,
 
         `✅ Sync selesai\n\n` +
-        `Total product: ${totalSync}`
+        `Total:${total}`
+      )
+
+      return res
+        .status(200)
+        .send('ok')
+    }
+
+    // =========================
+    // EXPORT SHOPEE
+    // =========================
+
+    if (message === '/exportshopee') {
+
+      console.log(
+        'START SHOPEE'
+      )
+
+      await sendTelegram(
+        chatId,
+        '⏳ Exporting Shopee...'
+      )
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+
+      const result =
+        await exportShopee({
+
+          data,
+
+          templatePath:
+            process.cwd() +
+            '/templates/template-shopee.xlsx',
+
+          outputPath:
+            '/tmp/shopee-stock.xlsx'
+        })
+
+      console.log(
+        'DONE SHOPEE'
+      )
+
+      await sendFile(
+        chatId,
+        result.outputPath
+      )
+
+      await sendTelegram(
+
+        chatId,
+
+        `✅ Shopee selesai\n` +
+        `Updated:${result.updated}`
+      )
+
+      return res
+        .status(200)
+        .send('ok')
+    }
+
+    // =========================
+    // EXPORT TIKTOK LIVE
+    // =========================
+
+    if (message === '/exporttiktoklive') {
+
+      console.log(
+        'START TIKTOK LIVE'
+      )
+
+      await sendTelegram(
+        chatId,
+        '⏳ Exporting TikTok LIVE...'
+      )
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+
+      const result =
+        await exportTiktok({
+
+          data,
+
+          templatePath:
+            process.cwd() +
+            '/templates/template-tiktok-live.xlsx',
+
+          outputPath:
+            '/tmp/tiktok-live-stock.xlsx'
+        })
+
+      console.log(
+        'DONE TIKTOK LIVE'
+      )
+
+      await sendFile(
+        chatId,
+        result.outputPath
+      )
+
+      await sendTelegram(
+
+        chatId,
+
+        `✅ TikTok LIVE selesai\n` +
+        `Updated:${result.updated}`
+      )
+
+      return res
+        .status(200)
+        .send('ok')
+    }
+
+    // =========================
+    // EXPORT TIKTOK INACTIVE
+    // =========================
+
+    if (message === '/exporttiktokinactive') {
+
+      console.log(
+        'START TIKTOK INACTIVE'
+      )
+
+      await sendTelegram(
+        chatId,
+        '⏳ Exporting TikTok INACTIVE...'
+      )
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+
+      const result =
+        await exportTiktok({
+
+          data,
+
+          templatePath:
+            process.cwd() +
+            '/templates/template-tiktok-inactive.xlsx',
+
+          outputPath:
+            '/tmp/tiktok-inactive-stock.xlsx'
+        })
+
+      console.log(
+        'DONE TIKTOK INACTIVE'
+      )
+
+      await sendFile(
+        chatId,
+        result.outputPath
+      )
+
+      await sendTelegram(
+
+        chatId,
+
+        `✅ TikTok INACTIVE selesai\n` +
+        `Updated:${result.updated}`
       )
 
       return res
@@ -271,12 +440,10 @@ export default async function handler(
       )
 
       await sendTelegram(
+
         chatId,
 
         '⏳ Exporting ALL Marketplace Files...\n\n' +
-
-        'Mode:\n' +
-        'Sequential Export\n\n' +
 
         '1. Shopee\n' +
         '2. TikTok LIVE\n' +
@@ -288,10 +455,6 @@ export default async function handler(
           .from('stocks')
           .select('*')
 
-      // =========================
-      // DELAY
-      // =========================
-
       const delay = (ms) =>
         new Promise(resolve =>
           setTimeout(resolve, ms)
@@ -301,10 +464,6 @@ export default async function handler(
       // SHOPEE
       // =========================
 
-      console.log(
-        'START SHOPEE'
-      )
-
       await sendTelegram(
         chatId,
         '⏳ Exporting Shopee...'
@@ -312,6 +471,7 @@ export default async function handler(
 
       const shopee =
         await exportShopee({
+
           data,
 
           templatePath:
@@ -322,20 +482,17 @@ export default async function handler(
             '/tmp/shopee-stock.xlsx'
         })
 
-      console.log(
-        'DONE SHOPEE'
-      )
-
       await sendFile(
         chatId,
         shopee.outputPath
       )
 
       await sendTelegram(
+
         chatId,
 
         `✅ Shopee selesai\n` +
-        `Updated: ${shopee.updated}`
+        `Updated:${shopee.updated}`
       )
 
       await delay(2000)
@@ -344,10 +501,6 @@ export default async function handler(
       // TIKTOK LIVE
       // =========================
 
-      console.log(
-        'START TIKTOK LIVE'
-      )
-
       await sendTelegram(
         chatId,
         '⏳ Exporting TikTok LIVE...'
@@ -355,6 +508,7 @@ export default async function handler(
 
       const tiktokLive =
         await exportTiktok({
+
           data,
 
           templatePath:
@@ -365,20 +519,17 @@ export default async function handler(
             '/tmp/tiktok-live-stock.xlsx'
         })
 
-      console.log(
-        'DONE TIKTOK LIVE'
-      )
-
       await sendFile(
         chatId,
         tiktokLive.outputPath
       )
 
       await sendTelegram(
+
         chatId,
 
         `✅ TikTok LIVE selesai\n` +
-        `Updated: ${tiktokLive.updated}`
+        `Updated:${tiktokLive.updated}`
       )
 
       await delay(2000)
@@ -387,10 +538,6 @@ export default async function handler(
       // TIKTOK INACTIVE
       // =========================
 
-      console.log(
-        'START TIKTOK INACTIVE'
-      )
-
       await sendTelegram(
         chatId,
         '⏳ Exporting TikTok INACTIVE...'
@@ -398,6 +545,7 @@ export default async function handler(
 
       const tiktokInactive =
         await exportTiktok({
+
           data,
 
           templatePath:
@@ -408,34 +556,28 @@ export default async function handler(
             '/tmp/tiktok-inactive-stock.xlsx'
         })
 
-      console.log(
-        'DONE TIKTOK INACTIVE'
-      )
-
       await sendFile(
         chatId,
         tiktokInactive.outputPath
       )
 
       await sendTelegram(
+
         chatId,
 
         `✅ TikTok INACTIVE selesai\n` +
-        `Updated: ${tiktokInactive.updated}`
+        `Updated:${tiktokInactive.updated}`
       )
 
-      // =========================
-      // FINAL
-      // =========================
-
       await sendTelegram(
+
         chatId,
 
         '🎉 Export ALL selesai\n\n' +
 
-        `Shopee: ${shopee.updated}\n` +
-        `TikTok LIVE: ${tiktokLive.updated}\n` +
-        `TikTok INACTIVE: ${tiktokInactive.updated}`
+        `Shopee:${shopee.updated}\n` +
+        `TikTok LIVE:${tiktokLive.updated}\n` +
+        `TikTok INACTIVE:${tiktokInactive.updated}`
       )
 
       console.log(

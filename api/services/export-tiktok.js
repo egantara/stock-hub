@@ -6,10 +6,6 @@ export async function exportTiktok({
   outputPath
 }) {
 
-  // =========================
-  // READ TEMPLATE
-  // =========================
-
   const workbook =
     XLSX.readFile(templatePath)
 
@@ -18,10 +14,6 @@ export async function exportTiktok({
 
   const worksheet =
     workbook.Sheets[sheetName]
-
-  // =========================
-  // JSON ROWS
-  // =========================
 
   const rows =
     XLSX.utils.sheet_to_json(
@@ -33,15 +25,7 @@ export async function exportTiktok({
 
   let updated = 0
 
-  // =========================
-  // LOOP TEMPLATE
-  // =========================
-
   for (const row of rows) {
-
-    // =========================
-    // TEMPLATE COLUMN
-    // =========================
 
     const templateSkuId =
       String(
@@ -51,10 +35,6 @@ export async function exportTiktok({
     if (!templateSkuId) {
       continue
     }
-
-    // =========================
-    // FIND SUPABASE DATA
-    // =========================
 
     const product =
       data.find(item =>
@@ -70,19 +50,11 @@ export async function exportTiktok({
       continue
     }
 
-    // =========================
-    // UPDATE STOCK
-    // =========================
-
     row['Quantity'] =
       product.stock || 0
 
     updated++
   }
-
-  // =========================
-  // WRITE BACK
-  // =========================
 
   const newWorksheet =
     XLSX.utils.json_to_sheet(
