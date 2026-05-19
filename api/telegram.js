@@ -1,6 +1,9 @@
 import axios from 'axios'
 import { createClient } from '@supabase/supabase-js'
 import { google } from 'googleapis'
+import XLSX from 'xlsx'
+import fs from 'fs'
+import FormData from 'form-data'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -94,7 +97,8 @@ export default async function handler(req, res) {
         '/syncsheet\n' +
         '/cek sku\n' +
         '/plus sku qty\n' +
-        '/minus sku qty'
+        '/minus sku qty\n' +
+        '/exportshopee'
       )
 
       return res.status(200).send('ok')
@@ -447,6 +451,115 @@ export default async function handler(req, res) {
 
         `➖ Stock ${sku}\n\n` +
         `${data.stock} → ${newStock}`
+      )
+
+      return res.status(200).send('ok')
+    }
+
+    // =========================
+    // EXPORT SHOPEE XLSX
+    // =========================
+
+    if (message === '/exportshopee') {
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+          .order('sku')
+
+      if (!data || data.length === 0) {
+
+        await sendTelegram(
+          chatId,
+          '❌ Data kosong'
+        )
+
+        return res.status(200).send('ok')
+      }
+
+      // =========================
+      // FORMAT XLSX
+      // =========================
+
+      const rows = data.map(item => ({
+
+        'Kode Produk':
+          item.shopee_product_id || '',
+
+        'Nama Produk':
+          item.nama_produk || '',
+
+        'Kode Variasi':
+          item.shopee_model_id || '',
+
+        'Nama Variasi':
+          item.variasi || '',
+
+        'SKU Induk':
+          item.sku_induk || '',
+
+        'SKU':
+          item.sku || '',
+
+        'Harga':
+          item.harga || 0,
+
+        'GTIN':
+          '',
+
+        'Stok':
+          item.stock || 0
+      }))
+
+      // =========================
+      // CREATE XLSX
+      // =========================
+
+      const workbook =
+        XLSX.utils.book_new()
+
+      const worksheet =
+        XLSX.utils.json_to_sheet(rows)
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        'Shopee'
+      )
+
+      const filePath =
+        '/tmp/shopee-stock.xlsx'
+
+      XLSX.writeFile(
+        workbook,
+        filePath
+      )
+
+      // =========================
+      // SEND FILE TELEGRAM
+      // =========================
+
+      const formData =
+        new FormData()
+
+      formData.append(
+        'chat_id',
+        chatId
+      )
+
+      formData.append(
+        'document',
+        fs.createReadStream(filePath)
+      )
+
+      await axios.post(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
+        formData,
+        {
+          headers:
+            formData.getHeaders()
+        }
       )
 
       return res.status(200).send('ok')
