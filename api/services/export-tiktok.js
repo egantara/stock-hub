@@ -1,14 +1,14 @@
 import XLSX from 'xlsx'
 
-// =========================
-// EXPORT TIKTOK
-// =========================
-
 export async function exportTiktok({
   data,
   templatePath,
   outputPath
 }) {
+
+  // =========================
+  // READ TEMPLATE
+  // =========================
 
   const workbook =
     XLSX.readFile(templatePath)
@@ -19,58 +19,74 @@ export async function exportTiktok({
   const worksheet =
     workbook.Sheets[sheetName]
 
-  const range =
-    XLSX.utils.decode_range(
-      worksheet['!ref']
+  // =========================
+  // CONVERT TO JSON
+  // =========================
+
+  const rows =
+    XLSX.utils.sheet_to_json(
+      worksheet,
+      {
+        defval: ''
+      }
     )
 
   let updated = 0
 
-  // START ROW 5
+  // =========================
+  // LOOP TEMPLATE ROWS
+  // =========================
 
-  for (
-    let row = 5;
-    row <= range.e.r + 1;
-    row++
-  ) {
+  for (const row of rows) {
 
-    // D = TIKTOK SKU ID
+    // =========================
+    // TEMPLATE COLUMN
+    // =========================
 
-    const skuCell =
-      worksheet[`D${row}`]
+    const skuId =
+      String(
+        row['SKU ID'] || ''
+      ).trim()
 
-    if (!skuCell) continue
+    if (!skuId) continue
 
-    const tiktokSkuId =
-      skuCell.v
-        ?.toString()
-        .trim()
-
-    if (!tiktokSkuId) continue
-
-    // FIND PRODUCT
+    // =========================
+    // FIND SUPABASE DATA
+    // =========================
 
     const product =
-      data.find(
-        item =>
-          item.tiktok_sku_id
-            ?.toString()
-          === tiktokSkuId
+      data.find(item =>
+
+        String(
+          item.tiktok_sku_id || ''
+        ).trim()
+
+        === skuId
       )
 
     if (!product) continue
 
-    // G = QUANTITY
+    // =========================
+    // UPDATE STOCK
+    // =========================
 
-    worksheet[`G${row}`] = {
-      t: 'n',
-      v: product.stock || 0
-    }
+    row['Quantity'] =
+      product.stock || 0
 
     updated++
   }
 
-  // WRITE FILE
+  // =========================
+  // WRITE BACK
+  // =========================
+
+  const newSheet =
+    XLSX.utils.json_to_sheet(
+      rows
+    )
+
+  workbook.Sheets[sheetName] =
+    newSheet
 
   XLSX.writeFile(
     workbook,
