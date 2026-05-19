@@ -9,7 +9,7 @@ export async function exportTiktok({
 }) {
 
   // =========================
-  // LOAD TEMPLATE
+  // LOAD FILE
   // =========================
 
   const workbook =
@@ -22,7 +22,7 @@ export async function exportTiktok({
     workbook.Sheets[sheetName]
 
   // =========================
-  // SHEET TO JSON
+  // RAW ARRAY
   // =========================
 
   const rows =
@@ -31,53 +31,43 @@ export async function exportTiktok({
       worksheet,
 
       {
-        range: 2,
-        defval: '',
-        raw: true
+        header: 1,
+        raw: true,
+        defval: ''
       }
     )
 
   console.log(
-    'TIKTOK TEMPLATE ROWS:',
+    'TOTAL RAW ROWS:',
     rows.length
-  )
-
-  console.log(
-    'SUPABASE SAMPLE:',
-    data[0]
   )
 
   let updated = 0
 
   // =========================
-  // LOOP TEMPLATE
+  // START FROM ROW 6
   // =========================
 
-  for (const row of rows) {
+  for (let i = 5; i < rows.length; i++) {
 
-    // =========================
-    // TEMPLATE SKU ID
-    // =========================
+    const row =
+      rows[i]
 
+    // COLUMN D = sku_id
     const templateSkuId =
       String(
-        row['sku_id'] || ''
+        row[3] || ''
       )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
         .trim()
 
-    // =========================
-    // SKIP FAKE HEADER ROW
-    // =========================
-
     if (!templateSkuId) {
-
       continue
     }
 
     console.log(
-      'SEARCH SKU:',
+      'SEARCH:',
       templateSkuId
     )
 
@@ -99,10 +89,6 @@ export async function exportTiktok({
         return dbSku === templateSkuId
       })
 
-    // =========================
-    // NOT FOUND
-    // =========================
-
     if (!product) {
 
       console.log(
@@ -114,10 +100,10 @@ export async function exportTiktok({
     }
 
     // =========================
-    // UPDATE STOCK
+    // COLUMN G = quantity
     // =========================
 
-    row['quantity'] =
+    row[6] =
       Number(product.stock || 0)
 
     updated++
@@ -135,20 +121,16 @@ export async function exportTiktok({
   )
 
   // =========================
-  // JSON TO SHEET
+  // ARRAY TO SHEET
   // =========================
 
   const newWorksheet =
-    XLSX.utils.json_to_sheet(
+    XLSX.utils.aoa_to_sheet(
       rows
     )
 
   workbook.Sheets[sheetName] =
     newWorksheet
-
-  // =========================
-  // WRITE FILE
-  // =========================
 
   XLSX.writeFile(
     workbook,
