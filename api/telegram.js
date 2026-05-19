@@ -566,8 +566,8 @@ export default async function handler(
 
           chatId,
 
-          `✅ Shopee selesai\n` +
-          `Updated:${result.updated}`
+          `✅ Export Shopee selesai\n` +
+          `Updated: ${result.updated}`
         )
 
         continue
@@ -650,16 +650,6 @@ export default async function handler(
 
           `✅ TikTok INACTIVE selesai\n` +
           `Updated:${inactive.updated}`
-        )
-
-        await sendTelegram(
-
-          chatId,
-
-          '🎉 Export TikTok selesai\n\n' +
-
-          `LIVE:${live.updated}\n` +
-          `INACTIVE:${inactive.updated}`
         )
 
         continue
