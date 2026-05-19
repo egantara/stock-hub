@@ -2,6 +2,8 @@ import axios from 'axios'
 import fs from 'fs'
 import FormData from 'form-data'
 import AdmZip from 'adm-zip'
+import { updateSheetStock }
+from './services/update-sheet-stock.js'
 
 import { createClient }
 from '@supabase/supabase-js'
@@ -304,251 +306,371 @@ export default async function handler(
       }
 
       // =========================
-      // CEK STOCK
-      // =========================
+// CEK STOCK
+// =========================
 
-      if (cmd.startsWith('/cek ')) {
+if (cmd.startsWith('/cek ')) {
 
-        handled = true
+  handled = true
 
-        const parts =
-          cmd.trim().split(/\s+/)
+  const parts =
+    cmd.trim().split(/\s+/)
 
-        const sku =
-          parts[1]?.trim()
+  const sku =
+    parts[1]?.trim()
 
-        if (!sku) {
+  if (!sku) {
 
-          await sendTelegram(
-            chatId,
-            'Format:\n/cek SKU'
-          )
+    await sendTelegram(
+      chatId,
+      'Format:\n/cek SKU'
+    )
 
-          continue
-        }
+    continue
+  }
 
-        const { data: item } =
-          await supabase
-            .from('stocks')
-            .select('*')
-            .eq('sku', sku)
-            .single()
+  const rows =
+    await getSheetData()
 
-        if (!item) {
+  const headers =
+    rows[0].map(h =>
+      h.toString().trim()
+    )
 
-          await sendTelegram(
-            chatId,
-            `SKU tidak ditemukan:\n${sku}`
-          )
+  const skuIndex =
+    headers.indexOf('sku')
 
-          continue
-        }
+  const stockIndex =
+    headers.indexOf('Stock')
 
-        await sendTelegram(
+  let found = false
 
-          chatId,
+  for (
+    let i = 1;
+    i < rows.length;
+    i++
+  ) {
 
-          `${sku}\n\n` +
-          `Stock: ${item.stock}`
-        )
+    const row =
+      rows[i]
 
-        continue
-      }
+    const rowSku =
+      String(
+        row[skuIndex] || ''
+      ).trim()
 
-      // =========================
-      // PLUS STOCK
-      // =========================
+    if (rowSku !== sku) {
+      continue
+    }
 
-      if (cmd.startsWith('/plus ')) {
+    found = true
 
-        handled = true
+    const stock =
+      row[stockIndex] || 0
 
-        const parts =
-          cmd.trim().split(/\s+/)
+    await sendTelegram(
 
-        const sku =
-          parts[1]?.trim()
+      chatId,
 
-        const qty =
-          Number(parts[2])
+      `${sku}\n\n` +
+      `Stock: ${stock}`
+    )
 
-        if (!sku || Number.isNaN(qty)) {
+    break
+  }
 
-          await sendTelegram(
-            chatId,
-            'Format:\n/plus SKU qty'
-          )
+  if (!found) {
 
-          continue
-        }
+    await sendTelegram(
+      chatId,
+      `SKU tidak ditemukan:\n${sku}`
+    )
+  }
 
-        const { data: item } =
-          await supabase
-            .from('stocks')
-            .select('*')
-            .eq('sku', sku)
-            .single()
+  continue
+}
 
-        if (!item) {
+// =========================
+// PLUS STOCK
+// =========================
 
-          await sendTelegram(
-            chatId,
-            `SKU tidak ditemukan:\n${sku}`
-          )
+if (cmd.startsWith('/plus ')) {
 
-          continue
-        }
+  handled = true
 
-        const newStock =
-          (item.stock || 0) + qty
+  const parts =
+    cmd.trim().split(/\s+/)
 
-        await supabase
-          .from('stocks')
-          .update({
-            stock: newStock
-          })
-          .eq('sku', sku)
+  const sku =
+    parts[1]?.trim()
 
-        await sendTelegram(
+  const qty =
+    Number(parts[2])
 
-          chatId,
+  if (!sku || Number.isNaN(qty)) {
 
-          `✅Stock ${sku} ditambah\n\n` +
-          `${item.stock} → ${newStock}`
-        )
+    await sendTelegram(
+      chatId,
+      'Format:\n/plus SKU qty'
+    )
 
-        continue
-      }
+    continue
+  }
 
-      // =========================
-      // MINUS STOCK
-      // =========================
+  // =========================
+  // SHOPEE
+  // =========================
 
-      if (cmd.startsWith('/minus ')) {
+  const shopee =
+    await updateSheetStock({
 
-        handled = true
+      sheetName:
+        'Stock Shopee',
 
-        const parts =
-          cmd.trim().split(/\s+/)
+      sku,
 
-        const sku =
-          parts[1]?.trim()
+      columnName:
+        'Stok',
 
-        const qty =
-          Number(parts[2])
+      operation:
+        'plus',
 
-        if (!sku || Number.isNaN(qty)) {
+      qty
+    })
 
-          await sendTelegram(
-            chatId,
-            'Format:\n/minus SKU qty'
-          )
+  // =========================
+  // TOKOPEDIA
+  // =========================
 
-          continue
-        }
+  const tokopedia =
+    await updateSheetStock({
 
-        const { data: item } =
-          await supabase
-            .from('stocks')
-            .select('*')
-            .eq('sku', sku)
-            .single()
+      sheetName:
+        'Stock Tokopedia',
 
-        if (!item) {
+      sku,
 
-          await sendTelegram(
-            chatId,
-            `SKU tidak ditemukan:\n${sku}`
-          )
+      columnName:
+        'Quantity',
 
-          continue
-        }
+      operation:
+        'plus',
 
-        const newStock =
-          Math.max(
-            0,
-            (item.stock || 0) - qty
-          )
+      qty
+    })
 
-        await supabase
-          .from('stocks')
-          .update({
-            stock: newStock
-          })
-          .eq('sku', sku)
+  if (
+    !shopee.found &&
+    !tokopedia.found
+  ) {
 
-        await sendTelegram(
+    await sendTelegram(
+      chatId,
+      `SKU tidak ditemukan:\n${sku}`
+    )
 
-          chatId,
+    continue
+  }
 
-          `✅Stock ${sku} ditambah\n\n` +
-          `${item.stock} → ${newStock}`
-        )
+  await sendTelegram(
 
-        continue
-      }
+    chatId,
 
-      // =========================
-      // SET STOCK
-      // =========================
+    `✅ Stock ${sku} ditambah\n\n` +
 
-      if (cmd.startsWith('/set ')) {
+    `${shopee.oldValue} → ${shopee.newValue}`
+  )
 
-        handled = true
+  continue
+}
 
-        const parts =
-          cmd.trim().split(/\s+/)
+// =========================
+// MINUS STOCK
+// =========================
 
-        const sku =
-          parts[1]?.trim()
+if (cmd.startsWith('/minus ')) {
 
-        const qty =
-          Number(parts[2])
+  handled = true
 
-        if (!sku || Number.isNaN(qty)) {
+  const parts =
+    cmd.trim().split(/\s+/)
 
-          await sendTelegram(
-            chatId,
-            'Format:\n/set SKU qty'
-          )
+  const sku =
+    parts[1]?.trim()
 
-          continue
-        }
+  const qty =
+    Number(parts[2])
 
-        const { data: item } =
-          await supabase
-            .from('stocks')
-            .select('*')
-            .eq('sku', sku)
-            .single()
+  if (!sku || Number.isNaN(qty)) {
 
-        if (!item) {
+    await sendTelegram(
+      chatId,
+      'Format:\n/minus SKU qty'
+    )
 
-          await sendTelegram(
-            chatId,
-            `SKU tidak ditemukan:\n${sku}`
-          )
+    continue
+  }
 
-          continue
-        }
+  // =========================
+  // SHOPEE
+  // =========================
 
-        await supabase
-          .from('stocks')
-          .update({
-            stock: qty
-          })
-          .eq('sku', sku)
+  const shopee =
+    await updateSheetStock({
 
-        await sendTelegram(
+      sheetName:
+        'Stock Shopee',
 
-          chatId,
+      sku,
 
-          `✅Stock ${sku} diubah\n\n` +
-          `${item.stock} → ${qty}`
-        )
+      columnName:
+        'Stok',
 
-        continue
-      }
+      operation:
+        'minus',
+
+      qty
+    })
+
+  // =========================
+  // TOKOPEDIA
+  // =========================
+
+  const tokopedia =
+    await updateSheetStock({
+
+      sheetName:
+        'Stock Tokopedia',
+
+      sku,
+
+      columnName:
+        'Quantity',
+
+      operation:
+        'minus',
+
+      qty
+    })
+
+  if (
+    !shopee.found &&
+    !tokopedia.found
+  ) {
+
+    await sendTelegram(
+      chatId,
+      `SKU tidak ditemukan:\n${sku}`
+    )
+
+    continue
+  }
+
+  await sendTelegram(
+
+    chatId,
+
+    `✅ Stock ${sku} dikurangi\n\n` +
+
+    `${shopee.oldValue} → ${shopee.newValue}`
+  )
+
+  continue
+}
+
+// =========================
+// SET STOCK
+// =========================
+
+if (cmd.startsWith('/set ')) {
+
+  handled = true
+
+  const parts =
+    cmd.trim().split(/\s+/)
+
+  const sku =
+    parts[1]?.trim()
+
+  const qty =
+    Number(parts[2])
+
+  if (!sku || Number.isNaN(qty)) {
+
+    await sendTelegram(
+      chatId,
+      'Format:\n/set SKU qty'
+    )
+
+    continue
+  }
+
+  // =========================
+  // SHOPEE
+  // =========================
+
+  const shopee =
+    await updateSheetStock({
+
+      sheetName:
+        'Stock Shopee',
+
+      sku,
+
+      columnName:
+        'Stok',
+
+      operation:
+        'set',
+
+      qty
+    })
+
+  // =========================
+  // TOKOPEDIA
+  // =========================
+
+  const tokopedia =
+    await updateSheetStock({
+
+      sheetName:
+        'Stock Tokopedia',
+
+      sku,
+
+      columnName:
+        'Quantity',
+
+      operation:
+        'set',
+
+      qty
+    })
+
+  if (
+    !shopee.found &&
+    !tokopedia.found
+  ) {
+
+    await sendTelegram(
+      chatId,
+      `SKU tidak ditemukan:\n${sku}`
+    )
+
+    continue
+  }
+
+  await sendTelegram(
+
+    chatId,
+
+    `✅ Stock ${sku} diubah\n\n` +
+
+    `${shopee.oldValue} → ${shopee.newValue}`
+  )
+
+  continue
+}
 
       // =========================
       // EXPORT SHOPEE
