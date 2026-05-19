@@ -1,6 +1,7 @@
 import axios from 'axios'
 import fs from 'fs'
 import FormData from 'form-data'
+import archiver from 'archiver'
 
 import { createClient }
 from '@supabase/supabase-js'
@@ -30,6 +31,48 @@ const supabase =
 
 const processedUpdates =
   new Set()
+
+// =========================
+// FUNCTION ZIP
+// =========================
+
+async function createZip(files, zipPath) {
+
+  return new Promise((resolve, reject) => {
+
+    const output =
+      fs.createWriteStream(zipPath)
+
+    const archive =
+      archiver('zip', {
+        zlib: { level: 9 }
+      })
+
+    output.on('close', () => {
+      resolve()
+    })
+
+    archive.on('error', err => {
+      reject(err)
+    })
+
+    archive.pipe(output)
+
+    for (const file of files) {
+
+      archive.file(
+        file.path,
+        {
+          name: file.name
+        }
+      )
+    }
+
+    archive.finalize()
+  })
+}
+
+
 
 // =========================
 // TELEGRAM SEND MESSAGE
@@ -82,6 +125,63 @@ async function sendFile(
     {
       headers:
         formData.getHeaders()
+    }
+  )
+}
+
+// =========================
+// CREATE ZIP
+// =========================
+
+async function createZip(
+  files,
+  zipPath
+) {
+
+  return new Promise(
+
+    (resolve, reject) => {
+
+      const output =
+        fs.createWriteStream(
+          zipPath
+        )
+
+      const archive =
+        archiver(
+          'zip',
+          {
+            zlib: {
+              level: 9
+            }
+          }
+        )
+
+      output.on(
+        'close',
+        () => resolve()
+      )
+
+      archive.on(
+        'error',
+        err => reject(err)
+      )
+
+      archive.pipe(output)
+
+      for (const file of files) {
+
+        archive.file(
+
+          file.path,
+
+          {
+            name: file.name
+          }
+        )
+      }
+
+      archive.finalize()
     }
   )
 }
@@ -656,104 +756,138 @@ export default async function handler(
       }
 
       // =========================
-      // EXPORT ALL
-      // =========================
+// EXPORT ALL
+// =========================
 
-      if (cmd === '/exportall') {
+if (cmd === '/exportall') {
 
-        handled = true
+  handled = true
 
-        await sendTelegram(
+  await sendTelegram(
 
-          chatId,
+    chatId,
 
-          '⏳ Exporting Shopee & Tiktok Files...'
-        )
+    '⏳ Exporting Shopee & Tiktok Files...'
+  )
 
-        const { data } =
-          await supabase
-            .from('stocks')
-            .select('*')
+  const { data } =
+    await supabase
+      .from('stocks')
+      .select('*')
 
-        // =========================
-        // SHOPEE
-        // =========================
+  // =========================
+  // SHOPEE
+  // =========================
 
-        const shopee =
-          await exportShopee({
+  const shopee =
+    await exportShopee({
 
-            data,
+      data,
 
-            templatePath:
-              process.cwd() +
-              '/templates/template-shopee.xlsx',
+      templatePath:
+        process.cwd() +
+        '/templates/template-shopee.xlsx',
 
-            outputPath:
-              '/tmp/shopee-stock.xlsx'
-          })
+      outputPath:
+        '/tmp/shopee-stock.xlsx'
+    })
 
-        await sendFile(
-          chatId,
-          shopee.outputPath
-        )
+  // =========================
+  // TIKTOK LIVE
+  // =========================
 
-        // =========================
-        // TIKTOK LIVE
-        // =========================
+  const live =
+    await exportTiktok({
 
-        const live =
-          await exportTiktok({
+      data,
 
-            data,
+      templatePath:
+        process.cwd() +
+        '/templates/template-tiktok-live.xlsx',
 
-            templatePath:
-              process.cwd() +
-              '/templates/template-tiktok-live.xlsx',
+      outputPath:
+        '/tmp/tiktok-live-stock.xlsx'
+    })
 
-            outputPath:
-              '/tmp/tiktok-live-stock.xlsx'
-          })
+  // =========================
+  // TIKTOK INACTIVE
+  // =========================
 
-        await sendFile(
-          chatId,
-          live.outputPath
-        )
+  const inactive =
+    await exportTiktok({
 
-        // =========================
-        // TIKTOK INACTIVE
-        // =========================
+      data,
 
-        const inactive =
-          await exportTiktok({
+      templatePath:
+        process.cwd() +
+        '/templates/template-tiktok-inactive.xlsx',
 
-            data,
+      outputPath:
+        '/tmp/tiktok-inactive-stock.xlsx'
+    })
 
-            templatePath:
-              process.cwd() +
-              '/templates/template-tiktok-inactive.xlsx',
+  // =========================
+  // CREATE ZIP
+  // =========================
 
-            outputPath:
-              '/tmp/tiktok-inactive-stock.xlsx'
-          })
+  const zipPath =
+    '/tmp/inventory-export.zip'
 
-        await sendFile(
-          chatId,
-          inactive.outputPath
-        )
+  await createZip(
 
-        await sendTelegram(
+    [
 
-          chatId,
+      {
+        path:
+          shopee.outputPath,
 
-          '🎉 Export Shopee & Tiktok selesai\n\n' +
+        name:
+          'shopee-stock.xlsx'
+      },
 
-          `Shopee: ${shopee.updated}\n` +
-          `Tiktok Live: ${live.updated}\n` +
-          `Tiktok Inactive: ${inactive.updated}`
-        )
+      {
+        path:
+          live.outputPath,
 
-        continue
+        name:
+          'tiktok-live-stock.xlsx'
+      },
+
+      {
+        path:
+          inactive.outputPath,
+
+        name:
+          'tiktok-inactive-stock.xlsx'
       }
+
+    ],
+
+    zipPath
+  )
+
+  // =========================
+  // SEND ZIP
+  // =========================
+
+  await sendFile(
+    chatId,
+    zipPath
+  )
+
+  await sendTelegram(
+
+    chatId,
+
+    '🎉 Export Shopee & Tiktok selesai\n\n' +
+
+    `Shopee: ${shopee.updated}\n` +
+    `Tiktok Live: ${live.updated}\n` +
+    `Tiktok Inactive: ${inactive.updated}`
+  )
+
+  continue
+}
     }
 
     // =========================
