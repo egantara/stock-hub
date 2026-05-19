@@ -7,6 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 )
 
+// =========================
+// GET GOOGLE SHEET
+// =========================
+
 async function getSheetData() {
 
   const credentials =
@@ -40,154 +44,185 @@ async function getSheetData() {
   return response.data.values
 }
 
+// =========================
+// SEND TELEGRAM
+// =========================
+
+async function sendTelegram(chatId, text) {
+
+  await axios.post(
+    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+    {
+      chat_id: chatId,
+      text
+    }
+  )
+}
+
+// =========================
+// MAIN HANDLER
+// =========================
+
 export default async function handler(req, res) {
 
-  const body = req.body
+  try {
 
-  const message =
-    body.message?.text
+    const body =
+      req.body
 
-  const chatId =
-    body.message?.chat?.id
+    const message =
+      body.message?.text
 
-  if (!message) {
-    return res.status(200).send('ok')
-  }
+    const chatId =
+      body.message?.chat?.id
 
-  // =========================
-  // START
-  // =========================
+    if (!message) {
+      return res.status(200).send('ok')
+    }
 
-  if (message === '/start') {
+    // =========================
+    // START
+    // =========================
 
-    await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        chat_id: chatId,
-        text:
-          '🚀 Inventory Bot Active\n\n' +
-          'Commands:\n' +
-          '/syncsheet\n' +
-          '/cek sku\n' +
-          '/plus sku jumlah\n' +
-          '/minus sku jumlah'
-      }
-    )
+    if (message === '/start') {
 
-    return res.status(200).send('ok')
-  }
+      await sendTelegram(
+        chatId,
 
-  // =========================
-  // SYNC SHEET
-  // =========================
-
-  if (message === '/syncsheet') {
-
-    const rows =
-      await getSheetData()
-
-    if (!rows || rows.length <= 1) {
-
-      await axios.post(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-        {
-          chat_id: chatId,
-          text: '❌ Sheet kosong'
-        }
+        '🚀 Inventory Bot Active\n\n' +
+        'Commands:\n' +
+        '/syncsheet\n' +
+        '/cek sku\n' +
+        '/plus sku qty\n' +
+        '/minus sku qty'
       )
 
       return res.status(200).send('ok')
     }
 
-    // HEADER
-    const headers =
-      rows[0].map(h =>
-        h.toString().trim()
-      )
+    // =========================
+    // SYNC SHEET
+    // =========================
 
-    const skuIndex =
-      headers.indexOf('sku')
+    if (message === '/syncsheet') {
 
-    const stockIndex =
-      headers.indexOf('Stock')
+      const rows =
+        await getSheetData()
 
-    const shopeeIdIndex =
-      headers.indexOf('shopee_id')
+      if (!rows || rows.length <= 1) {
 
-    const shopeeProductIdIndex =
-      headers.indexOf('shopee_product_id')
+        await sendTelegram(
+          chatId,
+          '❌ Sheet kosong'
+        )
 
-    const tokopediaIdIndex =
-      headers.indexOf('tokopedia_id')
+        return res.status(200).send('ok')
+      }
 
-    const variasiIndex =
-      headers.indexOf('Variasi')
+      // =========================
+      // HEADER MAPPING
+      // =========================
 
-    let totalSync = 0
+      const headers =
+        rows[0].map(h =>
+          h.toString().trim()
+        )
 
-    for (let i = 1; i < rows.length; i++) {
+      const skuIndex =
+        headers.indexOf('sku')
 
-      const row = rows[i]
+      const stockIndex =
+        headers.indexOf('Stock')
 
-      const sku =
-        row[skuIndex] || ''
+      const shopeeIdIndex =
+        headers.indexOf('shopee_id')
 
-      const stock =
-        parseInt(
-          row[stockIndex]
-        ) || 0
+      const shopeeProductIdIndex =
+        headers.indexOf('shopee_product_id')
 
-      const shopeeId =
-        row[shopeeIdIndex] || ''
+      const tokopediaIdIndex =
+        headers.indexOf('tokopedia_id')
 
-      const shopeeProductId =
-        row[shopeeProductIdIndex] || ''
+      const variasiIndex =
+        headers.indexOf('Variasi')
 
-      const tokopediaId =
-        row[tokopediaIdIndex] || ''
+      const namaProdukIndex =
+        headers.indexOf('nama_produk')
 
-      const variasi =
-        row[variasiIndex] || ''
+      const hargaIndex =
+        headers.indexOf('Harga Shopee')
 
-      if (!sku) continue
+      const skuIndukIndex =
+        headers.indexOf('SKU Induk')
 
-      const { data: existing } =
-        await supabase
-          .from('stocks')
-          .select('*')
-          .eq('sku', sku)
-          .single()
+      let totalSync = 0
 
-      if (existing) {
+      // =========================
+      // LOOP ROW
+      // =========================
 
-        await supabase
-          .from('stocks')
-          .update({
-            stock: stock,
+      for (let i = 1; i < rows.length; i++) {
 
-            shopee_model_id:
-              shopeeId,
+        const row = rows[i]
 
-            shopee_product_id:
-              shopeeProductId,
+        const sku =
+          row[skuIndex] || ''
 
-            tokopedia_product_id:
-              tokopediaId,
+        const stock =
+          parseInt(
+            row[stockIndex]
+          ) || 0
 
-            variasi:
-              variasi
-          })
-          .eq('sku', sku)
+        const shopeeId =
+          row[shopeeIdIndex] || ''
 
-      } else {
+        const shopeeProductId =
+          row[shopeeProductIdIndex] || ''
 
-        await supabase
-          .from('stocks')
-          .insert([
-            {
-              sku: sku,
+        const tokopediaId =
+          row[tokopediaIdIndex] || ''
 
-              stock: stock,
+        const variasi =
+          row[variasiIndex] || ''
+
+        const namaProduk =
+          row[namaProdukIndex] || ''
+
+        const harga =
+          parseInt(
+            (row[hargaIndex] || '')
+              .toString()
+              .replace(/[^\d]/g, '')
+          ) || 0
+
+        const skuInduk =
+          row[skuIndukIndex] || ''
+
+        if (!sku) continue
+
+        // =========================
+        // CHECK EXISTING
+        // =========================
+
+        const { data: existing } =
+          await supabase
+            .from('stocks')
+            .select('*')
+            .eq('sku', sku)
+            .single()
+
+        // =========================
+        // UPDATE
+        // =========================
+
+        if (existing) {
+
+          await supabase
+            .from('stocks')
+            .update({
+
+              stock:
+                stock,
 
               shopee_model_id:
                 shopeeId,
@@ -199,206 +234,243 @@ export default async function handler(req, res) {
                 tokopediaId,
 
               variasi:
-                variasi
-            }
-          ])
-      }
+                variasi,
 
-      totalSync++
-    }
+              nama_produk:
+                namaProduk,
 
-    await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        chat_id: chatId,
-        text:
-          `✅ Sync selesai\n\n` +
-          `Total product: ${totalSync}`
-      }
-    )
+              harga:
+                harga,
 
-    return res.status(200).send('ok')
-  }
+              sku_induk:
+                skuInduk
+            })
+            .eq('sku', sku)
 
-  // =========================
-  // CEK STOCK
-  // =========================
+        } else {
 
-  if (message.startsWith('/cek')) {
+          // =========================
+          // INSERT
+          // =========================
 
-    const split =
-      message.split(' ')
+          await supabase
+            .from('stocks')
+            .insert([
+              {
+                sku:
+                  sku,
 
-    const sku =
-      split[1]
+                stock:
+                  stock,
 
-    const { data } =
-      await supabase
-        .from('stocks')
-        .select('*')
-        .eq('sku', sku)
-        .single()
+                shopee_model_id:
+                  shopeeId,
 
-    if (!data) {
+                shopee_product_id:
+                  shopeeProductId,
 
-      await axios.post(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-        {
-          chat_id: chatId,
-          text:
-            `❌ SKU tidak ditemukan`
+                tokopedia_product_id:
+                  tokopediaId,
+
+                variasi:
+                  variasi,
+
+                nama_produk:
+                  namaProduk,
+
+                harga:
+                  harga,
+
+                sku_induk:
+                  skuInduk
+              }
+            ])
         }
+
+        totalSync++
+      }
+
+      // =========================
+      // DONE
+      // =========================
+
+      await sendTelegram(
+        chatId,
+
+        `✅ Sync selesai\n\n` +
+        `Total product: ${totalSync}`
       )
 
       return res.status(200).send('ok')
     }
 
-    await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        chat_id: chatId,
-        text:
-          `📦 SKU: ${data.sku}\n` +
-          `Stock: ${data.stock}`
+    // =========================
+    // CEK STOCK
+    // =========================
+
+    if (message.startsWith('/cek')) {
+
+      const split =
+        message.split(' ')
+
+      const sku =
+        split[1]
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+          .eq('sku', sku)
+          .single()
+
+      if (!data) {
+
+        await sendTelegram(
+          chatId,
+          '❌ SKU tidak ditemukan'
+        )
+
+        return res.status(200).send('ok')
       }
-    )
 
-    return res.status(200).send('ok')
-  }
+      await sendTelegram(
+        chatId,
 
-  // =========================
-  // PLUS STOCK
-  // =========================
-
-  if (message.startsWith('/plus')) {
-
-    const split =
-      message.split(' ')
-
-    const sku =
-      split[1]
-
-    const qty =
-      parseInt(split[2]) || 0
-
-    const { data } =
-      await supabase
-        .from('stocks')
-        .select('*')
-        .eq('sku', sku)
-        .single()
-
-    if (!data) {
-
-      await axios.post(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-        {
-          chat_id: chatId,
-          text:
-            `❌ SKU tidak ditemukan`
-        }
+        `📦 SKU: ${data.sku}\n` +
+        `Stock: ${data.stock}\n\n` +
+        `Shopee Product ID:\n${data.shopee_product_id}\n\n` +
+        `Shopee Model ID:\n${data.shopee_model_id}`
       )
 
       return res.status(200).send('ok')
     }
 
-    const newStock =
-      data.stock + qty
+    // =========================
+    // PLUS STOCK
+    // =========================
 
-    await supabase
-      .from('stocks')
-      .update({
-        stock: newStock
+    if (message.startsWith('/plus')) {
+
+      const split =
+        message.split(' ')
+
+      const sku =
+        split[1]
+
+      const qty =
+        parseInt(split[2]) || 0
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+          .eq('sku', sku)
+          .single()
+
+      if (!data) {
+
+        await sendTelegram(
+          chatId,
+          '❌ SKU tidak ditemukan'
+        )
+
+        return res.status(200).send('ok')
+      }
+
+      const newStock =
+        data.stock + qty
+
+      await supabase
+        .from('stocks')
+        .update({
+          stock: newStock
+        })
+        .eq('sku', sku)
+
+      await sendTelegram(
+        chatId,
+
+        `➕ Stock ${sku}\n\n` +
+        `${data.stock} → ${newStock}`
+      )
+
+      return res.status(200).send('ok')
+    }
+
+    // =========================
+    // MINUS STOCK
+    // =========================
+
+    if (message.startsWith('/minus')) {
+
+      const split =
+        message.split(' ')
+
+      const sku =
+        split[1]
+
+      const qty =
+        parseInt(split[2]) || 0
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+          .eq('sku', sku)
+          .single()
+
+      if (!data) {
+
+        await sendTelegram(
+          chatId,
+          '❌ SKU tidak ditemukan'
+        )
+
+        return res.status(200).send('ok')
+      }
+
+      const newStock =
+        Math.max(
+          data.stock - qty,
+          0
+        )
+
+      await supabase
+        .from('stocks')
+        .update({
+          stock: newStock
+        })
+        .eq('sku', sku)
+
+      await sendTelegram(
+        chatId,
+
+        `➖ Stock ${sku}\n\n` +
+        `${data.stock} → ${newStock}`
+      )
+
+      return res.status(200).send('ok')
+    }
+
+    // =========================
+    // DEFAULT
+    // =========================
+
+    await sendTelegram(
+      chatId,
+      '❓ Command tidak dikenal'
+    )
+
+    return res.status(200).send('ok')
+
+  } catch (err) {
+
+    console.error(err)
+
+    return res
+      .status(500)
+      .json({
+        error: err.message
       })
-      .eq('sku', sku)
-
-    await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        chat_id: chatId,
-        text:
-          `➕ Stock ${sku}\n` +
-          `${data.stock} → ${newStock}`
-      }
-    )
-
-    return res.status(200).send('ok')
   }
-
-  // =========================
-  // MINUS STOCK
-  // =========================
-
-  if (message.startsWith('/minus')) {
-
-    const split =
-      message.split(' ')
-
-    const sku =
-      split[1]
-
-    const qty =
-      parseInt(split[2]) || 0
-
-    const { data } =
-      await supabase
-        .from('stocks')
-        .select('*')
-        .eq('sku', sku)
-        .single()
-
-    if (!data) {
-
-      await axios.post(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-        {
-          chat_id: chatId,
-          text:
-            `❌ SKU tidak ditemukan`
-        }
-      )
-
-      return res.status(200).send('ok')
-    }
-
-    const newStock =
-      Math.max(
-        data.stock - qty,
-        0
-      )
-
-    await supabase
-      .from('stocks')
-      .update({
-        stock: newStock
-      })
-      .eq('sku', sku)
-
-    await axios.post(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        chat_id: chatId,
-        text:
-          `➖ Stock ${sku}\n` +
-          `${data.stock} → ${newStock}`
-      }
-    )
-
-    return res.status(200).send('ok')
-  }
-
-  // =========================
-  // DEFAULT
-  // =========================
-
-  await axios.post(
-    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-    {
-      chat_id: chatId,
-      text:
-        '❓ Command tidak dikenal'
-    }
-  )
-
-  return res.status(200).send('ok')
 }
