@@ -189,11 +189,7 @@ export default async function handler(
 
           chatId,
 
-          '⏳ Syncing Sheet...\n\n' +
-
-          'Google Sheet\n' +
-          '↓\n' +
-          'Supabase'
+          '⏳ Syncing Sheet...\n\n'
         )
 
         const rows =
@@ -277,7 +273,7 @@ export default async function handler(
           chatId,
 
           `✅ Sync selesai\n\n` +
-          `Total:${total}`
+          `Total: ${total}`
         )
 
         continue
