@@ -20,7 +20,7 @@ export async function exportTiktok({
     workbook.Sheets[sheetName]
 
   // =========================
-  // CONVERT TO JSON
+  // JSON ROWS
   // =========================
 
   const rows =
@@ -34,7 +34,7 @@ export async function exportTiktok({
   let updated = 0
 
   // =========================
-  // LOOP TEMPLATE ROWS
+  // LOOP TEMPLATE
   // =========================
 
   for (const row of rows) {
@@ -43,12 +43,14 @@ export async function exportTiktok({
     // TEMPLATE COLUMN
     // =========================
 
-    const skuId =
+    const templateSkuId =
       String(
         row['SKU ID'] || ''
       ).trim()
 
-    if (!skuId) continue
+    if (!templateSkuId) {
+      continue
+    }
 
     // =========================
     // FIND SUPABASE DATA
@@ -61,10 +63,12 @@ export async function exportTiktok({
           item.tiktok_sku_id || ''
         ).trim()
 
-        === skuId
+        === templateSkuId
       )
 
-    if (!product) continue
+    if (!product) {
+      continue
+    }
 
     // =========================
     // UPDATE STOCK
@@ -80,13 +84,13 @@ export async function exportTiktok({
   // WRITE BACK
   // =========================
 
-  const newSheet =
+  const newWorksheet =
     XLSX.utils.json_to_sheet(
       rows
     )
 
   workbook.Sheets[sheetName] =
-    newSheet
+    newWorksheet
 
   XLSX.writeFile(
     workbook,
