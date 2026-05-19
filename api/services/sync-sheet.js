@@ -27,9 +27,7 @@ export async function getSheetData() {
 
   const doc =
     new GoogleSpreadsheet(
-
       process.env.GOOGLE_SHEET_ID,
-
       serviceAccountAuth
     )
 
@@ -38,27 +36,52 @@ export async function getSheetData() {
   const sheet =
     doc.sheetsByIndex[0]
 
+  // =========================
+  // LOAD HEADER + CELLS
+  // =========================
+
+  await sheet.loadHeaderRow()
+
   const rows =
     await sheet.getRows()
+
+  console.log(
+    'TOTAL ROWS:',
+    rows.length
+  )
 
   if (!rows.length) {
     return []
   }
 
+  // =========================
+  // AMBIL HEADER
+  // =========================
+
   const headers =
-    Object.keys(rows[0]._rawData)
+    sheet.headerValues
+
+  console.log(
+    'HEADERS:',
+    headers
+  )
 
   const data = [
     headers
   ]
 
+  // =========================
+  // BUILD DATA
+  // =========================
+
   for (const row of rows) {
 
-    data.push(
-      headers.map(h =>
-        row.get(h)
+    const rowData =
+      headers.map(header =>
+        row.get(header)
       )
-    )
+
+    data.push(rowData)
   }
 
   return data
