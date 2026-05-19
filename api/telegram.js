@@ -83,6 +83,13 @@ export default async function handler(
   res
 ) {
 
+  // =========================
+  // IMPORTANT
+  // AVOID TELEGRAM RETRY
+  // =========================
+
+  res.status(200).send('ok')
+
   try {
 
     const body =
@@ -95,7 +102,7 @@ export default async function handler(
       body.message?.chat?.id
 
     if (!message) {
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -123,7 +130,7 @@ export default async function handler(
         '/exportall'
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -152,7 +159,7 @@ export default async function handler(
           '❌ Sheet kosong'
         )
 
-        return res.status(200).send('ok')
+        return
       }
 
       const headers =
@@ -235,7 +242,7 @@ export default async function handler(
         `Total product: ${totalSync}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -264,7 +271,7 @@ export default async function handler(
           '❌ SKU tidak ditemukan'
         )
 
-        return res.status(200).send('ok')
+        return
       }
 
       await sendTelegram(
@@ -274,7 +281,7 @@ export default async function handler(
         `Stock: ${data.stock}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -306,7 +313,7 @@ export default async function handler(
           '❌ SKU tidak ditemukan'
         )
 
-        return res.status(200).send('ok')
+        return
       }
 
       const newStock =
@@ -326,7 +333,7 @@ export default async function handler(
         `${data.stock} → ${newStock}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -358,7 +365,7 @@ export default async function handler(
           '❌ SKU tidak ditemukan'
         )
 
-        return res.status(200).send('ok')
+        return
       }
 
       const newStock =
@@ -381,7 +388,7 @@ export default async function handler(
         `${data.stock} → ${newStock}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -413,7 +420,7 @@ export default async function handler(
           '❌ SKU tidak ditemukan'
         )
 
-        return res.status(200).send('ok')
+        return
       }
 
       const oldStock =
@@ -434,7 +441,7 @@ export default async function handler(
         `${oldStock} → ${qty}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -445,7 +452,6 @@ export default async function handler(
 
       await sendTelegram(
         chatId,
-
         '⏳ Exporting Shopee File...'
       )
 
@@ -478,7 +484,7 @@ export default async function handler(
         `Updated rows: ${result.updated}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -489,7 +495,6 @@ export default async function handler(
 
       await sendTelegram(
         chatId,
-
         '⏳ Exporting TikTok LIVE...'
       )
 
@@ -522,7 +527,7 @@ export default async function handler(
         `Updated rows: ${result.updated}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -533,7 +538,6 @@ export default async function handler(
 
       await sendTelegram(
         chatId,
-
         '⏳ Exporting TikTok INACTIVE...'
       )
 
@@ -566,7 +570,7 @@ export default async function handler(
         `Updated rows: ${result.updated}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
@@ -667,11 +671,11 @@ export default async function handler(
         `TikTok INACTIVE: ${tiktokInactive.updated}`
       )
 
-      return res.status(200).send('ok')
+      return
     }
 
     // =========================
-    // UNKNOWN COMMAND
+    // UNKNOWN
     // =========================
 
     await sendTelegram(
@@ -679,16 +683,8 @@ export default async function handler(
       '❓ Unknown command'
     )
 
-    return res.status(200).send('ok')
-
   } catch (err) {
 
     console.error(err)
-
-    return res
-      .status(500)
-      .json({
-        error: err.message
-      })
   }
 }
