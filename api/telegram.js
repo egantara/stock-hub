@@ -11,7 +11,7 @@ const supabase = createClient(
 )
 
 // =========================
-// GET GOOGLE SHEET
+// GOOGLE SHEET
 // =========================
 
 async function getSheetData() {
@@ -110,6 +110,11 @@ export default async function handler(req, res) {
 
     if (message === '/syncsheet') {
 
+      await sendTelegram(
+        chatId,
+        '⏳ Syncing sheet...'
+      )
+
       const rows =
         await getSheetData()
 
@@ -122,10 +127,6 @@ export default async function handler(req, res) {
 
         return res.status(200).send('ok')
       }
-
-      // =========================
-      // HEADER MAPPING
-      // =========================
 
       const headers =
         rows[0].map(h =>
@@ -161,16 +162,14 @@ export default async function handler(req, res) {
 
       let totalSync = 0
 
-      // =========================
-      // LOOP ROW
-      // =========================
-
       for (let i = 1; i < rows.length; i++) {
 
         const row = rows[i]
 
         const sku =
           row[skuIndex] || ''
+
+        if (!sku) continue
 
         const stock =
           parseInt(
@@ -202,8 +201,6 @@ export default async function handler(req, res) {
         const skuInduk =
           row[skuIndukIndex] || ''
 
-        if (!sku) continue
-
         const { data: existing } =
           await supabase
             .from('stocks')
@@ -211,78 +208,37 @@ export default async function handler(req, res) {
             .eq('sku', sku)
             .single()
 
-        // =========================
-        // UPDATE
-        // =========================
-
         if (existing) {
 
           await supabase
             .from('stocks')
             .update({
-
-              stock:
-                stock,
-
-              shopee_model_id:
-                shopeeId,
-
-              shopee_product_id:
-                shopeeProductId,
-
-              tokopedia_product_id:
-                tokopediaId,
-
-              variasi:
-                variasi,
-
-              nama_produk:
-                namaProduk,
-
-              harga:
-                harga,
-
-              sku_induk:
-                skuInduk
+              stock: stock,
+              shopee_model_id: shopeeId,
+              shopee_product_id: shopeeProductId,
+              tokopedia_product_id: tokopediaId,
+              variasi: variasi,
+              nama_produk: namaProduk,
+              harga: harga,
+              sku_induk: skuInduk
             })
             .eq('sku', sku)
 
         } else {
 
-          // =========================
-          // INSERT
-          // =========================
-
           await supabase
             .from('stocks')
             .insert([
               {
-                sku:
-                  sku,
-
-                stock:
-                  stock,
-
-                shopee_model_id:
-                  shopeeId,
-
-                shopee_product_id:
-                  shopeeProductId,
-
-                tokopedia_product_id:
-                  tokopediaId,
-
-                variasi:
-                  variasi,
-
-                nama_produk:
-                  namaProduk,
-
-                harga:
-                  harga,
-
-                sku_induk:
-                  skuInduk
+                sku: sku,
+                stock: stock,
+                shopee_model_id: shopeeId,
+                shopee_product_id: shopeeProductId,
+                tokopedia_product_id: tokopediaId,
+                variasi: variasi,
+                nama_produk: namaProduk,
+                harga: harga,
+                sku_induk: skuInduk
               }
             ])
         }
@@ -448,143 +404,198 @@ export default async function handler(req, res) {
 
     // =========================
     // EXPORT SHOPEE
-    // TEMPLATE PATCH MODE
     // =========================
 
     if (message === '/exportshopee') {
 
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-
-      if (!data || data.length === 0) {
+      try {
 
         await sendTelegram(
           chatId,
-          '❌ Data kosong'
+          '⏳ Generating Shopee file...'
+        )
+
+        // =========================
+        // GET DATA
+        // =========================
+
+        const { data } =
+          await supabase
+            .from('stocks')
+            .select('*')
+
+        console.log('SUPABASE OK')
+
+        if (!data || data.length === 0) {
+
+          await sendTelegram(
+            chatId,
+            '❌ Data kosong'
+          )
+
+          return res.status(200).send('ok')
+        }
+
+        // =========================
+        // TEMPLATE PATH
+        // =========================
+
+        const templatePath =
+          process.cwd() +
+          '/templates/template-shopee.xlsx'
+
+        console.log(templatePath)
+
+        console.log(
+          fs.existsSync(templatePath)
+        )
+
+        // =========================
+        // LOAD TEMPLATE
+        // =========================
+
+        const workbook =
+          XLSX.readFile(templatePath)
+
+        console.log('TEMPLATE LOADED')
+
+        const sheetName =
+          workbook.SheetNames[0]
+
+        const worksheet =
+          workbook.Sheets[sheetName]
+
+        // =========================
+        // RANGE
+        // =========================
+
+        const range =
+          XLSX.utils.decode_range(
+            worksheet['!ref']
+          )
+
+        console.log('RANGE OK')
+
+        let updated = 0
+
+        // =========================
+        // LOOP ROW
+        // =========================
+
+        for (
+          let row = 2;
+          row <= range.e.r + 1;
+          row++
+        ) {
+
+          // SKU = COLUMN F
+
+          const skuCell =
+            worksheet[`F${row}`]
+
+          if (!skuCell) continue
+
+          const sku =
+            skuCell.v
+              ?.toString()
+              .trim()
+
+          if (!sku) continue
+
+          // FIND PRODUCT
+
+          const product =
+            data.find(
+              item =>
+                item.sku === sku
+            )
+
+          if (!product) continue
+
+          // UPDATE STOCK ONLY
+          // COLUMN I
+
+          worksheet[`I${row}`] = {
+            t: 'n',
+            v: product.stock || 0
+          }
+
+          updated++
+        }
+
+        console.log(
+          `UPDATED: ${updated}`
+        )
+
+        // =========================
+        // WRITE FILE
+        // =========================
+
+        const filePath =
+          '/tmp/shopee-stock.xlsx'
+
+        XLSX.writeFile(
+          workbook,
+          filePath
+        )
+
+        console.log('FILE WRITTEN')
+
+        // =========================
+        // SEND FILE
+        // =========================
+
+        const formData =
+          new FormData()
+
+        formData.append(
+          'chat_id',
+          chatId
+        )
+
+        formData.append(
+          'document',
+          fs.createReadStream(filePath)
+        )
+
+        console.log('START TELEGRAM UPLOAD')
+
+        await axios.post(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
+          formData,
+          {
+            headers:
+              formData.getHeaders()
+          }
+        )
+
+        console.log('UPLOAD SUCCESS')
+
+        await sendTelegram(
+          chatId,
+
+          `✅ Export selesai\n\n` +
+          `Updated rows: ${updated}`
         )
 
         return res.status(200).send('ok')
-      }
 
-      // =========================
-      // LOAD TEMPLATE
-      // =========================
+      } catch (err) {
 
-      const workbook =
-        XLSX.readFile(
-          process.cwd() +
-          '/templates/template-shopee.xlsx'
+        console.error(err)
+
+        await sendTelegram(
+          chatId,
+
+          `❌ Export error\n\n${err.message}`
         )
 
-      const sheetName =
-        workbook.SheetNames[0]
-
-      const worksheet =
-        workbook.Sheets[sheetName]
-
-      // =========================
-      // GET RANGE
-      // =========================
-
-      const range =
-        XLSX.utils.decode_range(
-          worksheet['!ref']
-        )
-
-      // =========================
-      // LOOP TEMPLATE ROW
-      // =========================
-
-      for (
-        let row = 2;
-        row <= range.e.r + 1;
-        row++
-      ) {
-
-        // =========================
-        // SKU = KOLOM F
-        // =========================
-
-        const skuCell =
-          worksheet[`F${row}`]
-
-        if (!skuCell) continue
-
-        const sku =
-          skuCell.v
-            ?.toString()
-            .trim()
-
-        if (!sku) continue
-
-        // =========================
-        // FIND PRODUCT
-        // =========================
-
-        const product =
-          data.find(
-            item =>
-              item.sku === sku
-          )
-
-        if (!product) continue
-
-        // =========================
-        // UPDATE STOCK ONLY
-        // KOLOM I
-        // =========================
-
-        worksheet[`I${row}`] = {
-          t: 'n',
-          v: product.stock || 0
-        }
+        return res.status(500).send('error')
       }
-
-      // =========================
-      // EXPORT FILE
-      // =========================
-
-      const filePath =
-        '/tmp/shopee-stock.xlsx'
-
-      XLSX.writeFile(
-        workbook,
-        filePath
-      )
-
-      // =========================
-      // SEND FILE TELEGRAM
-      // =========================
-
-      const formData =
-        new FormData()
-
-      formData.append(
-        'chat_id',
-        chatId
-      )
-
-      formData.append(
-        'document',
-        fs.createReadStream(filePath)
-      )
-
-      await axios.post(
-        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
-        formData,
-        {
-          headers:
-            formData.getHeaders()
-        }
-      )
-
-      return res.status(200).send('ok')
     }
 
     // =========================
-    // DEFAULT
+    // UNKNOWN
     // =========================
 
     await sendTelegram(
