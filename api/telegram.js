@@ -98,6 +98,7 @@ export default async function handler(req, res) {
         '/cek sku\n' +
         '/plus sku qty\n' +
         '/minus sku qty\n' +
+        '/set sku qty\n' +
         '/exportshopee'
       )
 
@@ -112,7 +113,11 @@ export default async function handler(req, res) {
 
       await sendTelegram(
         chatId,
-        '⏳ Syncing sheet...'
+
+        '⏳ Syncing Google Sheet\n\n' +
+        'Google Sheet\n' +
+        '↓\n' +
+        'Supabase'
       )
 
       const rows =
@@ -403,6 +408,75 @@ export default async function handler(req, res) {
     }
 
     // =========================
+    // SET STOCK
+    // =========================
+
+    if (message.startsWith('/set')) {
+
+      const split =
+        message.split(' ')
+
+      const sku =
+        split[1]
+
+      const qty =
+        parseInt(split[2]) || 0
+
+      if (!sku) {
+
+        await sendTelegram(
+          chatId,
+          '❌ Format:\n/set sku qty'
+        )
+
+        return res.status(200).send('ok')
+      }
+
+      await sendTelegram(
+        chatId,
+
+        `⏳ Setting stock ${sku}...`
+      )
+
+      const { data } =
+        await supabase
+          .from('stocks')
+          .select('*')
+          .eq('sku', sku)
+          .single()
+
+      if (!data) {
+
+        await sendTelegram(
+          chatId,
+          '❌ SKU tidak ditemukan'
+        )
+
+        return res.status(200).send('ok')
+      }
+
+      const oldStock =
+        data.stock || 0
+
+      await supabase
+        .from('stocks')
+        .update({
+          stock: qty
+        })
+        .eq('sku', sku)
+
+      await sendTelegram(
+        chatId,
+
+        `✅ Stock updated\n\n` +
+        `SKU: ${sku}\n` +
+        `${oldStock} → ${qty}`
+      )
+
+      return res.status(200).send('ok')
+    }
+
+    // =========================
     // EXPORT SHOPEE
     // =========================
 
@@ -412,12 +486,14 @@ export default async function handler(req, res) {
 
         await sendTelegram(
           chatId,
-          '⏳ Generating Shopee file...'
-        )
 
-        // =========================
-        // GET DATA
-        // =========================
+          '⏳ Exporting Shopee File\n\n' +
+          'Supabase\n' +
+          '↓\n' +
+          'Template Shopee\n' +
+          '↓\n' +
+          'Generate XLSX'
+        )
 
         const { data } =
           await supabase
@@ -436,10 +512,6 @@ export default async function handler(req, res) {
           return res.status(200).send('ok')
         }
 
-        // =========================
-        // TEMPLATE PATH
-        // =========================
-
         const templatePath =
           process.cwd() +
           '/templates/template-shopee.xlsx'
@@ -449,10 +521,6 @@ export default async function handler(req, res) {
         console.log(
           fs.existsSync(templatePath)
         )
-
-        // =========================
-        // LOAD TEMPLATE
-        // =========================
 
         const workbook =
           XLSX.readFile(templatePath)
@@ -465,10 +533,6 @@ export default async function handler(req, res) {
         const worksheet =
           workbook.Sheets[sheetName]
 
-        // =========================
-        // RANGE
-        // =========================
-
         const range =
           XLSX.utils.decode_range(
             worksheet['!ref']
@@ -477,10 +541,6 @@ export default async function handler(req, res) {
         console.log('RANGE OK')
 
         let updated = 0
-
-        // =========================
-        // LOOP ROW
-        // =========================
 
         for (
           let row = 2;
