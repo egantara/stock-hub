@@ -33,11 +33,22 @@ export async function getSheetData() {
 
   await doc.loadInfo()
 
-  const sheet =
-    doc.sheetsByIndex[0]
+  console.log(
+    'TITLES:',
+    doc.sheetsByIndex.map(
+      s => s.title
+    )
+  )
 
   // =========================
-  // LOAD HEADER + CELLS
+  // PAKAI SHEET STOCK ALL
+  // =========================
+
+  const sheet =
+    doc.sheetsByTitle['Stock ALL']
+
+  // =========================
+  // LOAD HEADER
   // =========================
 
   await sheet.loadHeaderRow()
