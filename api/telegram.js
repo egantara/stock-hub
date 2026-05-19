@@ -99,7 +99,9 @@ export default async function handler(req, res) {
         '/plus sku qty\n' +
         '/minus sku qty\n' +
         '/set sku qty\n' +
-        '/exportshopee'
+        '/exportshopee\n' +
+        '/exporttiktoklive\n' +
+        '/exporttiktokinactive'
       )
 
       return res.status(200).send('ok')
@@ -500,32 +502,12 @@ export default async function handler(req, res) {
             .from('stocks')
             .select('*')
 
-        console.log('SUPABASE OK')
-
-        if (!data || data.length === 0) {
-
-          await sendTelegram(
-            chatId,
-            '❌ Data kosong'
-          )
-
-          return res.status(200).send('ok')
-        }
-
         const templatePath =
           process.cwd() +
           '/templates/template-shopee.xlsx'
 
-        console.log(templatePath)
-
-        console.log(
-          fs.existsSync(templatePath)
-        )
-
         const workbook =
           XLSX.readFile(templatePath)
-
-        console.log('TEMPLATE LOADED')
 
         const sheetName =
           workbook.SheetNames[0]
@@ -538,8 +520,6 @@ export default async function handler(req, res) {
             worksheet['!ref']
           )
 
-        console.log('RANGE OK')
-
         let updated = 0
 
         for (
@@ -547,8 +527,6 @@ export default async function handler(req, res) {
           row <= range.e.r + 1;
           row++
         ) {
-
-          // SKU = COLUMN F
 
           const skuCell =
             worksheet[`F${row}`]
@@ -562,8 +540,6 @@ export default async function handler(req, res) {
 
           if (!sku) continue
 
-          // FIND PRODUCT
-
           const product =
             data.find(
               item =>
@@ -571,9 +547,6 @@ export default async function handler(req, res) {
             )
 
           if (!product) continue
-
-          // UPDATE STOCK ONLY
-          // COLUMN I
 
           worksheet[`I${row}`] = {
             t: 'n',
@@ -583,14 +556,6 @@ export default async function handler(req, res) {
           updated++
         }
 
-        console.log(
-          `UPDATED: ${updated}`
-        )
-
-        // =========================
-        // WRITE FILE
-        // =========================
-
         const filePath =
           '/tmp/shopee-stock.xlsx'
 
@@ -598,12 +563,6 @@ export default async function handler(req, res) {
           workbook,
           filePath
         )
-
-        console.log('FILE WRITTEN')
-
-        // =========================
-        // SEND FILE
-        // =========================
 
         const formData =
           new FormData()
@@ -618,7 +577,142 @@ export default async function handler(req, res) {
           fs.createReadStream(filePath)
         )
 
-        console.log('START TELEGRAM UPLOAD')
+        await axios.post(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
+          formData,
+          {
+            headers:
+              formData.getHeaders()
+          }
+        )
+
+        await sendTelegram(
+          chatId,
+
+          `✅ Shopee export selesai\n\n` +
+          `Updated rows: ${updated}`
+        )
+
+        return res.status(200).send('ok')
+
+      } catch (err) {
+
+        console.error(err)
+
+        await sendTelegram(
+          chatId,
+
+          `❌ Export error\n\n${err.message}`
+        )
+
+        return res.status(500).send('error')
+      }
+    }
+
+    // =========================
+    // EXPORT TIKTOK LIVE
+    // =========================
+
+    if (message === '/exporttiktoklive') {
+
+      try {
+
+        await sendTelegram(
+          chatId,
+
+          '⏳ Exporting TikTok LIVE File\n\n' +
+          'Supabase\n' +
+          '↓\n' +
+          'TikTok LIVE Template\n' +
+          '↓\n' +
+          'Generate XLSX'
+        )
+
+        const { data } =
+          await supabase
+            .from('stocks')
+            .select('*')
+
+        const templatePath =
+          process.cwd() +
+          '/templates/template-tiktok-live.xlsx'
+
+        const workbook =
+          XLSX.readFile(templatePath)
+
+        const sheetName =
+          workbook.SheetNames[0]
+
+        const worksheet =
+          workbook.Sheets[sheetName]
+
+        const range =
+          XLSX.utils.decode_range(
+            worksheet['!ref']
+          )
+
+        let updated = 0
+
+        // START FROM ROW 5
+
+        for (
+          let row = 5;
+          row <= range.e.r + 1;
+          row++
+        ) {
+
+          // H = seller_sku
+
+          const skuCell =
+            worksheet[`H${row}`]
+
+          if (!skuCell) continue
+
+          const sku =
+            skuCell.v
+              ?.toString()
+              .trim()
+
+          if (!sku) continue
+
+          const product =
+            data.find(
+              item =>
+                item.sku === sku
+            )
+
+          if (!product) continue
+
+          // G = quantity
+
+          worksheet[`G${row}`] = {
+            t: 'n',
+            v: product.stock || 0
+          }
+
+          updated++
+        }
+
+        const filePath =
+          '/tmp/tiktok-live-stock.xlsx'
+
+        XLSX.writeFile(
+          workbook,
+          filePath
+        )
+
+        const formData =
+          new FormData()
+
+        formData.append(
+          'chat_id',
+          chatId
+        )
+
+        formData.append(
+          'document',
+          fs.createReadStream(filePath)
+        )
 
         await axios.post(
           `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
@@ -629,12 +723,147 @@ export default async function handler(req, res) {
           }
         )
 
-        console.log('UPLOAD SUCCESS')
+        await sendTelegram(
+          chatId,
+
+          `✅ TikTok LIVE export selesai\n\n` +
+          `Updated rows: ${updated}`
+        )
+
+        return res.status(200).send('ok')
+
+      } catch (err) {
+
+        console.error(err)
 
         await sendTelegram(
           chatId,
 
-          `✅ Export selesai\n\n` +
+          `❌ Export error\n\n${err.message}`
+        )
+
+        return res.status(500).send('error')
+      }
+    }
+
+    // =========================
+    // EXPORT TIKTOK INACTIVE
+    // =========================
+
+    if (message === '/exporttiktokinactive') {
+
+      try {
+
+        await sendTelegram(
+          chatId,
+
+          '⏳ Exporting TikTok INACTIVE File\n\n' +
+          'Supabase\n' +
+          '↓\n' +
+          'TikTok INACTIVE Template\n' +
+          '↓\n' +
+          'Generate XLSX'
+        )
+
+        const { data } =
+          await supabase
+            .from('stocks')
+            .select('*')
+
+        const templatePath =
+          process.cwd() +
+          '/templates/template-tiktok-inactive.xlsx'
+
+        const workbook =
+          XLSX.readFile(templatePath)
+
+        const sheetName =
+          workbook.SheetNames[0]
+
+        const worksheet =
+          workbook.Sheets[sheetName]
+
+        const range =
+          XLSX.utils.decode_range(
+            worksheet['!ref']
+          )
+
+        let updated = 0
+
+        // START FROM ROW 5
+
+        for (
+          let row = 5;
+          row <= range.e.r + 1;
+          row++
+        ) {
+
+          // H = seller_sku
+
+          const skuCell =
+            worksheet[`H${row}`]
+
+          if (!skuCell) continue
+
+          const sku =
+            skuCell.v
+              ?.toString()
+              .trim()
+
+          if (!sku) continue
+
+          const product =
+            data.find(
+              item =>
+                item.sku === sku
+            )
+
+          if (!product) continue
+
+          // G = quantity
+
+          worksheet[`G${row}`] = {
+            t: 'n',
+            v: product.stock || 0
+          }
+
+          updated++
+        }
+
+        const filePath =
+          '/tmp/tiktok-inactive-stock.xlsx'
+
+        XLSX.writeFile(
+          workbook,
+          filePath
+        )
+
+        const formData =
+          new FormData()
+
+        formData.append(
+          'chat_id',
+          chatId
+        )
+
+        formData.append(
+          'document',
+          fs.createReadStream(filePath)
+        )
+
+        await axios.post(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
+          formData,
+          {
+            headers:
+              formData.getHeaders()
+          }
+        )
+
+        await sendTelegram(
+          chatId,
+
+          `✅ TikTok INACTIVE export selesai\n\n` +
           `Updated rows: ${updated}`
         )
 
