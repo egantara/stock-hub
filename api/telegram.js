@@ -25,6 +25,13 @@ const supabase =
   )
 
 // =========================
+// ANTI DUPLICATE
+// =========================
+
+const processedUpdates =
+  new Set()
+
+// =========================
 // SEND TELEGRAM
 // =========================
 
@@ -83,17 +90,28 @@ export default async function handler(
   res
 ) {
 
-  // =========================
-  // IMPORTANT
-  // AVOID TELEGRAM RETRY
-  // =========================
-
-  res.status(200).send('ok')
-
   try {
 
     const body =
       req.body
+
+    // =========================
+    // ANTI TELEGRAM RETRY
+    // =========================
+
+    const updateId =
+      body.update_id
+
+    if (
+      processedUpdates.has(updateId)
+    ) {
+
+      return res
+        .status(200)
+        .send('duplicate')
+    }
+
+    processedUpdates.add(updateId)
 
     const message =
       body.message?.text
@@ -102,7 +120,10 @@ export default async function handler(
       body.message?.chat?.id
 
     if (!message) {
-      return
+
+      return res
+        .status(200)
+        .send('ok')
     }
 
     // =========================
@@ -130,7 +151,9 @@ export default async function handler(
         '/exportall'
       )
 
-      return
+      return res
+        .status(200)
+        .send('ok')
     }
 
     // =========================
@@ -151,16 +174,6 @@ export default async function handler(
 
       const rows =
         await getSheetData()
-
-      if (!rows || rows.length <= 1) {
-
-        await sendTelegram(
-          chatId,
-          '❌ Sheet kosong'
-        )
-
-        return
-      }
 
       const headers =
         rows[0].map(h =>
@@ -242,217 +255,32 @@ export default async function handler(
         `Total product: ${totalSync}`
       )
 
-      return
+      return res
+        .status(200)
+        .send('ok')
     }
 
     // =========================
-    // CEK STOCK
+    // EXPORT ALL
     // =========================
 
-    if (message.startsWith('/cek')) {
+    if (message === '/exportall') {
 
-      const split =
-        message.split(' ')
-
-      const sku =
-        split[1]
-
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-          .eq('sku', sku)
-          .single()
-
-      if (!data) {
-
-        await sendTelegram(
-          chatId,
-          '❌ SKU tidak ditemukan'
-        )
-
-        return
-      }
-
-      await sendTelegram(
-        chatId,
-
-        `📦 SKU: ${data.sku}\n` +
-        `Stock: ${data.stock}`
+      console.log(
+        'START EXPORT ALL'
       )
 
-      return
-    }
-
-    // =========================
-    // PLUS STOCK
-    // =========================
-
-    if (message.startsWith('/plus')) {
-
-      const split =
-        message.split(' ')
-
-      const sku =
-        split[1]
-
-      const qty =
-        parseInt(split[2]) || 0
-
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-          .eq('sku', sku)
-          .single()
-
-      if (!data) {
-
-        await sendTelegram(
-          chatId,
-          '❌ SKU tidak ditemukan'
-        )
-
-        return
-      }
-
-      const newStock =
-        data.stock + qty
-
-      await supabase
-        .from('stocks')
-        .update({
-          stock: newStock
-        })
-        .eq('sku', sku)
-
       await sendTelegram(
         chatId,
 
-        `➕ ${sku}\n` +
-        `${data.stock} → ${newStock}`
-      )
+        '⏳ Exporting ALL Marketplace Files...\n\n' +
 
-      return
-    }
+        'Mode:\n' +
+        'Sequential Export\n\n' +
 
-    // =========================
-    // MINUS STOCK
-    // =========================
-
-    if (message.startsWith('/minus')) {
-
-      const split =
-        message.split(' ')
-
-      const sku =
-        split[1]
-
-      const qty =
-        parseInt(split[2]) || 0
-
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-          .eq('sku', sku)
-          .single()
-
-      if (!data) {
-
-        await sendTelegram(
-          chatId,
-          '❌ SKU tidak ditemukan'
-        )
-
-        return
-      }
-
-      const newStock =
-        Math.max(
-          data.stock - qty,
-          0
-        )
-
-      await supabase
-        .from('stocks')
-        .update({
-          stock: newStock
-        })
-        .eq('sku', sku)
-
-      await sendTelegram(
-        chatId,
-
-        `➖ ${sku}\n` +
-        `${data.stock} → ${newStock}`
-      )
-
-      return
-    }
-
-    // =========================
-    // SET STOCK
-    // =========================
-
-    if (message.startsWith('/set')) {
-
-      const split =
-        message.split(' ')
-
-      const sku =
-        split[1]
-
-      const qty =
-        parseInt(split[2]) || 0
-
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-          .eq('sku', sku)
-          .single()
-
-      if (!data) {
-
-        await sendTelegram(
-          chatId,
-          '❌ SKU tidak ditemukan'
-        )
-
-        return
-      }
-
-      const oldStock =
-        data.stock || 0
-
-      await supabase
-        .from('stocks')
-        .update({
-          stock: qty
-        })
-        .eq('sku', sku)
-
-      await sendTelegram(
-        chatId,
-
-        `✅ Stock Updated\n\n` +
-        `SKU: ${sku}\n` +
-        `${oldStock} → ${qty}`
-      )
-
-      return
-    }
-
-    // =========================
-    // EXPORT SHOPEE
-    // =========================
-
-    if (message === '/exportshopee') {
-
-      await sendTelegram(
-        chatId,
-        '⏳ Exporting Shopee File...'
+        '1. Shopee\n' +
+        '2. TikTok LIVE\n' +
+        '3. TikTok INACTIVE'
       )
 
       const { data } =
@@ -460,7 +288,29 @@ export default async function handler(
           .from('stocks')
           .select('*')
 
-      const result =
+      // =========================
+      // DELAY
+      // =========================
+
+      const delay = (ms) =>
+        new Promise(resolve =>
+          setTimeout(resolve, ms)
+        )
+
+      // =========================
+      // SHOPEE
+      // =========================
+
+      console.log(
+        'START SHOPEE'
+      )
+
+      await sendTelegram(
+        chatId,
+        '⏳ Exporting Shopee...'
+      )
+
+      const shopee =
         await exportShopee({
           data,
 
@@ -472,38 +322,38 @@ export default async function handler(
             '/tmp/shopee-stock.xlsx'
         })
 
+      console.log(
+        'DONE SHOPEE'
+      )
+
       await sendFile(
         chatId,
-        result.outputPath
+        shopee.outputPath
       )
 
       await sendTelegram(
         chatId,
 
-        `✅ Shopee Export selesai\n\n` +
-        `Updated rows: ${result.updated}`
+        `✅ Shopee selesai\n` +
+        `Updated: ${shopee.updated}`
       )
 
-      return
-    }
+      await delay(2000)
 
-    // =========================
-    // EXPORT TIKTOK LIVE
-    // =========================
+      // =========================
+      // TIKTOK LIVE
+      // =========================
 
-    if (message === '/exporttiktoklive') {
+      console.log(
+        'START TIKTOK LIVE'
+      )
 
       await sendTelegram(
         chatId,
         '⏳ Exporting TikTok LIVE...'
       )
 
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-
-      const result =
+      const tiktokLive =
         await exportTiktok({
           data,
 
@@ -515,38 +365,38 @@ export default async function handler(
             '/tmp/tiktok-live-stock.xlsx'
         })
 
+      console.log(
+        'DONE TIKTOK LIVE'
+      )
+
       await sendFile(
         chatId,
-        result.outputPath
+        tiktokLive.outputPath
       )
 
       await sendTelegram(
         chatId,
 
-        `✅ TikTok LIVE Export selesai\n\n` +
-        `Updated rows: ${result.updated}`
+        `✅ TikTok LIVE selesai\n` +
+        `Updated: ${tiktokLive.updated}`
       )
 
-      return
-    }
+      await delay(2000)
 
-    // =========================
-    // EXPORT TIKTOK INACTIVE
-    // =========================
+      // =========================
+      // TIKTOK INACTIVE
+      // =========================
 
-    if (message === '/exporttiktokinactive') {
+      console.log(
+        'START TIKTOK INACTIVE'
+      )
 
       await sendTelegram(
         chatId,
         '⏳ Exporting TikTok INACTIVE...'
       )
 
-      const { data } =
-        await supabase
-          .from('stocks')
-          .select('*')
-
-      const result =
+      const tiktokInactive =
         await exportTiktok({
           data,
 
@@ -558,173 +408,44 @@ export default async function handler(
             '/tmp/tiktok-inactive-stock.xlsx'
         })
 
+      console.log(
+        'DONE TIKTOK INACTIVE'
+      )
+
       await sendFile(
         chatId,
-        result.outputPath
+        tiktokInactive.outputPath
       )
 
       await sendTelegram(
         chatId,
 
-        `✅ TikTok INACTIVE Export selesai\n\n` +
-        `Updated rows: ${result.updated}`
+        `✅ TikTok INACTIVE selesai\n` +
+        `Updated: ${tiktokInactive.updated}`
       )
 
-      return
+      // =========================
+      // FINAL
+      // =========================
+
+      await sendTelegram(
+        chatId,
+
+        '🎉 Export ALL selesai\n\n' +
+
+        `Shopee: ${shopee.updated}\n` +
+        `TikTok LIVE: ${tiktokLive.updated}\n` +
+        `TikTok INACTIVE: ${tiktokInactive.updated}`
+      )
+
+      console.log(
+        'DONE EXPORT ALL'
+      )
+
+      return res
+        .status(200)
+        .send('ok')
     }
-
-    // =========================
-    // EXPORT ALL
-    // =========================
-
-    if (message === '/exportall') {
-
-  await sendTelegram(
-    chatId,
-
-    '⏳ Exporting ALL Marketplace Files...\n\n' +
-
-    'Mode:\n' +
-    'Sequential Export\n\n' +
-
-    '1. Shopee\n' +
-    '2. TikTok LIVE\n' +
-    '3. TikTok INACTIVE'
-  )
-
-  const { data } =
-    await supabase
-      .from('stocks')
-      .select('*')
-
-  // =========================
-  // DELAY HELPER
-  // =========================
-
-  const delay = (ms) =>
-    new Promise(resolve =>
-      setTimeout(resolve, ms)
-    )
-
-  // =========================
-  // SHOPEE
-  // =========================
-
-  await sendTelegram(
-    chatId,
-    '⏳ Exporting Shopee...'
-  )
-
-  const shopee =
-    await exportShopee({
-      data,
-
-      templatePath:
-        process.cwd() +
-        '/templates/template-shopee.xlsx',
-
-      outputPath:
-        '/tmp/shopee-stock.xlsx'
-    })
-
-  await sendFile(
-    chatId,
-    shopee.outputPath
-  )
-
-  await sendTelegram(
-    chatId,
-
-    `✅ Shopee selesai\n` +
-    `Updated: ${shopee.updated}`
-  )
-
-  await delay(2000)
-
-  // =========================
-  // TIKTOK LIVE
-  // =========================
-
-  await sendTelegram(
-    chatId,
-    '⏳ Exporting TikTok LIVE...'
-  )
-
-  const tiktokLive =
-    await exportTiktok({
-      data,
-
-      templatePath:
-        process.cwd() +
-        '/templates/template-tiktok-live.xlsx',
-
-      outputPath:
-        '/tmp/tiktok-live-stock.xlsx'
-    })
-
-  await sendFile(
-    chatId,
-    tiktokLive.outputPath
-  )
-
-  await sendTelegram(
-    chatId,
-
-    `✅ TikTok LIVE selesai\n` +
-    `Updated: ${tiktokLive.updated}`
-  )
-
-  await delay(2000)
-
-  // =========================
-  // TIKTOK INACTIVE
-  // =========================
-
-  await sendTelegram(
-    chatId,
-    '⏳ Exporting TikTok INACTIVE...'
-  )
-
-  const tiktokInactive =
-    await exportTiktok({
-      data,
-
-      templatePath:
-        process.cwd() +
-        '/templates/template-tiktok-inactive.xlsx',
-
-      outputPath:
-        '/tmp/tiktok-inactive-stock.xlsx'
-    })
-
-  await sendFile(
-    chatId,
-    tiktokInactive.outputPath
-  )
-
-  await sendTelegram(
-    chatId,
-
-    `✅ TikTok INACTIVE selesai\n` +
-    `Updated: ${tiktokInactive.updated}`
-  )
-
-  // =========================
-  // FINAL
-  // =========================
-
-  await sendTelegram(
-    chatId,
-
-    '🎉 Export ALL selesai\n\n' +
-
-    `Shopee: ${shopee.updated}\n` +
-    `TikTok LIVE: ${tiktokLive.updated}\n` +
-    `TikTok INACTIVE: ${tiktokInactive.updated}`
-  )
-
-  return res.status(200).send('ok')
-}
 
     // =========================
     // UNKNOWN
@@ -735,8 +456,18 @@ export default async function handler(
       '❓ Unknown command'
     )
 
+    return res
+      .status(200)
+      .send('ok')
+
   } catch (err) {
 
     console.error(err)
+
+    return res
+      .status(500)
+      .json({
+        error: err.message
+      })
   }
 }
