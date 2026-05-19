@@ -16,7 +16,7 @@ export async function exportTiktok({
     XLSX.readFile(templatePath)
 
   const sheetName =
-    workbook.SheetNames[0]
+    'Template'
 
   const worksheet =
     workbook.Sheets[sheetName]
