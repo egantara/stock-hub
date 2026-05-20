@@ -33,6 +33,9 @@ from './commands/set.js'
 import { lowCommand }
 from './commands/low.js'
 
+import { searchCommand }
+from './commands/search.js'
+
 // =========================
 // SUPABASE
 // =========================
@@ -361,6 +364,23 @@ if (cmd === '/low') {
   await lowCommand({
 
     chatId
+  })
+
+  continue
+}
+
+
+      // =========================
+      // SEARCH
+      // =========================      
+if (cmd.startsWith('/search ')) {
+
+  handled = true
+
+  await searchCommand({
+
+    chatId,
+    cmd
   })
 
   continue
