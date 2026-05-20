@@ -206,7 +206,7 @@ const variasiIndex =
   headers.indexOf('Variasi')
 
 const shopeeModelIdIndex =
-  headers.indexOf('shopee_model_id')
+  headers.indexOf('shopee_id')
 
 const tiktokSkuIndex =
   headers.indexOf('tiktok_sku_id')
