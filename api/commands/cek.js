@@ -76,5 +76,5 @@ if (cmd.startsWith('/cek ')) {
     )
   }
 
-  continue
+  return
 }
