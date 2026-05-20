@@ -62,6 +62,26 @@ export async function exportShopee({
           .includes('stock')
       )
 
+    const skuKey =
+      keys.find(key =>
+
+        key
+          .toLowerCase()
+          .trim()
+
+        ===
+
+        'sku'
+      )
+
+    const skuIndukKey =
+      keys.find(key =>
+
+        key
+          .toLowerCase()
+          .includes('sku induk')
+      )
+
     if (
       !variationKey ||
       !stockKey
@@ -78,7 +98,9 @@ export async function exportShopee({
         row[variationKey] || ''
       ).trim()
 
-    if (!modelId) continue
+    if (!modelId) {
+      continue
+    }
 
     // =========================
     // FIND SUPABASE
@@ -94,7 +116,9 @@ export async function exportShopee({
         === modelId
       )
 
-    if (!product) continue
+    if (!product) {
+      continue
+    }
 
     // =========================
     // UPDATE STOCK
@@ -102,6 +126,26 @@ export async function exportShopee({
 
     row[stockKey] =
       product.stock || 0
+
+    // =========================
+    // UPDATE SKU
+    // =========================
+
+    if (skuKey) {
+
+      row[skuKey] =
+        product.sku || ''
+    }
+
+    // =========================
+    // UPDATE SKU INDUK
+    // =========================
+
+    if (skuIndukKey) {
+
+      row[skuIndukKey] =
+        product.sku_induk || ''
+    }
 
     updated++
   }
@@ -120,7 +164,9 @@ export async function exportShopee({
   )
 
   return {
+
     updated,
+
     outputPath
   }
 }
