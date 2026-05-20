@@ -3,5 +3,19 @@
     "api/**/*.js": {
       "includeFiles": "templates/**/*"
     }
-  }
+  },
+
+  "crons": [
+
+    {
+      "path": "/api/cron/auto-export",
+      "schedule": "0 23 * * *"
+    },
+
+    {
+      "path": "/api/cron/auto-backup",
+      "schedule": "0 23 * * 0"
+    }
+
+  ]
 }

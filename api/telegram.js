@@ -107,6 +107,11 @@ export default async function handler(
     const chatId =
       body.message?.chat?.id
 
+      console.log(
+  'CHAT ID:',
+  chatId
+)
+
     if (!message) {
 
       return res
