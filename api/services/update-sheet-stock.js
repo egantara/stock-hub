@@ -7,6 +7,7 @@ from 'google-auth-library'
 export async function updateSheetStock({
 
   sheetName,
+  searchColumnName,
   sku,
   columnName,
   operation,
@@ -56,9 +57,11 @@ export async function updateSheetStock({
   for (const row of rows) {
 
     const rowSku =
-      String(
-        row.get('sku') || ''
-      ).trim()
+  String(
+    row.get(
+      searchColumnName
+    ) || ''
+  ).trim()
 
     if (rowSku !== sku) {
       continue
