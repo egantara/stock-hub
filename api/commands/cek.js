@@ -15,7 +15,7 @@ if (cmd.startsWith('/cek ')) {
       'Format:\n/cek SKU'
     )
 
-    return
+    continue
   }
 
   const rows =
@@ -49,7 +49,7 @@ if (cmd.startsWith('/cek ')) {
       ).trim()
 
     if (rowSku !== sku) {
-      return
+      continue
     }
 
     found = true
@@ -76,5 +76,5 @@ if (cmd.startsWith('/cek ')) {
     )
   }
 
-  return
+  continue
 }
