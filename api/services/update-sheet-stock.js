@@ -56,12 +56,28 @@ export async function updateSheetStock({
 
   for (const row of rows) {
 
-    const rowSku =
+    const headers =
+  Object.keys(row._rawData)
+
+const realHeader =
+  headers.find(h =>
+
+    h
+      .trim()
+      .toLowerCase()
+
+    ===
+
+    searchColumnName
+      .trim()
+      .toLowerCase()
+  )
+
+const rowSku =
   String(
-    row.get(
-      searchColumnName
-    ) || ''
-  ).trim()
+    row.get(realHeader) || ''
+  )
+    .trim()
 
     if (rowSku !== sku) {
       continue

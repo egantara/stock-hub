@@ -422,42 +422,48 @@ if (cmd.startsWith('/plus ')) {
   // =========================
 
   const shopee =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Shopee',
+    sheetName:
+      'Stock Shopee',
 
-      sku,
+    searchColumnName:
+      'SKU',
 
-      columnName:
-        'Stok',
+    sku,
 
-      operation:
-        'plus',
+    columnName:
+      'Stok',
 
-      qty
-    })
+    operation:
+      'plus',
+
+    qty
+  })
 
   // =========================
   // TOKOPEDIA
   // =========================
 
   const tokopedia =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Tokopedia',
+    sheetName:
+      'Stock Tokopedia',
 
-      sku,
+    searchColumnName:
+      'Seller SKU',
 
-      columnName:
-        'Quantity',
+    sku,
 
-      operation:
-        'plus',
+    columnName:
+      'Quantity',
 
-      qty
-    })
+    operation:
+      'plus',
+
+    qty
+  })
 
   if (
     !shopee.found &&
@@ -516,42 +522,48 @@ if (cmd.startsWith('/minus ')) {
   // =========================
 
   const shopee =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Shopee',
+    sheetName:
+      'Stock Shopee',
 
-      sku,
+    searchColumnName:
+      'SKU',
 
-      columnName:
-        'Stok',
+    sku,
 
-      operation:
-        'minus',
+    columnName:
+      'Stok',
 
-      qty
-    })
+    operation:
+      'minus',
+
+    qty
+  })
 
   // =========================
   // TOKOPEDIA
   // =========================
 
   const tokopedia =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Tokopedia',
+    sheetName:
+      'Stock Tokopedia',
 
-      sku,
+    searchColumnName:
+      'Seller SKU',
 
-      columnName:
-        'Quantity',
+    sku,
 
-      operation:
-        'minus',
+    columnName:
+      'Quantity',
 
-      qty
-    })
+    operation:
+      'minus',
+
+    qty
+  })
 
   if (
     !shopee.found &&
@@ -610,42 +622,48 @@ if (cmd.startsWith('/set ')) {
   // =========================
 
   const shopee =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Shopee',
+    sheetName:
+      'Stock Shopee',
 
-      sku,
+    searchColumnName:
+      'SKU',
 
-      columnName:
-        'Stok',
+    sku,
 
-      operation:
-        'set',
+    columnName:
+      'Stok',
 
-      qty
-    })
+    operation:
+      'set',
+
+    qty
+  })
 
   // =========================
   // TOKOPEDIA
   // =========================
 
   const tokopedia =
-    await updateSheetStock({
+  await updateSheetStock({
 
-      sheetName:
-        'Stock Tokopedia',
+    sheetName:
+      'Stock Tokopedia',
 
-      sku,
+    searchColumnName:
+      'Seller SKU',
 
-      columnName:
-        'Quantity',
+    sku,
 
-      operation:
-        'set',
+    columnName:
+      'Quantity',
 
-      qty
-    })
+    operation:
+      'set',
+
+    qty
+  })
 
   if (
     !shopee.found &&
