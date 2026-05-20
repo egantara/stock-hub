@@ -88,13 +88,16 @@ export async function exportTiktok({
   // FIND COLUMN INDEX
   // =========================
 
-  const skuCol =
+  const skuIdCol =
     headers.findIndex(h =>
 
       String(h)
         .trim()
         .toLowerCase()
-        .includes('sku')
+
+      ===
+
+      'sku id'
     )
 
   const qtyCol =
@@ -103,12 +106,27 @@ export async function exportTiktok({
       String(h)
         .trim()
         .toLowerCase()
-        .includes('quantity')
+
+      ===
+
+      'quantity'
+    )
+
+  const sellerSkuCol =
+    headers.findIndex(h =>
+
+      String(h)
+        .trim()
+        .toLowerCase()
+
+      ===
+
+      'seller sku'
     )
 
   console.log(
-    'SKU COL:',
-    skuCol
+    'SKU ID COL:',
+    skuIdCol
   )
 
   console.log(
@@ -116,8 +134,13 @@ export async function exportTiktok({
     qtyCol
   )
 
+  console.log(
+    'SELLER SKU COL:',
+    sellerSkuCol
+  )
+
   if (
-    skuCol === -1 ||
+    skuIdCol === -1 ||
     qtyCol === -1
   ) {
 
@@ -143,7 +166,7 @@ export async function exportTiktok({
 
     const templateSkuId =
       String(
-        row[skuCol] || ''
+        row[skuIdCol] || ''
       )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
@@ -157,6 +180,10 @@ export async function exportTiktok({
 
       continue
     }
+
+    // =========================
+    // FIND SUPABASE
+    // =========================
 
     const product =
       data.find(item => {
@@ -182,8 +209,22 @@ export async function exportTiktok({
       continue
     }
 
+    // =========================
+    // UPDATE QUANTITY
+    // =========================
+
     row[qtyCol] =
       Number(product.stock || 0)
+
+    // =========================
+    // UPDATE SELLER SKU
+    // =========================
+
+    if (sellerSkuCol !== -1) {
+
+      row[sellerSkuCol] =
+        product.sku || ''
+    }
 
     updated++
 
@@ -219,6 +260,7 @@ export async function exportTiktok({
   return {
 
     updated,
+
     outputPath
   }
 }
