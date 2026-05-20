@@ -107,13 +107,7 @@ export default async function handler(
     const chatId =
       body.message?.chat?.id
 
-      await sendTelegram(
-
-  chatId,
-
-  `CHAT ID:\n${chatId}`
-)
-
+      
     if (!message) {
 
       return res
