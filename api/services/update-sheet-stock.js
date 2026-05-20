@@ -1,4 +1,3 @@
-```javascript
 import { GoogleSpreadsheet }
 from 'google-spreadsheet'
 
@@ -15,10 +14,6 @@ export async function updateSheetStock({
   qty
 
 }) {
-
-  // =========================
-  // AUTH
-  // =========================
 
   const credentials =
     JSON.parse(
@@ -39,10 +34,6 @@ export async function updateSheetStock({
       ]
     })
 
-  // =========================
-  // LOAD DOC
-  // =========================
-
   const doc =
     new GoogleSpreadsheet(
 
@@ -58,103 +49,49 @@ export async function updateSheetStock({
       sheetName
     ]
 
-  // =========================
-  // LOAD CELLS
-  // =========================
+  await sheet.loadHeaderRow()
 
-  await sheet.loadCells()
+  const rows =
+    await sheet.getRows()
 
-  // =========================
-  // FIND HEADER
-  // =========================
+  for (const row of rows) {
 
-  let searchColumn = -1
-  let targetColumn = -1
+    const headers =
+      row._worksheet.headerValues
 
-  for (
-    let col = 0;
-    col < sheet.columnCount;
-    col++
-  ) {
+    const realSearchHeader =
+      headers.find(h =>
 
-    const header =
-      String(
+        String(h)
+          .trim()
+          .toLowerCase()
 
-        sheet.getCell(
-          0,
-          col
-        ).value || ''
+        ===
 
+        String(searchColumnName)
+          .trim()
+          .toLowerCase()
       )
-        .trim()
-        .toLowerCase()
 
-    if (
+    const realUpdateHeader =
+      headers.find(h =>
 
-      header ===
+        String(h)
+          .trim()
+          .toLowerCase()
 
-      searchColumnName
-        .trim()
-        .toLowerCase()
+        ===
 
-    ) {
-
-      searchColumn = col
-    }
-
-    if (
-
-      header ===
-
-      columnName
-        .trim()
-        .toLowerCase()
-
-    ) {
-
-      targetColumn = col
-    }
-  }
-
-  console.log(
-    'SEARCH COLUMN:',
-    searchColumn
-  )
-
-  console.log(
-    'TARGET COLUMN:',
-    targetColumn
-  )
-
-  if (
-    searchColumn === -1 ||
-    targetColumn === -1
-  ) {
-
-    throw new Error(
-      'COLUMN NOT FOUND'
-    )
-  }
-
-  // =========================
-  // LOOP ROWS
-  // =========================
-
-  for (
-    let row = 1;
-    row < sheet.rowCount;
-    row++
-  ) {
-
-    const skuCell =
-      sheet.getCell(
-        row,
-        searchColumn
+        String(columnName)
+          .trim()
+          .toLowerCase()
       )
 
     const rowSku =
       String(
-        skuCell.value || ''
+        row.get(
+          realSearchHeader
+        ) || ''
       )
         .trim()
         .toLowerCase()
@@ -170,37 +107,23 @@ export async function updateSheetStock({
       continue
     }
 
-    // =========================
-    // TARGET CELL
-    // =========================
-
-    const targetCell =
-      sheet.getCell(
-        row,
-        targetColumn
-      )
-
     const current =
       parseInt(
-        targetCell.value
+
+        row.get(
+          realUpdateHeader
+        )
+
       ) || 0
 
     let newValue =
       current
-
-    // =========================
-    // PLUS
-    // =========================
 
     if (operation === 'plus') {
 
       newValue =
         current + qty
     }
-
-    // =========================
-    // MINUS
-    // =========================
 
     if (operation === 'minus') {
 
@@ -211,31 +134,18 @@ export async function updateSheetStock({
         )
     }
 
-    // =========================
-    // SET
-    // =========================
-
     if (operation === 'set') {
 
       newValue =
         qty
     }
 
-    // =========================
-    // UPDATE CELL ONLY
-    // =========================
-
-    targetCell.value =
-      newValue
-
-    await sheet.saveUpdatedCells()
-
-    console.log(
-      'UPDATED:',
-      rowSku,
-      current,
+    row.set(
+      realUpdateHeader,
       newValue
     )
+
+    await row.save()
 
     return {
 
@@ -248,13 +158,7 @@ export async function updateSheetStock({
     }
   }
 
-  console.log(
-    'SKU NOT FOUND:',
-    sku
-  )
-
   return {
     found: false
   }
 }
-```
