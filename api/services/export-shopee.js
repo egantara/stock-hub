@@ -62,20 +62,42 @@ export async function exportShopee({
           .includes('stock')
       )
 
+    // =========================
+    // SKU
+    // =========================
+
     const skuKey =
       keys.find(key =>
 
         key
           .toLowerCase()
-          .trim()
+          .includes('variation_sku')
 
-        ===
+        ||
 
-        'sku'
+        key
+          .toLowerCase()
+          .includes('variation sku')
       )
+
+    // =========================
+    // SKU INDUK
+    // =========================
 
     const skuIndukKey =
       keys.find(key =>
+
+        key
+          .toLowerCase()
+          .includes('parent_sku')
+
+        ||
+
+        key
+          .toLowerCase()
+          .includes('parent sku')
+
+        ||
 
         key
           .toLowerCase()
