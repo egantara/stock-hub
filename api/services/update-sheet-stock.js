@@ -15,6 +15,10 @@ export async function updateSheetStock({
 
 }) {
 
+  // =========================
+  // AUTH
+  // =========================
+
   const credentials =
     JSON.parse(
       process.env.GOOGLE_SERVICE_ACCOUNT
@@ -34,6 +38,10 @@ export async function updateSheetStock({
       ]
     })
 
+  // =========================
+  // LOAD DOC
+  // =========================
+
   const doc =
     new GoogleSpreadsheet(
 
@@ -49,43 +57,112 @@ export async function updateSheetStock({
       sheetName
     ]
 
+  // =========================
+  // LOAD HEADER
+  // =========================
+
   await sheet.loadHeaderRow()
 
   const rows =
     await sheet.getRows()
 
+  console.log(
+    'TOTAL ROWS:',
+    rows.length
+  )
+
+  // =========================
+  // LOOP ROWS
+  // =========================
+
   for (const row of rows) {
 
+    // =========================
+    // FIND REAL HEADER
+    // =========================
+
     const headers =
-  Object.keys(row._rawData)
+      row._worksheet.headerValues
 
-const realHeader =
-  headers.find(h =>
+    const realSearchHeader =
+      headers.find(h =>
 
-    h
-      .trim()
-      .toLowerCase()
+        String(h)
+          .trim()
+          .toLowerCase()
 
-    ===
+        ===
 
-    searchColumnName
-      .trim()
-      .toLowerCase()
-  )
+        String(searchColumnName)
+          .trim()
+          .toLowerCase()
+      )
 
-const rowSku =
-  String(
-    row.get(realHeader) || ''
-  )
-    .trim()
+    const realUpdateHeader =
+      headers.find(h =>
 
-    if (rowSku !== sku) {
+        String(h)
+          .trim()
+          .toLowerCase()
+
+        ===
+
+        String(columnName)
+          .trim()
+          .toLowerCase()
+      )
+
+    console.log(
+      'SEARCH HEADER:',
+      realSearchHeader
+    )
+
+    console.log(
+      'UPDATE HEADER:',
+      realUpdateHeader
+    )
+
+    // =========================
+    // GET SKU
+    // =========================
+
+    const rowSku =
+      String(
+        row.get(
+          realSearchHeader
+        ) || ''
+      )
+        .trim()
+        .toLowerCase()
+
+    const targetSku =
+      String(
+        sku || ''
+      )
+        .trim()
+        .toLowerCase()
+
+    console.log(
+      'COMPARE:',
+      rowSku,
+      targetSku
+    )
+
+    if (rowSku !== targetSku) {
       continue
     }
 
+    // =========================
+    // CURRENT VALUE
+    // =========================
+
     const current =
       parseInt(
-        row.get(columnName)
+
+        row.get(
+          realUpdateHeader
+        )
+
       ) || 0
 
     let newValue =
@@ -124,12 +201,23 @@ const rowSku =
         qty
     }
 
+    // =========================
+    // UPDATE
+    // =========================
+
     row.set(
-      columnName,
+      realUpdateHeader,
       newValue
     )
 
     await row.save()
+
+    console.log(
+      'UPDATED:',
+      rowSku,
+      current,
+      newValue
+    )
 
     return {
 
@@ -141,6 +229,15 @@ const rowSku =
       newValue
     }
   }
+
+  // =========================
+  // NOT FOUND
+  // =========================
+
+  console.log(
+    'SKU NOT FOUND:',
+    sku
+  )
 
   return {
     found: false
