@@ -1,3 +1,6 @@
+import ExcelJS
+from 'exceljs'
+
 import { supabase }
 
 from '../../lib/supabase.js'
@@ -5,6 +8,10 @@ from '../../lib/supabase.js'
 import { sendTelegram }
 
 from '../services/send-telegram.js'
+
+import { sendFile }
+
+from '../services/send-file.js'
 
 export default async function handler(
   req,
@@ -25,90 +32,128 @@ export default async function handler(
         .from('stocks')
         .select('*')
 
-    if (!data?.length) {
-
-      await sendTelegram(
-
-        chatId,
-
-        '✅ Semua stock aman'
-      )
-
-      return res
-        .status(200)
-        .send('ok')
-    }
-
     // =========================
     // FILTER
     // =========================
 
     const critical =
-      data.filter(item =>
+      data
+        .filter(item =>
 
-        item.stock <= 10
-      )
+          item.stock <= 10
+        )
+        .sort((a, b) =>
+
+          a.sku.localeCompare(
+            b.sku
+          )
+        )
 
     const low =
-      data.filter(item =>
+      data
+        .filter(item =>
 
-        item.stock > 10 &&
-        item.stock <= 20
+          item.stock > 10 &&
+          item.stock <= 20
+        )
+        .sort((a, b) =>
+
+          a.sku.localeCompare(
+            b.sku
+          )
+        )
+
+    // =========================
+    // EXCEL
+    // =========================
+
+    const workbook =
+      new ExcelJS.Workbook()
+
+    const sheet =
+      workbook.addWorksheet(
+        'Low Stock Report'
       )
 
     // =========================
-    // BUILD MESSAGE
+    // CRITICAL TITLE
     // =========================
 
-    let message =
-      '📦 DAILY STOCK REPORT\n\n'
+    sheet.addRow([
+      'STATUS CRITICAL'
+    ])
+
+    // HEADER
+
+    sheet.addRow([
+      'SKU',
+      'STOCK'
+    ])
+
+    // DATA
+
+    for (const item of critical) {
+
+      sheet.addRow([
+
+        item.sku,
+
+        item.stock
+      ])
+    }
+
+    // SPACE
+
+    sheet.addRow([])
+    sheet.addRow([])
 
     // =========================
-    // CRITICAL
+    // LOW TITLE
     // =========================
 
-    if (critical.length) {
+    sheet.addRow([
+      'STATUS LOW'
+    ])
 
-      message +=
-        '🚨 CRITICAL\n\n'
+    // HEADER
 
-      for (const item of critical) {
+    sheet.addRow([
+      'SKU',
+      'STOCK'
+    ])
 
-        message +=
-          `${item.sku} = ${item.stock}\n`
-      }
+    // DATA
 
-      message += '\n'
+    for (const item of low) {
+
+      sheet.addRow([
+
+        item.sku,
+
+        item.stock
+      ])
     }
 
     // =========================
-    // LOW
+    // WIDTH
     // =========================
 
-    if (low.length) {
+    sheet.getColumn(1).width =
+      40
 
-      message +=
-        '⚠ LOW\n\n'
-
-      for (const item of low) {
-
-        message +=
-          `${item.sku} = ${item.stock}\n`
-      }
-    }
+    sheet.getColumn(2).width =
+      15
 
     // =========================
-    // ALL SAFE
+    // SAVE
     // =========================
 
-    if (
-      !critical.length &&
-      !low.length
-    ) {
+    const outputPath =
+      '/tmp/low-stock-report.xlsx'
 
-      message +=
-        '✅ Semua stock aman'
-    }
+    await workbook.xlsx.writeFile(
+      outputPath
+    )
 
     // =========================
     // SEND
@@ -118,7 +163,14 @@ export default async function handler(
 
       chatId,
 
-      message
+      '📦 Daily Low Stock Report'
+    )
+
+    await sendFile(
+
+      chatId,
+
+      outputPath
     )
 
     return res

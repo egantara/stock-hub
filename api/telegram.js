@@ -30,6 +30,9 @@ from './commands/minus.js'
 import { setCommand }
 from './commands/set.js'
 
+import { lowCommand }
+from './commands/low.js'
+
 // =========================
 // SUPABASE
 // =========================
@@ -347,6 +350,21 @@ export default async function handler(
 
         continue
       }
+
+      // =========================
+      // LOW
+      // =========================      
+if (cmd === '/low') {
+
+  handled = true
+
+  await lowCommand({
+
+    chatId
+  })
+
+  continue
+}
 
       // =========================
       // EXPORT SHOPEE
