@@ -199,6 +199,9 @@ export default async function handler(
 const stockIndex =
   headers.indexOf('Stock')
 
+  const skuIndukIndex =
+  headers.indexOf('SKU Induk')
+
 const namaProdukIndex =
   headers.indexOf('nama_produk')
 
@@ -234,6 +237,9 @@ for (
       row[stockIndex]
     ) || 0
 
+    const sku_induk =
+  row[skuIndukIndex] || ''
+
   const nama_produk =
     row[namaProdukIndex] || ''
 
@@ -248,18 +254,20 @@ for (
 
   const payload = {
 
-    sku,
+  sku,
 
-    stock,
+  sku_induk,
 
-    nama_produk,
+  stock,
 
-    variasi,
+  nama_produk,
 
-    shopee_model_id,
+  variasi,
 
-    tiktok_sku_id
-  }
+  shopee_model_id,
+
+  tiktok_sku_id
+}
 
   const { data: existing } =
     await supabase
