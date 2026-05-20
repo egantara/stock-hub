@@ -1,4 +1,4 @@
-import XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 export async function exportTiktok({
 
@@ -9,67 +9,55 @@ export async function exportTiktok({
 }) {
 
   // =========================
-  // LOAD FILE
+  // LOAD WORKBOOK
   // =========================
 
   const workbook =
-    XLSX.readFile(
+    new ExcelJS.Workbook()
 
-      templatePath,
-
-      {
-        dense: true
-      }
-    )
+  await workbook.xlsx.readFile(
+    templatePath
+  )
 
   const worksheet =
-    workbook.Sheets['Template']
-
-  // =========================
-  // RAW ARRAY
-  // =========================
-
-  const rows =
-    XLSX.utils.sheet_to_json(
-
-      worksheet,
-
-      {
-        header: 1,
-        raw: true,
-        defval: ''
-      }
+    workbook.getWorksheet(
+      'Template'
     )
 
-  console.log(
-    'TOTAL RAW ROWS:',
-    rows.length
-  )
+  if (!worksheet) {
+
+    throw new Error(
+      'Template sheet not found'
+    )
+  }
 
   // =========================
   // FIND HEADER ROW
   // =========================
 
-  let headerRowIndex = -1
+  let headerRowNumber = -1
 
-  for (let i = 0; i < rows.length; i++) {
+  worksheet.eachRow(
+    (row, rowNumber) => {
 
-    const row =
-      rows[i].map(v =>
-        String(v).trim()
-      )
+      const values =
+        row.values.map(v =>
+          String(v || '')
+            .trim()
+        )
 
-    if (
-      row.includes('SKU ID') &&
-      row.includes('Quantity')
-    ) {
+      if (
+        values.includes('SKU ID') &&
+        values.includes('Quantity')
+      ) {
 
-      headerRowIndex = i
-      break
+        headerRowNumber =
+          rowNumber
+      }
     }
-  }
+  )
 
-  if (headerRowIndex === -1) {
+  if (headerRowNumber === -1) {
 
     throw new Error(
       'HEADER ROW NOT FOUND'
@@ -78,51 +66,66 @@ export async function exportTiktok({
 
   console.log(
     'HEADER ROW:',
-    headerRowIndex
+    headerRowNumber
   )
 
-  const headers =
-    rows[headerRowIndex]
+  const headerRow =
+    worksheet.getRow(
+      headerRowNumber
+    )
 
   // =========================
-  // FIND COLUMN INDEX
+  // FIND COLUMN
   // =========================
 
-  const skuIdCol =
-    headers.findIndex(h =>
+  let skuIdCol = -1
+  let qtyCol = -1
+  let sellerSkuCol = -1
 
-      String(h)
-        .trim()
-        .toLowerCase()
+  headerRow.eachCell(
+    (cell, colNumber) => {
 
-      ===
+      const value =
+        String(cell.value || '')
+          .trim()
+          .toLowerCase()
 
-      'sku id'
-    )
+      // SKU ID
 
-  const qtyCol =
-    headers.findIndex(h =>
+      if (
+        value === 'sku id'
+      ) {
 
-      String(h)
-        .trim()
-        .toLowerCase()
+        skuIdCol =
+          colNumber
+      }
 
-      ===
+      // QUANTITY
 
-      'quantity'
-    )
+      if (
+        value === 'quantity'
+      ) {
 
-  const sellerSkuCol =
-    headers.findIndex(h =>
+        qtyCol =
+          colNumber
+      }
 
-      String(h)
-        .trim()
-        .toLowerCase()
+      // SELLER SKU
 
-      ===
+      if (
 
-      'seller sku'
-    )
+        value === 'seller_sku'
+
+        ||
+
+        value === 'seller sku'
+      ) {
+
+        sellerSkuCol =
+          colNumber
+      }
+    }
+  )
 
   console.log(
     'SKU ID COL:',
@@ -149,91 +152,109 @@ export async function exportTiktok({
     )
   }
 
+  // =========================
+  // UPDATE ROWS
+  // =========================
+
   let updated = 0
 
-  // =========================
-  // START AFTER HEADER
-  // =========================
+  worksheet.eachRow(
+    (row, rowNumber) => {
 
-  for (
-    let i = headerRowIndex + 1;
-    i < rows.length;
-    i++
-  ) {
+      if (
+        rowNumber <=
+        headerRowNumber
+      ) {
 
-    const row =
-      rows[i]
+        return
+      }
 
-    const templateSkuId =
-      String(
-        row[skuIdCol] || ''
-      )
-        .replace(/\.0$/, '')
-        .replace(/\s/g, '')
-        .trim()
+      const templateSkuId =
+        String(
+          row.getCell(
+            skuIdCol
+          ).value || ''
+        )
+          .replace(/\.0$/, '')
+          .replace(/\s/g, '')
+          .trim()
 
-    if (
-      !templateSkuId ||
-      templateSkuId === 'Mandatory' ||
-      templateSkuId === 'Uneditable'
-    ) {
+      if (
+        !templateSkuId ||
+        templateSkuId ===
+          'Mandatory' ||
+        templateSkuId ===
+          'Uneditable'
+      ) {
 
-      continue
-    }
+        return
+      }
 
-    // =========================
-    // FIND SUPABASE
-    // =========================
+      // =========================
+      // FIND PRODUCT
+      // =========================
 
-    const product =
-      data.find(item => {
+      const product =
+        data.find(item => {
 
-        const dbSku =
-          String(
-            item.tiktok_sku_id || ''
+          const dbSku =
+            String(
+              item.tiktok_sku_id || ''
+            )
+              .replace(/\.0$/, '')
+              .replace(/\s/g, '')
+              .trim()
+
+          return (
+            dbSku ===
+            templateSkuId
           )
-            .replace(/\.0$/, '')
-            .replace(/\s/g, '')
-            .trim()
+        })
 
-        return dbSku === templateSkuId
-      })
+      if (!product) {
 
-    if (!product) {
+        console.log(
+          'NOT FOUND:',
+          templateSkuId
+        )
+
+        return
+      }
+
+      // =========================
+      // UPDATE QUANTITY
+      // =========================
+
+      row.getCell(
+        qtyCol
+      ).value =
+        Number(
+          product.stock || 0
+        )
+
+      // =========================
+      // UPDATE SELLER SKU
+      // =========================
+
+      if (
+        sellerSkuCol !== -1
+      ) {
+
+        row.getCell(
+          sellerSkuCol
+        ).value =
+          product.sku || ''
+      }
+
+      updated++
 
       console.log(
-        'NOT FOUND:',
-        templateSkuId
+        'UPDATED:',
+        templateSkuId,
+        product.stock
       )
-
-      continue
     }
-
-    // =========================
-    // UPDATE QUANTITY
-    // =========================
-
-    row[qtyCol] =
-      Number(product.stock || 0)
-
-    // =========================
-    // UPDATE SELLER SKU
-    // =========================
-
-    if (sellerSkuCol !== -1) {
-
-      row[sellerSkuCol] =
-        product.sku || ''
-    }
-
-    updated++
-
-    console.log(
-      'UPDATED:',
-      templateSkuId,
-      product.stock
-    )
-  }
+  )
 
   console.log(
     'TOTAL UPDATED:',
@@ -241,19 +262,10 @@ export async function exportTiktok({
   )
 
   // =========================
-  // SAVE FILE
+  // SAVE
   // =========================
 
-  const newWorksheet =
-    XLSX.utils.aoa_to_sheet(
-      rows
-    )
-
-  workbook.Sheets['Template'] =
-    newWorksheet
-
-  XLSX.writeFile(
-    workbook,
+  await workbook.xlsx.writeFile(
     outputPath
   )
 
