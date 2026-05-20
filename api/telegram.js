@@ -194,82 +194,98 @@ export default async function handler(
           )
 
         const skuIndex =
-          headers.indexOf('sku')
+  headers.indexOf('sku')
 
-        const stockIndex =
-          headers.indexOf('Stock')
+const stockIndex =
+  headers.indexOf('Stock')
 
-        const tiktokSkuIndex =
-          headers.indexOf('tiktok_sku_id')
+const namaProdukIndex =
+  headers.indexOf('nama_produk')
 
-        let total = 0
+const variasiIndex =
+  headers.indexOf('Variasi')
 
-        for (
-          let i = 1;
-          i < rows.length;
-          i++
-        ) {
+const shopeeModelIdIndex =
+  headers.indexOf('shopee_model_id')
 
-          const row =
-            rows[i]
+const tiktokSkuIndex =
+  headers.indexOf('tiktok_sku_id')
 
-          const sku =
-            row[skuIndex]
+let total = 0
 
-          if (!sku) {
-            continue
-          }
+for (
+  let i = 1;
+  i < rows.length;
+  i++
+) {
 
-          const stock =
-            parseInt(
-              row[stockIndex]
-            ) || 0
+  const row =
+    rows[i]
 
-          const tiktokSkuId =
-            row[tiktokSkuIndex] || ''
+  const sku =
+    row[skuIndex]
 
-          const { data: existing } =
-            await supabase
-              .from('stocks')
-              .select('*')
-              .eq('sku', sku)
-              .single()
+  if (!sku) {
+    continue
+  }
 
-          if (existing) {
+  const stock =
+    parseInt(
+      row[stockIndex]
+    ) || 0
 
-            await supabase
-              .from('stocks')
-              .update({
+  const nama_produk =
+    row[namaProdukIndex] || ''
 
-                stock,
+  const variasi =
+    row[variasiIndex] || ''
 
-                tiktok_sku_id:
-                  tiktokSkuId
+  const shopee_model_id =
+    row[shopeeModelIdIndex] || ''
 
-              })
-              .eq('sku', sku)
+  const tiktok_sku_id =
+    row[tiktokSkuIndex] || ''
 
-          } else {
+  const payload = {
 
-            await supabase
-              .from('stocks')
-              .insert([
+    sku,
 
-                {
+    stock,
 
-                  sku,
+    nama_produk,
 
-                  stock,
+    variasi,
 
-                  tiktok_sku_id:
-                    tiktokSkuId
-                }
+    shopee_model_id,
 
-              ])
-          }
+    tiktok_sku_id
+  }
 
-          total++
-        }
+  const { data: existing } =
+    await supabase
+      .from('stocks')
+      .select('*')
+      .eq('sku', sku)
+      .single()
+
+  if (existing) {
+
+    await supabase
+      .from('stocks')
+      .update(payload)
+      .eq('sku', sku)
+
+  } else {
+
+    await supabase
+      .from('stocks')
+      .insert([
+        payload
+      ])
+  }
+
+  total++
+}
 
         await sendTelegram(
 
