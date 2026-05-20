@@ -2,8 +2,6 @@ import axios from 'axios'
 import fs from 'fs'
 import FormData from 'form-data'
 import AdmZip from 'adm-zip'
-import { updateSheetStock }
-from './services/update-sheet-stock.js'
 
 import { exportShopee }
 from './services/export-shopee.js'
@@ -13,6 +11,24 @@ from './services/export-tiktok.js'
 
 import { getSheetData }
 from './services/sync-sheet.js'
+
+import { sendTelegram }
+from './services/send-telegram.js'
+
+import { sendFile }
+from './services/send-file.js'
+
+import { cekCommand }
+from './commands/cek.js'
+
+import { plusCommand }
+from './commands/plus.js'
+
+import { minusCommand }
+from './commands/minus.js'
+
+import { setCommand }
+from './commands/set.js'
 
 // =========================
 // SUPABASE
@@ -30,20 +46,9 @@ const processedUpdates =
   new Set()
 
 // =========================
-// TELEGRAM SEND MESSAGE & FILE
-// =========================
-
-import { sendTelegram }
-
-from './services/send-telegram.js'
-
-import { sendFile }
-
-from './services/send-file.js'
-
-// =========================
 // ADM ZIP
 // =========================
+
 function createZip(
   files,
   zipPath
@@ -153,7 +158,10 @@ export default async function handler(
 
     for (const cmd of commands) {
 
-      console.log('COMMAND:', cmd)
+      console.log(
+        'COMMAND:',
+        cmd
+      )
 
       // =========================
       // SYNC SHEET
@@ -201,7 +209,9 @@ export default async function handler(
           const sku =
             row[skuIndex]
 
-          if (!sku) continue
+          if (!sku) {
+            continue
+          }
 
           const stock =
             parseInt(
@@ -223,9 +233,12 @@ export default async function handler(
             await supabase
               .from('stocks')
               .update({
+
                 stock,
+
                 tiktok_sku_id:
                   tiktokSkuId
+
               })
               .eq('sku', sku)
 
@@ -234,12 +247,17 @@ export default async function handler(
             await supabase
               .from('stocks')
               .insert([
+
                 {
+
                   sku,
+
                   stock,
+
                   tiktok_sku_id:
                     tiktokSkuId
                 }
+
               ])
           }
 
@@ -257,390 +275,77 @@ export default async function handler(
         continue
       }
 
-// =========================
-// CEK STOCK
-// =========================
+      // =========================
+      // CEK STOCK
+      // =========================
 
-if (cmd.startsWith('/cek ')) {
+      if (cmd.startsWith('/cek ')) {
 
-  handled = true
+        handled = true
 
-  const parts =
-    cmd.trim().split(/\s+/)
+        await cekCommand({
 
-  const sku =
-    parts[1]?.trim()
+          chatId,
+          cmd
 
-  if (!sku) {
+        })
 
-    await sendTelegram(
-      chatId,
-      'Format:\n/cek SKU'
-    )
+        continue
+      }
 
-    continue
-  }
+      // =========================
+      // PLUS STOCK
+      // =========================
 
-  const rows =
-    await getSheetData()
+      if (cmd.startsWith('/plus ')) {
 
-  const headers =
-    rows[0].map(h =>
-      h.toString().trim()
-    )
+        handled = true
 
-  const skuIndex =
-    headers.indexOf('sku')
+        await plusCommand({
 
-  const stockIndex =
-    headers.indexOf('Stock')
+          chatId,
+          cmd
 
-  let found = false
+        })
 
-  for (
-    let i = 1;
-    i < rows.length;
-    i++
-  ) {
+        continue
+      }
 
-    const row =
-      rows[i]
+      // =========================
+      // MINUS STOCK
+      // =========================
 
-    const rowSku =
-      String(
-        row[skuIndex] || ''
-      ).trim()
+      if (cmd.startsWith('/minus ')) {
 
-    if (rowSku !== sku) {
-      continue
-    }
+        handled = true
 
-    found = true
+        await minusCommand({
 
-    const stock =
-      row[stockIndex] || 0
+          chatId,
+          cmd
 
-    await sendTelegram(
+        })
 
-      chatId,
+        continue
+      }
 
-      `${sku}\n\n` +
-      `Stock: ${stock}`
-    )
+      // =========================
+      // SET STOCK
+      // =========================
 
-    break
-  }
+      if (cmd.startsWith('/set ')) {
 
-  if (!found) {
+        handled = true
 
-    await sendTelegram(
-      chatId,
-      `SKU tidak ditemukan:\n${sku}`
-    )
-  }
+        await setCommand({
 
-  continue
-}
+          chatId,
+          cmd
 
-// =========================
-// PLUS STOCK
-// =========================
+        })
 
-if (cmd.startsWith('/plus ')) {
-
-  handled = true
-
-  const parts =
-    cmd.trim().split(/\s+/)
-
-  const sku =
-    parts[1]?.trim()
-
-  const qty =
-    Number(parts[2])
-
-  if (!sku || Number.isNaN(qty)) {
-
-    await sendTelegram(
-      chatId,
-      'Format:\n/plus SKU qty'
-    )
-
-    continue
-  }
-
-  // =========================
-  // SHOPEE
-  // =========================
-
-  const shopee =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Shopee',
-
-    searchColumnName:
-      'SKU',
-
-    sku,
-
-    columnName:
-      'Stok',
-
-    operation:
-      'plus',
-
-    qty
-  })
-
-  // =========================
-  // TOKOPEDIA
-  // =========================
-
-  const tokopedia =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Tokopedia',
-
-    searchColumnName:
-      'Seller SKU',
-
-    sku,
-
-    columnName:
-      'Quantity',
-
-    operation:
-      'plus',
-
-    qty
-  })
-
-  if (
-    !shopee.found &&
-    !tokopedia.found
-  ) {
-
-    await sendTelegram(
-      chatId,
-      `SKU tidak ditemukan:\n${sku}`
-    )
-
-    continue
-  }
-
-  await sendTelegram(
-
-    chatId,
-
-    `✅ Stock ${sku} ditambah\n\n` +
-
-    `${shopee.oldValue} → ${shopee.newValue}`
-  )
-
-  continue
-}
-
-// =========================
-// MINUS STOCK
-// =========================
-
-if (cmd.startsWith('/minus ')) {
-
-  handled = true
-
-  const parts =
-    cmd.trim().split(/\s+/)
-
-  const sku =
-    parts[1]?.trim()
-
-  const qty =
-    Number(parts[2])
-
-  if (!sku || Number.isNaN(qty)) {
-
-    await sendTelegram(
-      chatId,
-      'Format:\n/minus SKU qty'
-    )
-
-    continue
-  }
-
-  // =========================
-  // SHOPEE
-  // =========================
-
-  const shopee =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Shopee',
-
-    searchColumnName:
-      'SKU',
-
-    sku,
-
-    columnName:
-      'Stok',
-
-    operation:
-      'minus',
-
-    qty
-  })
-
-  // =========================
-  // TOKOPEDIA
-  // =========================
-
-  const tokopedia =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Tokopedia',
-
-    searchColumnName:
-      'Seller SKU',
-
-    sku,
-
-    columnName:
-      'Quantity',
-
-    operation:
-      'minus',
-
-    qty
-  })
-
-  if (
-    !shopee.found &&
-    !tokopedia.found
-  ) {
-
-    await sendTelegram(
-      chatId,
-      `SKU tidak ditemukan:\n${sku}`
-    )
-
-    continue
-  }
-
-  await sendTelegram(
-
-    chatId,
-
-    `✅ Stock ${sku} dikurangi\n\n` +
-
-    `${shopee.oldValue} → ${shopee.newValue}`
-  )
-
-  continue
-}
-
-// =========================
-// SET STOCK
-// =========================
-
-if (cmd.startsWith('/set ')) {
-
-  handled = true
-
-  const parts =
-    cmd.trim().split(/\s+/)
-
-  const sku =
-    parts[1]?.trim()
-
-  const qty =
-    Number(parts[2])
-
-  if (!sku || Number.isNaN(qty)) {
-
-    await sendTelegram(
-      chatId,
-      'Format:\n/set SKU qty'
-    )
-
-    continue
-  }
-
-  // =========================
-  // SHOPEE
-  // =========================
-
-  const shopee =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Shopee',
-
-    searchColumnName:
-      'SKU',
-
-    sku,
-
-    columnName:
-      'Stok',
-
-    operation:
-      'set',
-
-    qty
-  })
-
-  // =========================
-  // TOKOPEDIA
-  // =========================
-
-  const tokopedia =
-  await updateSheetStock({
-
-    sheetName:
-      'Stock Tokopedia',
-
-    searchColumnName:
-      'Seller SKU',
-
-    sku,
-
-    columnName:
-      'Quantity',
-
-    operation:
-      'set',
-
-    qty
-  })
-
-  if (
-    !shopee.found &&
-    !tokopedia.found
-  ) {
-
-    await sendTelegram(
-      chatId,
-      `SKU tidak ditemukan:\n${sku}`
-    )
-
-    continue
-  }
-
-  await sendTelegram(
-
-    chatId,
-
-    `✅ Stock ${sku} diubah\n\n` +
-
-    `${shopee.oldValue} → ${shopee.newValue}`
-  )
-
-  continue
-}
+        continue
+      }
 
       // =========================
       // EXPORT SHOPEE
@@ -772,138 +477,141 @@ if (cmd.startsWith('/set ')) {
       }
 
       // =========================
-// EXPORT ALL
-// =========================
+      // EXPORT ALL
+      // =========================
 
-if (cmd === '/exportall') {
+      if (cmd === '/exportall') {
 
-  handled = true
+        handled = true
 
-  await sendTelegram(
+        await sendTelegram(
 
-    chatId,
+          chatId,
 
-    '⏳ Exporting Shopee & Tiktok Files...'
-  )
+          '⏳ Exporting Shopee & Tiktok Files...'
+        )
 
-  const { data } =
-    await supabase
-      .from('stocks')
-      .select('*')
+        const { data } =
+          await supabase
+            .from('stocks')
+            .select('*')
 
-  // =========================
-  // SHOPEE
-  // =========================
+        // =========================
+        // SHOPEE
+        // =========================
 
-  const shopee =
-    await exportShopee({
+        const shopee =
+          await exportShopee({
 
-      data,
+            data,
 
-      templatePath:
-        process.cwd() +
-        '/templates/template-shopee.xlsx',
+            templatePath:
+              process.cwd() +
+              '/templates/template-shopee.xlsx',
 
-      outputPath:
-        '/tmp/shopee-stock.xlsx'
-    })
+            outputPath:
+              '/tmp/shopee-stock.xlsx'
+          })
 
-  // =========================
-  // TIKTOK LIVE
-  // =========================
+        // =========================
+        // TIKTOK LIVE
+        // =========================
 
-  const live =
-    await exportTiktok({
+        const live =
+          await exportTiktok({
 
-      data,
+            data,
 
-      templatePath:
-        process.cwd() +
-        '/templates/template-tiktok-live.xlsx',
+            templatePath:
+              process.cwd() +
+              '/templates/template-tiktok-live.xlsx',
 
-      outputPath:
-        '/tmp/tiktok-live-stock.xlsx'
-    })
+            outputPath:
+              '/tmp/tiktok-live-stock.xlsx'
+          })
 
-  // =========================
-  // TIKTOK INACTIVE
-  // =========================
+        // =========================
+        // TIKTOK INACTIVE
+        // =========================
 
-  const inactive =
-    await exportTiktok({
+        const inactive =
+          await exportTiktok({
 
-      data,
+            data,
 
-      templatePath:
-        process.cwd() +
-        '/templates/template-tiktok-inactive.xlsx',
+            templatePath:
+              process.cwd() +
+              '/templates/template-tiktok-inactive.xlsx',
 
-      outputPath:
-        '/tmp/tiktok-inactive-stock.xlsx'
-    })
+            outputPath:
+              '/tmp/tiktok-inactive-stock.xlsx'
+          })
 
-  // =========================
-  // CREATE ZIP
-  // =========================
+        // =========================
+        // CREATE ZIP
+        // =========================
 
-  const zipPath =
-    '/tmp/inventory-export.zip'
+        const zipPath =
+          '/tmp/inventory-export.zip'
 
-  await createZip(
+        await createZip(
 
-    [
+          [
 
-      {
-        path:
-          shopee.outputPath,
+            {
 
-        name:
-          'shopee-stock.xlsx'
-      },
+              path:
+                shopee.outputPath,
 
-      {
-        path:
-          live.outputPath,
+              name:
+                'shopee-stock.xlsx'
+            },
 
-        name:
-          'tiktok-live-stock.xlsx'
-      },
+            {
 
-      {
-        path:
-          inactive.outputPath,
+              path:
+                live.outputPath,
 
-        name:
-          'tiktok-inactive-stock.xlsx'
+              name:
+                'tiktok-live-stock.xlsx'
+            },
+
+            {
+
+              path:
+                inactive.outputPath,
+
+              name:
+                'tiktok-inactive-stock.xlsx'
+            }
+
+          ],
+
+          zipPath
+        )
+
+        // =========================
+        // SEND ZIP
+        // =========================
+
+        await sendFile(
+          chatId,
+          zipPath
+        )
+
+        await sendTelegram(
+
+          chatId,
+
+          '🎉 Export Shopee & Tiktok selesai\n\n' +
+
+          `Shopee: ${shopee.updated}\n` +
+          `Tiktok Live: ${live.updated}\n` +
+          `Tiktok Inactive: ${inactive.updated}`
+        )
+
+        continue
       }
-
-    ],
-
-    zipPath
-  )
-
-  // =========================
-  // SEND ZIP
-  // =========================
-
-  await sendFile(
-    chatId,
-    zipPath
-  )
-
-  await sendTelegram(
-
-    chatId,
-
-    '🎉 Export Shopee & Tiktok selesai\n\n' +
-
-    `Shopee: ${shopee.updated}\n` +
-    `Tiktok Live: ${live.updated}\n` +
-    `Tiktok Inactive: ${inactive.updated}`
-  )
-
-  continue
-}
     }
 
     // =========================
@@ -929,7 +637,9 @@ if (cmd === '/exportall') {
     return res
       .status(500)
       .json({
-        error: err.message
+
+        error:
+          err.message
       })
   }
 }
