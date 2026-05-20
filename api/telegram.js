@@ -29,60 +29,17 @@ from '../lib/supabase.js'
 const processedUpdates =
   new Set()
 
-  // =========================
-// TELEGRAM SEND MESSAGE
+// =========================
+// TELEGRAM SEND MESSAGE & FILE
 // =========================
 
-async function sendTelegram(
-  chatId,
-  text
-) {
+import { sendTelegram }
 
-  await axios.post(
+from './services/send-telegram.js'
 
-    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+import { sendFile }
 
-    {
-      chat_id: chatId,
-      text
-    }
-  )
-}
-
-// =========================
-// TELEGRAM SEND FILE
-// =========================
-
-async function sendFile(
-  chatId,
-  filePath
-) {
-
-  const formData =
-    new FormData()
-
-  formData.append(
-    'chat_id',
-    chatId
-  )
-
-  formData.append(
-    'document',
-    fs.createReadStream(filePath)
-  )
-
-  await axios.post(
-
-    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendDocument`,
-
-    formData,
-
-    {
-      headers:
-        formData.getHeaders()
-    }
-  )
-}
+from './services/send-file.js'
 
 // =========================
 // ADM ZIP
