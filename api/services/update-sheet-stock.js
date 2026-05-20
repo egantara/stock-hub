@@ -1,3 +1,4 @@
+```javascript
 import { GoogleSpreadsheet }
 from 'google-spreadsheet'
 
@@ -58,79 +59,102 @@ export async function updateSheetStock({
     ]
 
   // =========================
-  // LOAD HEADER
+  // LOAD CELLS
   // =========================
 
-  await sheet.loadHeaderRow()
+  await sheet.loadCells()
 
-  const rows =
-    await sheet.getRows()
+  // =========================
+  // FIND HEADER
+  // =========================
+
+  let searchColumn = -1
+  let targetColumn = -1
+
+  for (
+    let col = 0;
+    col < sheet.columnCount;
+    col++
+  ) {
+
+    const header =
+      String(
+
+        sheet.getCell(
+          0,
+          col
+        ).value || ''
+
+      )
+        .trim()
+        .toLowerCase()
+
+    if (
+
+      header ===
+
+      searchColumnName
+        .trim()
+        .toLowerCase()
+
+    ) {
+
+      searchColumn = col
+    }
+
+    if (
+
+      header ===
+
+      columnName
+        .trim()
+        .toLowerCase()
+
+    ) {
+
+      targetColumn = col
+    }
+  }
 
   console.log(
-    'TOTAL ROWS:',
-    rows.length
+    'SEARCH COLUMN:',
+    searchColumn
   )
+
+  console.log(
+    'TARGET COLUMN:',
+    targetColumn
+  )
+
+  if (
+    searchColumn === -1 ||
+    targetColumn === -1
+  ) {
+
+    throw new Error(
+      'COLUMN NOT FOUND'
+    )
+  }
 
   // =========================
   // LOOP ROWS
   // =========================
 
-  for (const row of rows) {
+  for (
+    let row = 1;
+    row < sheet.rowCount;
+    row++
+  ) {
 
-    // =========================
-    // FIND REAL HEADER
-    // =========================
-
-    const headers =
-      row._worksheet.headerValues
-
-    const realSearchHeader =
-      headers.find(h =>
-
-        String(h)
-          .trim()
-          .toLowerCase()
-
-        ===
-
-        String(searchColumnName)
-          .trim()
-          .toLowerCase()
+    const skuCell =
+      sheet.getCell(
+        row,
+        searchColumn
       )
-
-    const realUpdateHeader =
-      headers.find(h =>
-
-        String(h)
-          .trim()
-          .toLowerCase()
-
-        ===
-
-        String(columnName)
-          .trim()
-          .toLowerCase()
-      )
-
-    console.log(
-      'SEARCH HEADER:',
-      realSearchHeader
-    )
-
-    console.log(
-      'UPDATE HEADER:',
-      realUpdateHeader
-    )
-
-    // =========================
-    // GET SKU
-    // =========================
 
     const rowSku =
       String(
-        row.get(
-          realSearchHeader
-        ) || ''
+        skuCell.value || ''
       )
         .trim()
         .toLowerCase()
@@ -142,27 +166,23 @@ export async function updateSheetStock({
         .trim()
         .toLowerCase()
 
-    console.log(
-      'COMPARE:',
-      rowSku,
-      targetSku
-    )
-
     if (rowSku !== targetSku) {
       continue
     }
 
     // =========================
-    // CURRENT VALUE
+    // TARGET CELL
     // =========================
+
+    const targetCell =
+      sheet.getCell(
+        row,
+        targetColumn
+      )
 
     const current =
       parseInt(
-
-        row.get(
-          realUpdateHeader
-        )
-
+        targetCell.value
       ) || 0
 
     let newValue =
@@ -202,15 +222,13 @@ export async function updateSheetStock({
     }
 
     // =========================
-    // UPDATE
+    // UPDATE CELL ONLY
     // =========================
 
-    row.set(
-      realUpdateHeader,
+    targetCell.value =
       newValue
-    )
 
-    await row.save()
+    await sheet.saveUpdatedCells()
 
     console.log(
       'UPDATED:',
@@ -230,10 +248,6 @@ export async function updateSheetStock({
     }
   }
 
-  // =========================
-  // NOT FOUND
-  // =========================
-
   console.log(
     'SKU NOT FOUND:',
     sku
@@ -243,3 +257,4 @@ export async function updateSheetStock({
     found: false
   }
 }
+```
