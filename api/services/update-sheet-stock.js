@@ -1,8 +1,6 @@
-import { GoogleSpreadsheet }
-from 'google-spreadsheet'
+import { getGoogleSheet }
 
-import { JWT }
-from 'google-auth-library'
+from '../../lib/google-sheet.js'
 
 export async function updateSheetStock({
 
@@ -15,34 +13,8 @@ export async function updateSheetStock({
 
 }) {
 
-  const credentials =
-    JSON.parse(
-      process.env.GOOGLE_SERVICE_ACCOUNT
-    )
-
-  const serviceAccountAuth =
-    new JWT({
-
-      email:
-        credentials.client_email,
-
-      key:
-        credentials.private_key,
-
-      scopes: [
-        'https://www.googleapis.com/auth/spreadsheets'
-      ]
-    })
-
   const doc =
-    new GoogleSpreadsheet(
-
-      process.env.GOOGLE_SHEET_ID,
-
-      serviceAccountAuth
-    )
-
-  await doc.loadInfo()
+    await getGoogleSheet()
 
   const sheet =
     doc.sheetsByTitle[
@@ -119,11 +91,19 @@ export async function updateSheetStock({
     let newValue =
       current
 
+    // =========================
+    // PLUS
+    // =========================
+
     if (operation === 'plus') {
 
       newValue =
         current + qty
     }
+
+    // =========================
+    // MINUS
+    // =========================
 
     if (operation === 'minus') {
 
@@ -133,6 +113,10 @@ export async function updateSheetStock({
           current - qty
         )
     }
+
+    // =========================
+    // SET
+    // =========================
 
     if (operation === 'set') {
 

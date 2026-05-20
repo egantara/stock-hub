@@ -1,37 +1,11 @@
-import { GoogleSpreadsheet }
-from 'google-spreadsheet'
+import { getGoogleSheet }
 
-import { JWT }
-from 'google-auth-library'
+from '../../lib/google-sheet.js'
 
 export async function getSheetData() {
 
-  const credentials =
-    JSON.parse(
-      process.env.GOOGLE_SERVICE_ACCOUNT
-    )
-
-  const serviceAccountAuth =
-    new JWT({
-
-      email:
-        credentials.client_email,
-
-      key:
-        credentials.private_key,
-
-      scopes: [
-        'https://www.googleapis.com/auth/spreadsheets'
-      ]
-    })
-
   const doc =
-    new GoogleSpreadsheet(
-      process.env.GOOGLE_SHEET_ID,
-      serviceAccountAuth
-    )
-
-  await doc.loadInfo()
+    await getGoogleSheet()
 
   console.log(
     'TITLES:',
@@ -45,7 +19,9 @@ export async function getSheetData() {
   // =========================
 
   const sheet =
-    doc.sheetsByTitle['Stock ALL']
+    doc.sheetsByTitle[
+      'Stock ALL'
+    ]
 
   // =========================
   // LOAD HEADER

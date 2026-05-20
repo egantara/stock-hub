@@ -5,9 +5,6 @@ import AdmZip from 'adm-zip'
 import { updateSheetStock }
 from './services/update-sheet-stock.js'
 
-import { createClient }
-from '@supabase/supabase-js'
-
 import { exportShopee }
 from './services/export-shopee.js'
 
@@ -21,11 +18,9 @@ from './services/sync-sheet.js'
 // SUPABASE
 // =========================
 
-const supabase =
-  createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
-  )
+import { supabase }
+
+from '../lib/supabase.js'
 
 // =========================
 // ANTI DUPLICATE
