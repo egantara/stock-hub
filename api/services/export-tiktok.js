@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'
+import XLSX from 'xlsx'
 
 export async function exportTiktok({
 
@@ -9,269 +9,186 @@ export async function exportTiktok({
 }) {
 
   // =========================
-  // LOAD WORKBOOK
+  // LOAD FILE
   // =========================
 
   const workbook =
-    new ExcelJS.Workbook()
+    XLSX.readFile(
+      templatePath
+    )
 
-  await workbook.xlsx.readFile(
-    templatePath
-  )
-
-  const worksheet =
-    workbook.getWorksheet(
+  const sheet =
+    workbook.Sheets[
       'Template'
-    )
-
-  if (!worksheet) {
-
-    throw new Error(
-      'Template sheet not found'
-    )
-  }
+    ]
 
   // =========================
-  // FIND HEADER ROW
+  // RANGE
   // =========================
 
-  let headerRowNumber = -1
-
-  worksheet.eachRow(
-    (row, rowNumber) => {
-
-      const values =
-        row.values.map(v =>
-          String(v || '')
-            .trim()
-        )
-
-      if (
-        values.includes('SKU ID') &&
-        values.includes('Quantity')
-      ) {
-
-        headerRowNumber =
-          rowNumber
-      }
-    }
-  )
-
-  if (headerRowNumber === -1) {
-
-    throw new Error(
-      'HEADER ROW NOT FOUND'
-    )
-  }
-
-  console.log(
-    'HEADER ROW:',
-    headerRowNumber
-  )
-
-  const headerRow =
-    worksheet.getRow(
-      headerRowNumber
+  const range =
+    XLSX.utils.decode_range(
+      sheet['!ref']
     )
 
   // =========================
-  // FIND COLUMN
+  // FIND HEADER
   // =========================
 
-  let skuIdCol = -1
-  let qtyCol = -1
-  let sellerSkuCol = -1
+  let headerRow = -1
 
-  headerRow.eachCell(
-    (cell, colNumber) => {
-
-      const value =
-        String(cell.value || '')
-          .trim()
-          .toLowerCase()
-
-      // SKU ID
-
-      if (
-        value === 'sku id'
-      ) {
-
-        skuIdCol =
-          colNumber
-      }
-
-      // QUANTITY
-
-      if (
-        value === 'quantity'
-      ) {
-
-        qtyCol =
-          colNumber
-      }
-
-      // SELLER SKU
-
-      if (
-
-        value === 'seller_sku'
-
-        ||
-
-        value === 'seller sku'
-      ) {
-
-        sellerSkuCol =
-          colNumber
-      }
-    }
-  )
-
-  console.log(
-    'SKU ID COL:',
-    skuIdCol
-  )
-
-  console.log(
-    'QTY COL:',
-    qtyCol
-  )
-
-  console.log(
-    'SELLER SKU COL:',
-    sellerSkuCol
-  )
-
-  if (
-    skuIdCol === -1 ||
-    qtyCol === -1
+  for (
+    let R = range.s.r;
+    R <= range.e.r;
+    ++R
   ) {
 
+    const skuIdCell =
+      XLSX.utils.encode_cell({
+        r: R,
+        c: 3
+      })
+
+    const qtyCell =
+      XLSX.utils.encode_cell({
+        r: R,
+        c: 6
+      })
+
+    const skuIdValue =
+      String(
+        sheet[skuIdCell]?.v || ''
+      ).trim()
+
+    const qtyValue =
+      String(
+        sheet[qtyCell]?.v || ''
+      ).trim()
+
+    if (
+      skuIdValue === 'SKU ID'
+      &&
+      qtyValue === 'Quantity'
+    ) {
+
+      headerRow = R
+      break
+    }
+  }
+
+  if (headerRow === -1) {
+
     throw new Error(
-      'COLUMN NOT FOUND'
+      'HEADER NOT FOUND'
     )
   }
 
   // =========================
-  // UPDATE ROWS
+  // COLUMN INDEX
   // =========================
+
+  const skuIdCol = 3
+  const qtyCol = 6
+  const sellerSkuCol = 7
 
   let updated = 0
 
-  worksheet.eachRow(
-    (row, rowNumber) => {
+  // =========================
+  // START DATA
+  // =========================
 
-      if (
-        rowNumber <=
-        headerRowNumber
-      ) {
+  for (
+    let R = headerRow + 3;
+    R <= range.e.r;
+    ++R
+  ) {
 
-        return
-      }
+    const skuIdAddress =
+      XLSX.utils.encode_cell({
+        r: R,
+        c: skuIdCol
+      })
 
-      const templateSkuId =
-        String(
-          row.getCell(
-            skuIdCol
-          ).value || ''
-        )
-          .replace(/\.0$/, '')
-          .replace(/\s/g, '')
-          .trim()
+    const qtyAddress =
+      XLSX.utils.encode_cell({
+        r: R,
+        c: qtyCol
+      })
 
-      if (
-        !templateSkuId ||
-        templateSkuId ===
-          'Mandatory' ||
-        templateSkuId ===
-          'Uneditable'
-      ) {
+    const sellerSkuAddress =
+      XLSX.utils.encode_cell({
+        r: R,
+        c: sellerSkuCol
+      })
 
-        return
-      }
+    const templateSkuId =
+      String(
+        sheet[skuIdAddress]?.v || ''
+      )
+        .replace(/\.0$/, '')
+        .replace(/\s/g, '')
+        .trim()
 
-      // =========================
-      // FIND PRODUCT
-      // =========================
+    if (!templateSkuId) {
+      continue
+    }
 
-      const product =
-        data.find(item => {
+    // =========================
+    // FIND PRODUCT
+    // =========================
 
-          const dbSku =
-            String(
-              item.tiktok_sku_id || ''
-            )
-              .replace(/\.0$/, '')
-              .replace(/\s/g, '')
-              .trim()
+    const product =
+      data.find(item => {
 
-          return (
-            dbSku ===
-            templateSkuId
+        const dbSku =
+          String(
+            item.tiktok_sku_id || ''
           )
-        })
+            .replace(/\.0$/, '')
+            .replace(/\s/g, '')
+            .trim()
 
-      if (!product) {
-
-        console.log(
-          'NOT FOUND:',
+        return (
+          dbSku ===
           templateSkuId
         )
+      })
 
-        return
-      }
+    if (!product) {
+      continue
+    }
 
-      // =========================
-      // UPDATE QUANTITY
-      // =========================
+    // =========================
+    // UPDATE QUANTITY
+    // =========================
 
-      row.getCell(
-        qtyCol
-      ).value =
+    if (sheet[qtyAddress]) {
+
+      sheet[qtyAddress].v =
         Number(
           product.stock || 0
         )
-
-      // =========================
-      // UPDATE SELLER SKU
-      // =========================
-
-      if (
-        sellerSkuCol !== -1
-      ) {
-
-        row.getCell(
-          sellerSkuCol
-        ).value =
-          product.sku || ''
-      }
-
-      updated++
-
-      console.log(
-        'UPDATED:',
-        templateSkuId,
-        product.stock
-      )
     }
-  )
 
-  console.log(
-    'TOTAL UPDATED:',
-    updated
-  )
+    // =========================
+    // UPDATE SELLER SKU
+    // =========================
 
-  // =========================
-// REMOVE CONDITIONAL FORMAT
-// =========================
+    if (sheet[sellerSkuAddress]) {
 
-worksheet.conditionalFormattings = []
+      sheet[sellerSkuAddress].v =
+        product.sku || ''
+    }
+
+    updated++
+  }
 
   // =========================
   // SAVE
   // =========================
 
-  await workbook.xlsx.writeFile(
+  XLSX.writeFile(
+    workbook,
     outputPath
   )
 
