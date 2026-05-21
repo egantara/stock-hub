@@ -262,6 +262,12 @@ export async function exportTiktok({
   )
 
   // =========================
+// REMOVE CONDITIONAL FORMAT
+// =========================
+
+worksheet.conditionalFormattings = []
+
+  // =========================
   // SAVE
   // =========================
 
