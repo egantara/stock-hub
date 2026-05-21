@@ -36,6 +36,14 @@ export async function exportTiktok({
       outputPath
     )
 
+    console.log(
+  zip.getEntries()
+    .map(e => e.entryName)
+    .filter(name =>
+      name.includes('worksheets')
+    )
+)
+
   // =========================
   // XML TOOLS
   // =========================
