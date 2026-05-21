@@ -1,4 +1,16 @@
-import XLSX from 'xlsx'
+import fs from 'fs'
+
+import path from 'path'
+
+import AdmZip from 'adm-zip'
+
+import {
+
+  XMLParser,
+
+  XMLBuilder
+
+} from 'fast-xml-parser'
 
 export async function exportTiktok({
 
@@ -9,127 +21,132 @@ export async function exportTiktok({
 }) {
 
   // =========================
-  // LOAD FILE
+  // COPY TEMPLATE
   // =========================
 
-  const workbook =
-    XLSX.readFile(
-      templatePath
-    )
-
-  const sheet =
-    workbook.Sheets[
-      'Template'
-    ]
+  fs.copyFileSync(
+    templatePath,
+    outputPath
+  )
 
   // =========================
-  // RANGE
+  // OPEN ZIP
   // =========================
 
-  const range =
-    XLSX.utils.decode_range(
-      sheet['!ref']
+  const zip =
+    new AdmZip(
+      outputPath
     )
 
   // =========================
-  // FIND HEADER
+  // LOAD SHEET XML
   // =========================
 
-  let headerRow = -1
+  const sheetEntry =
+    zip.getEntry(
+      'xl/worksheets/sheet1.xml'
+    )
 
-  for (
-    let R = range.s.r;
-    R <= range.e.r;
-    ++R
-  ) {
-
-    const skuIdCell =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: 3
-      })
-
-    const qtyCell =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: 6
-      })
-
-    const skuIdValue =
-      String(
-        sheet[skuIdCell]?.v || ''
-      ).trim()
-
-    const qtyValue =
-      String(
-        sheet[qtyCell]?.v || ''
-      ).trim()
-
-    if (
-      skuIdValue === 'SKU ID'
-      &&
-      qtyValue === 'Quantity'
-    ) {
-
-      headerRow = R
-      break
-    }
-  }
-
-  if (headerRow === -1) {
+  if (!sheetEntry) {
 
     throw new Error(
-      'HEADER NOT FOUND'
+      'sheet1.xml not found'
     )
   }
 
+  const sheetXml =
+    sheetEntry.getData()
+      .toString('utf8')
+
   // =========================
-  // COLUMN INDEX
+  // XML PARSER
   // =========================
 
-  const skuIdCol = 3
-  const qtyCol = 6
-  const sellerSkuCol = 7
+  const parser =
+    new XMLParser({
+
+      ignoreAttributes:
+        false
+    })
+
+  const builder =
+    new XMLBuilder({
+
+      ignoreAttributes:
+        false
+    })
+
+  const sheetObj =
+    parser.parse(sheetXml)
+
+  const rows =
+    sheetObj
+      .worksheet
+      .sheetData
+      .row
 
   let updated = 0
 
   // =========================
-  // START DATA
+  // START ROWS
   // =========================
 
-  for (
-    let R = headerRow + 3;
-    R <= range.e.r;
-    ++R
-  ) {
+  for (const row of rows) {
 
-    const skuIdAddress =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: skuIdCol
-      })
+    const cells =
+      Array.isArray(row.c)
+        ? row.c
+        : [row.c]
 
-    const qtyAddress =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: qtyCol
-      })
+    // =========================
+    // FIND CELLS
+    // =========================
 
-    const sellerSkuAddress =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: sellerSkuCol
-      })
+    const skuIdCell =
+      cells.find(cell =>
 
-    const templateSkuId =
+        cell['@_r']?.startsWith(
+          'D'
+        )
+      )
+
+    const qtyCell =
+      cells.find(cell =>
+
+        cell['@_r']?.startsWith(
+          'G'
+        )
+      )
+
+    const sellerSkuCell =
+      cells.find(cell =>
+
+        cell['@_r']?.startsWith(
+          'H'
+        )
+      )
+
+    if (!skuIdCell) {
+      continue
+    }
+
+    // =========================
+    // VALUE
+    // =========================
+
+    const skuId =
       String(
-        sheet[skuIdAddress]?.v || ''
+        skuIdCell.v || ''
       )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
         .trim()
 
-    if (!templateSkuId) {
+    if (
+      !skuId ||
+      skuId === 'SKU ID'
+    ) {
+
       continue
     }
 
@@ -148,10 +165,7 @@ export async function exportTiktok({
             .replace(/\s/g, '')
             .trim()
 
-        return (
-          dbSku ===
-          templateSkuId
-        )
+        return dbSku === skuId
       })
 
     if (!product) {
@@ -162,33 +176,60 @@ export async function exportTiktok({
     // UPDATE QUANTITY
     // =========================
 
-    if (sheet[qtyAddress]) {
+    if (qtyCell) {
 
-      sheet[qtyAddress].v =
+      qtyCell.v =
         Number(
           product.stock || 0
         )
+
+      delete qtyCell.is
+      delete qtyCell.t
     }
 
     // =========================
     // UPDATE SELLER SKU
     // =========================
 
-    if (sheet[sellerSkuAddress]) {
+    if (sellerSkuCell) {
 
-      sheet[sellerSkuAddress].v =
+      sellerSkuCell.v =
         product.sku || ''
+
+      sellerSkuCell.t =
+        'str'
+
+      delete sellerSkuCell.is
     }
 
     updated++
   }
 
   // =========================
-  // SAVE
+  // BUILD XML
   // =========================
 
-  XLSX.writeFile(
-    workbook,
+  const newXml =
+    builder.build(
+      sheetObj
+    )
+
+  // =========================
+  // UPDATE ZIP
+  // =========================
+
+  zip.updateFile(
+
+    'xl/worksheets/sheet1.xml',
+
+    Buffer.from(newXml)
+  )
+
+  // =========================
+  // WRITE ZIP
+  // =========================
+
+  zip.writeZip(
     outputPath
   )
 
