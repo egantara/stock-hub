@@ -1,14 +1,8 @@
-import fs from 'fs'
-
-import AdmZip from 'adm-zip'
-
 import {
 
-  XMLParser,
+  execFile
 
-  XMLBuilder
-
-} from 'fast-xml-parser'
+} from 'child_process'
 
 export async function exportTiktok({
 
@@ -18,225 +12,49 @@ export async function exportTiktok({
 
 }) {
 
-  // =========================
-  // COPY TEMPLATE
-  // =========================
+  return new Promise(
 
-  fs.copyFileSync(
-    templatePath,
-    outputPath
-  )
+    (resolve, reject) => {
 
-  // =========================
-  // OPEN ZIP
-  // =========================
+      execFile(
 
-  const zip =
-    new AdmZip(
-      outputPath
-    )
+        'python',
 
-  // =========================
-  // XML TOOLS
-  // =========================
+        [
 
-  const parser =
-    new XMLParser({
+          './python/export_tiktok.py',
 
-      ignoreAttributes:
-        false
-    })
+          templatePath,
 
-  const builder =
-    new XMLBuilder({
+          outputPath,
 
-      ignoreAttributes:
-        false
-    })
+          JSON.stringify(data)
+        ],
 
-  // =========================
-  // LOAD SHEET XML
-  // =========================
+        (
 
-  const sheetEntry =
-    zip.getEntry(
-      'xl/worksheets/sheet1.xml'
-    )
+          error,
 
-  if (!sheetEntry) {
+          stdout,
 
-    throw new Error(
-      'sheet1.xml not found'
-    )
-  }
+          stderr
 
-  const sheetXml =
-    sheetEntry
-      .getData()
-      .toString('utf8')
+        ) => {
 
-  const sheetObj =
-    parser.parse(
-      sheetXml
-    )
+          if (error) {
 
-  const rows =
-    sheetObj
-      .worksheet
-      .sheetData
-      .row
+            console.log(stderr)
 
-  let updated = 0
+            reject(error)
 
-  // =========================
-  // PROCESS ROWS
-  // =========================
+            return
+          }
 
-  for (const row of rows) {
-
-    const cells =
-      Array.isArray(row.c)
-        ? row.c
-        : [row.c]
-
-    // =========================
-    // D = SKU ID
-    // G = QUANTITY
-    // =========================
-
-    const skuIdCell =
-      cells.find(cell =>
-
-        cell['@_r']
-          ?.startsWith(
-            'D'
+          resolve(
+            JSON.parse(stdout)
           )
+        }
       )
-
-    const qtyCell =
-      cells.find(cell =>
-
-        cell['@_r']
-          ?.startsWith(
-            'G'
-          )
-      )
-
-    if (
-      !skuIdCell ||
-      !qtyCell
-    ) {
-
-      continue
     }
-
-    // =========================
-    // GET SKU ID
-    // =========================
-
-    const skuId =
-      String(
-        skuIdCell.v || ''
-      )
-        .replace(/\.0$/, '')
-        .replace(/\s/g, '')
-        .trim()
-
-    // SKIP HEADER
-
-    if (
-      !skuId ||
-      skuId === 'SKU ID'
-    ) {
-
-      continue
-    }
-
-    // =========================
-    // FIND PRODUCT
-    // =========================
-
-    const product =
-      data.find(item => {
-
-        const dbSku =
-          String(
-            item.tiktok_sku_id || ''
-          )
-            .replace(/\.0$/, '')
-            .replace(/\s/g, '')
-            .trim()
-
-        return (
-          dbSku === skuId
-        )
-      })
-
-    if (!product) {
-
-      console.log(
-        'NOT FOUND:',
-        skuId
-      )
-
-      continue
-    }
-
-    // =========================
-    // UPDATE QUANTITY ONLY
-    // =========================
-
-    qtyCell.v =
-      Number(
-        product.stock || 0
-      )
-
-    delete qtyCell['@_t']
-    delete qtyCell.is
-
-    updated++
-
-    console.log(
-      'UPDATED:',
-      skuId,
-      product.stock
-    )
-  }
-
-  // =========================
-  // BUILD XML
-  // =========================
-
-  const newSheetXml =
-    builder.build(
-      sheetObj
-    )
-
-  // =========================
-  // UPDATE ZIP
-  // =========================
-
-  zip.updateFile(
-
-    'xl/worksheets/sheet1.xml',
-
-    Buffer.from(
-      newSheetXml
-    )
   )
-
-  // =========================
-  // SAVE ZIP
-  // =========================
-
-  zip.writeZip(
-    outputPath
-  )
-
-  return {
-
-    updated,
-
-    outputPath
-  }
 }
