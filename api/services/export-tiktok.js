@@ -169,7 +169,12 @@ export async function exportTiktok({
       })
 
     if (!product) {
-      continue
+      console.log(
+    'NOT FOUND:',
+    skuId
+  )
+
+  continue
     }
 
     // =========================
