@@ -271,14 +271,16 @@ export async function exportTiktok({
 
     if (qtyCell) {
 
-      qtyCell.v =
-        Number(
-          product.stock || 0
-        )
+  qtyCell['@_t'] =
+    'n'
 
-      delete qtyCell.is
-      delete qtyCell.t
-    }
+  qtyCell.v =
+    Number(
+      product.stock || 0
+    )
+
+  delete qtyCell.is
+}
 
     // =========================
     // UPDATE SELLER SKU
