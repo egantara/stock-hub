@@ -36,14 +36,6 @@ export async function exportTiktok({
       outputPath
     )
 
-    console.log(
-  zip.getEntries()
-    .map(e => e.entryName)
-    .filter(name =>
-      name.includes('worksheets')
-    )
-)
-
   // =========================
   // XML TOOLS
   // =========================
@@ -61,147 +53,6 @@ export async function exportTiktok({
       ignoreAttributes:
         false
     })
-
-  // =========================
-  // LOAD SHARED STRINGS
-  // =========================
-
-  const sharedEntry =
-    zip.getEntry(
-      'xl/sharedStrings.xml'
-    )
-
-  if (!sharedEntry) {
-
-    throw new Error(
-      'sharedStrings.xml not found'
-    )
-  }
-
-  const sharedXml =
-    sharedEntry
-      .getData()
-      .toString('utf8')
-
-  const sharedObj =
-    parser.parse(
-      sharedXml
-    )
-
-  let sharedItems =
-    sharedObj
-      ?.sst
-      ?.si || []
-
-  if (
-    !Array.isArray(
-      sharedItems
-    )
-  ) {
-
-    sharedItems =
-      [sharedItems]
-  }
-
-  // =========================
-  // GET SHARED STRING VALUE
-  // =========================
-
-  function getSharedString(
-    index
-  ) {
-
-    const item =
-      sharedItems[index]
-
-    if (!item) {
-      return ''
-    }
-
-    // SIMPLE
-
-    if (
-      typeof item.t ===
-      'string'
-    ) {
-
-      return item.t
-    }
-
-    // RICH TEXT
-
-    if (
-      Array.isArray(item.r)
-    ) {
-
-      return item.r
-        .map(r => r.t || '')
-        .join('')
-    }
-
-    return ''
-  }
-
-  // =========================
-  // ADD SHARED STRING
-  // =========================
-
-  function addSharedString(
-    value
-  ) {
-
-    const existingIndex =
-      sharedItems.findIndex(
-        item => {
-
-          if (
-            typeof item.t ===
-            'string'
-          ) {
-
-            return (
-              item.t ===
-              value
-            )
-          }
-
-          return false
-        }
-      )
-
-    if (
-      existingIndex !== -1
-    ) {
-
-      return existingIndex
-    }
-
-    sharedItems.push({
-
-      t: value
-    })
-
-    sharedObj.sst.si =
-      sharedItems
-
-    sharedObj.sst[
-      '@_count'
-    ] =
-      String(
-        sharedItems.length
-      )
-
-    sharedObj.sst[
-      '@_uniqueCount'
-    ] =
-      String(
-        sharedItems.length
-      )
-
-    return (
-      sharedItems.length - 1
-    )
-  }
 
   // =========================
   // LOAD SHEET XML
@@ -249,7 +100,8 @@ export async function exportTiktok({
         : [row.c]
 
     // =========================
-    // FIND CELLS
+    // D = SKU ID
+    // G = QUANTITY
     // =========================
 
     const skuIdCell =
@@ -270,55 +122,27 @@ export async function exportTiktok({
           )
       )
 
-    const sellerSkuCell =
-      cells.find(cell =>
+    if (
+      !skuIdCell ||
+      !qtyCell
+    ) {
 
-        cell['@_r']
-          ?.startsWith(
-            'H'
-          )
-      )
-
-    if (!skuIdCell) {
       continue
     }
 
     // =========================
-    // GET REAL SKU ID
+    // GET SKU ID
     // =========================
 
-    let skuId = ''
-
-    // SHARED STRING
-
-    if (
-      skuIdCell['@_t'] ===
-      's'
-    ) {
-
-      skuId =
-        getSharedString(
-          Number(
-            skuIdCell.v
-          )
-        )
-    }
-
-    // NORMAL
-
-    else {
-
-      skuId =
-        String(
-          skuIdCell.v || ''
-        )
-    }
-
-    skuId =
-      skuId
+    const skuId =
+      String(
+        skuIdCell.v || ''
+      )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
         .trim()
+
+    // SKIP HEADER
 
     if (
       !skuId ||
@@ -344,8 +168,7 @@ export async function exportTiktok({
             .trim()
 
         return (
-          dbSku ===
-          skuId
+          dbSku === skuId
         )
       })
 
@@ -360,48 +183,23 @@ export async function exportTiktok({
     }
 
     // =========================
-    // UPDATE QUANTITY
+    // UPDATE QUANTITY ONLY
     // =========================
 
-    if (qtyCell) {
+    qtyCell.v =
+      Number(
+        product.stock || 0
+      )
 
-      qtyCell.v =
-        Number(
-          product.stock || 0
-        )
-
-      delete qtyCell['@_t']
-      delete qtyCell.is
-    }
-
-    // =========================
-    // UPDATE SELLER SKU
-    // =========================
-
-    if (sellerSkuCell) {
-
-      const sharedIndex =
-        addSharedString(
-          product.sku || ''
-        )
-
-      sellerSkuCell[
-        '@_t'
-      ] = 's'
-
-      sellerSkuCell.v =
-        String(
-          sharedIndex
-        )
-
-      delete sellerSkuCell.is
-    }
+    delete qtyCell['@_t']
+    delete qtyCell.is
 
     updated++
 
     console.log(
       'UPDATED:',
-      skuId
+      skuId,
+      product.stock
     )
   }
 
@@ -414,11 +212,6 @@ export async function exportTiktok({
       sheetObj
     )
 
-  const newSharedXml =
-    builder.build(
-      sharedObj
-    )
-
   // =========================
   // UPDATE ZIP
   // =========================
@@ -429,15 +222,6 @@ export async function exportTiktok({
 
     Buffer.from(
       newSheetXml
-    )
-  )
-
-  zip.updateFile(
-
-    'xl/sharedStrings.xml',
-
-    Buffer.from(
-      newSharedXml
     )
   )
 
