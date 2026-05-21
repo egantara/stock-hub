@@ -1,7 +1,5 @@
 import fs from 'fs'
 
-import path from 'path'
-
 import AdmZip from 'adm-zip'
 
 import {
@@ -39,26 +37,6 @@ export async function exportTiktok({
     )
 
   // =========================
-  // LOAD SHEET XML
-  // =========================
-
-  const sheetEntry =
-    zip.getEntry(
-      'xl/worksheets/sheet1.xml'
-    )
-
-  if (!sheetEntry) {
-
-    throw new Error(
-      'sheet1.xml not found'
-    )
-  }
-
-  const sheetXml =
-    sheetEntry.getData()
-      .toString('utf8')
-
-  // =========================
   // XML PARSER
   // =========================
 
@@ -76,6 +54,84 @@ export async function exportTiktok({
         false
     })
 
+  // =========================
+  // LOAD SHARED STRINGS
+  // =========================
+
+  const sharedStringsEntry =
+    zip.getEntry(
+      'xl/sharedStrings.xml'
+    )
+
+  let sharedStrings = []
+
+  if (sharedStringsEntry) {
+
+    const sharedXml =
+      sharedStringsEntry
+        .getData()
+        .toString('utf8')
+
+    const sharedObj =
+      parser.parse(sharedXml)
+
+    const sis =
+      sharedObj
+        ?.sst
+        ?.si || []
+
+    sharedStrings =
+      Array.isArray(sis)
+        ? sis.map(item => {
+
+            // SIMPLE TEXT
+
+            if (
+              typeof item.t ===
+              'string'
+            ) {
+
+              return item.t
+            }
+
+            // RICH TEXT
+
+            if (
+              Array.isArray(item.r)
+            ) {
+
+              return item.r
+                .map(r => r.t || '')
+                .join('')
+            }
+
+            return ''
+          })
+
+        : []
+  }
+
+  // =========================
+  // LOAD SHEET XML
+  // =========================
+
+  const sheetEntry =
+    zip.getEntry(
+      'xl/worksheets/sheet1.xml'
+    )
+
+  if (!sheetEntry) {
+
+    throw new Error(
+      'sheet1.xml not found'
+    )
+  }
+
+  const sheetXml =
+    sheetEntry
+      .getData()
+      .toString('utf8')
+
   const sheetObj =
     parser.parse(sheetXml)
 
@@ -88,7 +144,36 @@ export async function exportTiktok({
   let updated = 0
 
   // =========================
-  // START ROWS
+  // HELPER
+  // =========================
+
+  function getCellValue(
+    cell
+  ) {
+
+    // SHARED STRING
+
+    if (
+      cell?.['@_t'] === 's'
+    ) {
+
+      const index =
+        Number(cell.v)
+
+      return String(
+        sharedStrings[index] || ''
+      )
+    }
+
+    // NORMAL
+
+    return String(
+      cell?.v || ''
+    )
+  }
+
+  // =========================
+  // PROCESS ROWS
   // =========================
 
   for (const row of rows) {
@@ -98,9 +183,9 @@ export async function exportTiktok({
         ? row.c
         : [row.c]
 
-    // =========================
-    // FIND CELLS
-    // =========================
+    // D = SKU ID
+    // G = QUANTITY
+    // H = SELLER SKU
 
     const skuIdCell =
       cells.find(cell =>
@@ -131,12 +216,12 @@ export async function exportTiktok({
     }
 
     // =========================
-    // VALUE
+    // REAL SKU ID
     // =========================
 
     const skuId =
-      String(
-        skuIdCell.v || ''
+      getCellValue(
+        skuIdCell
       )
         .replace(/\.0$/, '')
         .replace(/\s/g, '')
@@ -165,16 +250,19 @@ export async function exportTiktok({
             .replace(/\s/g, '')
             .trim()
 
-        return dbSku === skuId
+        return (
+          dbSku === skuId
+        )
       })
 
     if (!product) {
-      console.log(
-    'NOT FOUND:',
-    skuId
-  )
 
-  continue
+      console.log(
+        'NOT FOUND:',
+        skuId
+      )
+
+      continue
     }
 
     // =========================
@@ -201,13 +289,18 @@ export async function exportTiktok({
       sellerSkuCell.v =
         product.sku || ''
 
-      sellerSkuCell.t =
+      sellerSkuCell['@_t'] =
         'str'
 
       delete sellerSkuCell.is
     }
 
     updated++
+
+    console.log(
+      'UPDATED:',
+      skuId
+    )
   }
 
   // =========================
@@ -231,7 +324,7 @@ export async function exportTiktok({
   )
 
   // =========================
-  // WRITE ZIP
+  // SAVE ZIP
   // =========================
 
   zip.writeZip(
