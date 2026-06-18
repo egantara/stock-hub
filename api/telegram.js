@@ -3,6 +3,11 @@ import fs from 'fs'
 import FormData from 'form-data'
 import AdmZip from 'adm-zip'
 
+import {
+  getStockAllData
+}
+from './services/get-stock-all.js'
+
 import { exportShopee }
 from './services/export-shopee.js'
 
@@ -406,6 +411,27 @@ if (cmd.startsWith('/search ')) {
     chatId,
     cmd
   })
+
+  continue
+}
+
+if (cmd === '/testsheet') {
+
+  handled = true
+
+  const data =
+    await getStockAllData()
+
+  await sendTelegram(
+
+    chatId,
+
+    JSON.stringify(
+      data[0],
+      null,
+      2
+    )
+  )
 
   continue
 }
