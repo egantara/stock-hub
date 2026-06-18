@@ -1,5 +1,5 @@
 import { getSheetData }
-from './sync-sheet.js'
+from '../api/services/sync-sheet.js'
 
 export async function getStockAllData() {
 

@@ -1,6 +1,6 @@
 import { updateStockCommand }
 
-from '../services/update-stock-command.js'
+from '../../services/update-stock-command.js'
 
 export async function plusCommand({
 

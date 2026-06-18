@@ -6,22 +6,22 @@ import AdmZip from 'adm-zip'
 import {
   getStockAllData
 }
-from './services/get-stock-all.js'
+from '../services/get-stock-all.js'
 
 import { exportShopee }
-from './services/export-shopee.js'
+from '../services/export-shopee.js'
 
 import { exportTiktok }
-from './services/export-tiktok.js'
+from '../services/export-tiktok.js'
 
 import { getSheetData }
 from './services/sync-sheet.js'
 
 import { sendTelegram }
-from './services/send-telegram.js'
+from '../services/send-telegram.js'
 
 import { sendFile }
-from './services/send-file.js'
+from '../services/send-file.js'
 
 import { cekCommand }
 from './commands/cek.js'

@@ -7,11 +7,11 @@ from '../../lib/supabase.js'
 
 import { sendTelegram }
 
-from '../services/send-telegram.js'
+from '../../services/send-telegram.js'
 
 import { sendFile }
 
-from '../services/send-file.js'
+from '../../services/send-file.js'
 
 export async function lowCommand({
 

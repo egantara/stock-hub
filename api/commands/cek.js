@@ -1,6 +1,6 @@
 import { sendTelegram }
 
-from '../services/send-telegram.js'
+from '../../services/send-telegram.js'
 
 import { getSheetData }
 
