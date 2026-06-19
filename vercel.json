@@ -1,26 +1,7 @@
 {
   "functions": {
-    "api/**/*.js": {
-      "includeFiles": "templates/**/*"
+    "api/*.js": {
+      "maxDuration": 60
     }
-  },
-
-  "crons": [
-
-    {
-      "path": "/api/cron/auto-export",
-      "schedule": "0 16 * * *"
-    },
-
-    {
-      "path": "/api/cron/auto-backup",
-      "schedule": "0 16 * * 0"
-    },
-
-    {
-      "path": "/api/cron/low-stock-alert",
-      "schedule": "0 1 * * *"
-    }
-
-  ]
+  }
 }
