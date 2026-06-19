@@ -71,9 +71,15 @@ export default async function handler(
         );
 
       const result =
-        await processUploadedFile(
-          localPath
-        );
+  await processUploadedFile({
+
+    filePath:
+      localPath,
+
+    user:
+      "TELEGRAM"
+
+  });
 
       await sendMessage(
         chatId,
