@@ -1,27 +1,64 @@
 import fs from "fs";
 import { google } from "googleapis";
 
-const credentials = JSON.parse(
-  fs.readFileSync(
-    "./credentials/service-account.json",
-    "utf8"
-  )
-);
+let credentials;
 
-const auth = new google.auth.GoogleAuth({
-  credentials,
-  scopes: [
-    "https://www.googleapis.com/auth/spreadsheets"
-  ]
-});
+if (
+  !credentials.project_id
+) {
 
-const sheets = google.sheets({
-  version: "v4",
-  auth
-});
+  throw new Error(
+    "GOOGLE_PROJECT_ID is missing"
+  );
+}
+
+if (
+  !credentials.client_email
+) {
+
+  throw new Error(
+    "GOOGLE_CLIENT_EMAIL is missing"
+  );
+}
+
+if (
+  !credentials.private_key
+) {
+
+  throw new Error(
+    "GOOGLE_PRIVATE_KEY is missing"
+  );
+}
+
+const auth =
+  new google.auth.GoogleAuth({
+
+    credentials,
+
+    scopes: [
+      "https://www.googleapis.com/auth/spreadsheets"
+    ]
+
+  });
+
+const sheets =
+  google.sheets({
+
+    version: "v4",
+
+    auth
+
+  });
 
 const spreadsheetId =
-  "1a0nB5BGO5uJv6tn9Vd_UNg8K-PEo5dMX1dtc0ty0tAM";
+  process.env.GOOGLE_SHEET_ID;
+
+if (!spreadsheetId) {
+
+  throw new Error(
+    "GOOGLE_SHEET_ID is missing"
+  );
+}
 
 export async function getRows(
   sheetName
@@ -29,8 +66,12 @@ export async function getRows(
 
   const result =
     await sheets.spreadsheets.values.get({
+
       spreadsheetId,
-      range: `${sheetName}!A:ZZ`
+
+      range:
+        `${sheetName}!A:ZZ`
+
     });
 
   const rows =
@@ -44,24 +85,34 @@ export async function getRows(
     rows[0];
 
   return rows
-  .slice(1)
-  .map((row, index) => {
 
-    const obj = {
-      __rowNumber:
-        index + 2
-    };
+    .slice(1)
 
-    headers.forEach(
-      (header, colIndex) => {
+    .map((row, index) => {
 
-        obj[header] =
-          row[colIndex] || "";
-      }
-    );
+      const obj = {
 
-    return obj;
-  });
+        __rowNumber:
+          index + 2
+
+      };
+
+      headers.forEach(
+
+        (
+          header,
+          colIndex
+        ) => {
+
+          obj[header] =
+            row[colIndex] || "";
+
+        }
+      );
+
+      return obj;
+
+    });
 }
 
 export async function appendRow(
@@ -70,16 +121,28 @@ export async function appendRow(
 ) {
 
   await sheets
+
     .spreadsheets
+
     .values
+
     .append({
+
       spreadsheetId,
-      range: sheetName,
+
+      range:
+        sheetName,
+
       valueInputOption:
         "USER_ENTERED",
+
       requestBody: {
-        values: [values]
+
+        values:
+          [values]
+
       }
+
     });
 }
 
@@ -89,16 +152,26 @@ export async function updateRange(
 ) {
 
   await sheets
+
     .spreadsheets
+
     .values
+
     .update({
+
       spreadsheetId,
+
       range,
+
       valueInputOption:
         "USER_ENTERED",
+
       requestBody: {
+
         values
+
       }
+
     });
 }
 
@@ -108,8 +181,12 @@ export async function getRawRows(
 
   const result =
     await sheets.spreadsheets.values.get({
+
       spreadsheetId,
-      range: `${sheetName}!A:ZZ`
+
+      range:
+        `${sheetName}!A:ZZ`
+
     });
 
   return (
