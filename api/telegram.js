@@ -34,6 +34,20 @@ export default async function handler(
     const document =
       message?.document;
 
+    console.log(
+      "NEW UPDATE"
+    );
+
+    console.log(
+      "CAPTION:",
+      caption
+    );
+
+    console.log(
+      "FILE:",
+      document?.file_name
+    );
+
     if (!chatId) {
 
       return res.status(200).json({
@@ -60,6 +74,10 @@ export default async function handler(
       document
     ) {
 
+      console.log(
+        "START PROCESS"
+      );
+
       await sendMessage(
         chatId,
         "⏳ Memproses file..."
@@ -70,19 +88,29 @@ export default async function handler(
           document.file_id
         );
 
+      console.log(
+        "DOWNLOADED:",
+        localPath
+      );
+
       const result =
-  await processUploadedFile({
+        await processUploadedFile({
 
-    filePath:
-      localPath,
+          filePath:
+            localPath,
 
-    user:
-      "TELEGRAM"
+          user:
+            "TELEGRAM"
 
-  });
+        });
+
+      console.log(
+        "RESULT:",
+        result
+      );
 
       await sendMessage(
-  chatId,
+        chatId,
 `📄 Marketplace: ${result.marketplace}
 
 ✅ Processed : ${result.processed}
@@ -90,7 +118,7 @@ export default async function handler(
 📦 Total Qty : ${result.totalQty}
 🆕 New SKU : ${result.newProducts}
 ❌ Error : ${result.errors.length}`
-);
+      );
     }
 
     //
@@ -110,7 +138,10 @@ export default async function handler(
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "TELEGRAM ERROR:",
+      error
+    );
 
     try {
 
