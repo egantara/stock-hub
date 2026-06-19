@@ -1,10 +1,54 @@
 import fs from "fs";
 import { google } from "googleapis";
 
-let credentials;
+let credentials = null;
+
+try {
+
+  credentials =
+    JSON.parse(
+      fs.readFileSync(
+        "./credentials/service-account.json",
+        "utf8"
+      )
+    );
+
+  console.log(
+    "Using local service-account.json"
+  );
+
+} catch {
+
+  credentials = {
+
+    type:
+      "service_account",
+
+    project_id:
+      process.env
+        .GOOGLE_PROJECT_ID,
+
+    client_email:
+      process.env
+        .GOOGLE_CLIENT_EMAIL,
+
+    private_key:
+      process.env
+        .GOOGLE_PRIVATE_KEY
+        ?.replace(
+          /\\n/g,
+          "\n"
+        )
+
+  };
+
+  console.log(
+    "Using Vercel Environment Variables"
+  );
+}
 
 if (
-  !credentials.project_id
+  !credentials?.project_id
 ) {
 
   throw new Error(
@@ -13,7 +57,7 @@ if (
 }
 
 if (
-  !credentials.client_email
+  !credentials?.client_email
 ) {
 
   throw new Error(
@@ -22,11 +66,22 @@ if (
 }
 
 if (
-  !credentials.private_key
+  !credentials?.private_key
 ) {
 
   throw new Error(
     "GOOGLE_PRIVATE_KEY is missing"
+  );
+}
+
+const spreadsheetId =
+  process.env
+    .GOOGLE_SHEET_ID;
+
+if (!spreadsheetId) {
+
+  throw new Error(
+    "GOOGLE_SHEET_ID is missing"
   );
 }
 
@@ -49,16 +104,6 @@ const sheets =
     auth
 
   });
-
-const spreadsheetId =
-  process.env.GOOGLE_SHEET_ID;
-
-if (!spreadsheetId) {
-
-  throw new Error(
-    "GOOGLE_SHEET_ID is missing"
-  );
-}
 
 export async function getRows(
   sheetName
@@ -120,30 +165,24 @@ export async function appendRow(
   values
 ) {
 
-  await sheets
+  await sheets.spreadsheets.values.append({
 
-    .spreadsheets
+    spreadsheetId,
 
-    .values
+    range:
+      sheetName,
 
-    .append({
+    valueInputOption:
+      "USER_ENTERED",
 
-      spreadsheetId,
+    requestBody: {
 
-      range:
-        sheetName,
+      values:
+        [values]
 
-      valueInputOption:
-        "USER_ENTERED",
+    }
 
-      requestBody: {
-
-        values:
-          [values]
-
-      }
-
-    });
+  });
 }
 
 export async function updateRange(
@@ -151,28 +190,22 @@ export async function updateRange(
   values
 ) {
 
-  await sheets
+  await sheets.spreadsheets.values.update({
 
-    .spreadsheets
+    spreadsheetId,
 
-    .values
+    range,
 
-    .update({
+    valueInputOption:
+      "USER_ENTERED",
 
-      spreadsheetId,
+    requestBody: {
 
-      range,
+      values
 
-      valueInputOption:
-        "USER_ENTERED",
+    }
 
-      requestBody: {
-
-        values
-
-      }
-
-    });
+  });
 }
 
 export async function getRawRows(
