@@ -11,16 +11,16 @@ export default async function handler(
     )
   );
 
+  const chatId =
+    req.body?.message?.chat?.id;
+
+  console.log(
+    "CHAT ID:",
+    chatId
+  );
+
   return res.status(200).json({
     ok: true
   });
-
-  const chatId =
-  req.body?.message?.chat?.id;
-
-await sendMessage(
-  chatId,
-  "Bot hidup 🚀"
-);
 
 }
