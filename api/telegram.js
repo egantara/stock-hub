@@ -29,11 +29,25 @@ export default async function handler(
         document.file_id
       );
 
-    await sendMessage(
-      chatId,
-      `Downloaded:\n${localPath}`
-    );
+    import {
+  processUploadedFile
+}
+from "../services/process-uploaded-file.js";
   }
+
+  const result =
+  await processUploadedFile(
+    localPath
+  );
+
+  await sendMessage(
+  chatId,
+  JSON.stringify(
+    result,
+    null,
+    2
+  )
+);
 
   return res.status(200).json({
     ok: true
