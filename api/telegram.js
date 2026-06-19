@@ -82,13 +82,15 @@ export default async function handler(
   });
 
       await sendMessage(
-        chatId,
-        JSON.stringify(
-          result,
-          null,
-          2
-        )
-      );
+  chatId,
+`📄 Marketplace: ${result.marketplace}
+
+✅ Processed : ${result.processed}
+⏭️ Duplicate : ${result.duplicateOrders}
+📦 Total Qty : ${result.totalQty}
+🆕 New SKU : ${result.newProducts}
+❌ Error : ${result.errors.length}`
+);
     }
 
     //
