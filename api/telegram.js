@@ -3,6 +3,11 @@ import {
 }
 from "../services/telegram.js";
 
+import {
+  downloadTelegramFile
+}
+from "../services/download-telegram-file.js";
+
 export default async function handler(
   req,
   res
@@ -11,24 +16,26 @@ export default async function handler(
   const chatId =
     req.body?.message?.chat?.id;
 
-  if (chatId) {
+  const document =
+    req.body?.message?.document;
+
+  if (
+    chatId &&
+    document
+  ) {
+
+    const localPath =
+      await downloadTelegramFile(
+        document.file_id
+      );
 
     await sendMessage(
       chatId,
-      "Bot hidup 🚀"
+      `Downloaded:\n${localPath}`
     );
-
-
-     const document =
-  req.body?.message?.document;
-
-console.log(document);
   }
 
   return res.status(200).json({
     ok: true
   });
-
- 
-
 }
