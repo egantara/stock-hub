@@ -19,16 +19,24 @@ import {
 from "./process-minus.js";
 
 export async function processUploadedFile({
-
   filePath,
   user = "SYSTEM"
-
 }) {
+
+  console.log(
+    "PROCESS FILE:",
+    filePath
+  );
 
   const marketplace =
     await detectMarketplace(
       filePath
     );
+
+  console.log(
+    "MARKETPLACE:",
+    marketplace
+  );
 
   if (!marketplace) {
 
@@ -48,6 +56,11 @@ export async function processUploadedFile({
       await parseShopeeOrder(
         filePath
       );
+
+    console.log(
+      "SHOPEE ORDERS:",
+      orders.length
+    );
   }
 
   if (
@@ -59,7 +72,16 @@ export async function processUploadedFile({
       await parseTiktokOrder(
         filePath
       );
+
+    console.log(
+      "TIKTOK ORDERS:",
+      orders.length
+    );
   }
+
+  console.log(
+    "START MINUS"
+  );
 
   const result =
     await processMinus({
@@ -71,6 +93,10 @@ export async function processUploadedFile({
       user
 
     });
+
+  console.log(
+    "FINISH MINUS"
+  );
 
   return {
 
