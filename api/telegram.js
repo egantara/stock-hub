@@ -15,4 +15,12 @@ export default async function handler(
     ok: true
   });
 
+  const chatId =
+  req.body?.message?.chat?.id;
+
+await sendMessage(
+  chatId,
+  "Bot hidup 🚀"
+);
+
 }
