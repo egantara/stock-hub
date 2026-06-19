@@ -1,75 +1,94 @@
-import {
-  getRows,
-  appendRow
-} from "./google-sheet.js";
+export function buildProcessedSet(
+  rows
+) {
 
-export async function isProcessed({
+  const processedSet =
+    new Set();
+
+  for (
+    const row
+    of rows
+  ) {
+
+    const orderId =
+      String(
+        row.ORDER_ID || ""
+      ).trim();
+
+    const sku =
+      String(
+        row.SKU || ""
+      ).trim();
+
+    if (
+      !orderId ||
+      !sku
+    ) {
+      continue;
+    }
+
+    processedSet.add(
+      `${orderId}|${sku}`
+    );
+  }
+
+  return processedSet;
+}
+
+export function isProcessed({
+
+  processedSet,
+
   orderId,
+
   sku
+
 }) {
 
-  const rows =
-    await getRows(
-      "PROCESSED_ORDERS"
-    );
+  return processedSet.has(
 
-  return rows.some(
-    item =>
+    `${orderId}|${sku}`
 
-      String(
-        item.ORDER_ID || ""
-      ).trim()
-
-      ===
-
-      String(
-        orderId
-      ).trim()
-
-      &&
-
-      String(
-        item.SKU || ""
-      ).trim()
-
-      ===
-
-      String(
-        sku
-      ).trim()
   );
 }
 
-export async function addProcessedOrder({
+export function addProcessedToSet({
+
+  processedSet,
 
   orderId,
+
+  sku
+
+}) {
+
+  processedSet.add(
+
+    `${orderId}|${sku}`
+
+  );
+}
+
+export function createProcessedRow({
+
+  orderId,
+
   sku,
+
   marketplace
 
 }) {
 
-  const exists =
-    await isProcessed({
+  return [
 
-      orderId,
-      sku
+    orderId,
 
-    });
+    sku,
 
-  if (exists) {
-    return false;
-  }
+    marketplace,
 
-  await appendRow(
-    "PROCESSED_ORDERS",
-    [
-      orderId,
-      sku,
-      marketplace,
-      new Date()
-        .toISOString()
-    ]
-  );
+    new Date()
+      .toISOString()
 
-  return true;
+  ];
 }

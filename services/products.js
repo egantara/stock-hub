@@ -1,33 +1,24 @@
-import {
-  getRows
-}
-from "./google-sheet.js";
+export function findProduct({
 
-export async function getProducts() {
+  store,
 
-  return await getRows(
-    "PRODUCTS"
-  );
-}
-
-export async function findProduct(
   sku
-) {
 
-  const products =
-    await getProducts();
+}) {
 
-  return products.find(
-    item =>
+  return (
 
-      String(
-        item.SKU || ""
-      ).trim()
-
-      ===
+    store.productMap.get(
 
       String(
         sku
       ).trim()
+
+    )
+
+    ||
+
+    null
+
   );
 }

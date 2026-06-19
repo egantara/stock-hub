@@ -1,13 +1,7 @@
 import {
-  minusStock
+  loadStore
 }
-from "./stock.js";
-
-import {
-  isProcessed,
-  addProcessedOrder
-}
-from "./processed-orders.js";
+from "./store.js";
 
 import {
   findProduct
@@ -15,15 +9,56 @@ import {
 from "./products.js";
 
 import {
-  addNewProduct
+  minusStock,
+  createStockUpdates
+}
+from "./stock.js";
+
+import {
+  isProcessed,
+  addProcessedToSet,
+  createProcessedRow
+}
+from "./processed-orders.js";
+
+import {
+  buildNewProductSet,
+  isNewProduct,
+  addNewProductToSet,
+  createNewProductRow
 }
 from "./new-products.js";
+
+import {
+  createLogRow
+}
+from "./logs.js";
+
+import {
+  appendRows,
+  batchUpdate,
+  getRows
+}
+from "./google-sheet.js";
 
 export async function processMinus({
   orders,
   marketplace,
   user = "SYSTEM"
 }) {
+
+  const store =
+    await loadStore();
+
+  const newProductRows =
+    await getRows(
+      "NEW_PRODUCTS"
+    );
+
+  const newProductSet =
+    buildNewProductSet(
+      newProductRows
+    );
 
   let processed = 0;
 
@@ -35,6 +70,12 @@ export async function processMinus({
 
   const errors = [];
 
+  const processedRowsToInsert = [];
+
+  const newProductsRowsToInsert = [];
+
+  const logRowsToInsert = [];
+
   for (
     const order
     of orders
@@ -43,7 +84,10 @@ export async function processMinus({
     try {
 
       const exists =
-        await isProcessed({
+        isProcessed({
+
+          processedSet:
+            store.processedSet,
 
           orderId:
             order.orderId,
@@ -61,60 +105,138 @@ export async function processMinus({
       }
 
       const product =
-        await findProduct(
-          order.sku
-        );
+        findProduct({
+
+          store,
+
+          sku:
+            order.sku
+
+        });
 
       if (!product) {
 
-        const inserted =
-          await addNewProduct({
+        const alreadyExists =
+          isNewProduct({
+
+            skuSet:
+              newProductSet,
 
             sku:
-              order.sku,
-
-            productName:
-              order.productName,
-
-            variant:
-              order.variant,
-
-            marketplace
+              order.sku
 
           });
 
-        if (inserted) {
+        if (
+          !alreadyExists
+        ) {
+
+          addNewProductToSet({
+
+            skuSet:
+              newProductSet,
+
+            sku:
+              order.sku
+
+          });
+
+          newProductsRowsToInsert.push(
+
+            createNewProductRow({
+
+              sku:
+                order.sku,
+
+              productName:
+                order.productName,
+
+              variant:
+                order.variant,
+
+              marketplace
+
+            })
+
+          );
+
           newProducts++;
         }
 
         continue;
       }
 
-      await minusStock({
+      const {
+
+        stockAwal,
+
+        stockAkhir
+
+      } = minusStock({
+
+        store,
 
         sku:
           order.sku,
 
         qty:
-          order.qty,
-
-        marketplace,
-
-        user
+          order.qty
 
       });
 
-      await addProcessedOrder({
+      addProcessedToSet({
+
+        processedSet:
+          store.processedSet,
 
         orderId:
           order.orderId,
 
         sku:
-          order.sku,
-
-        marketplace
+          order.sku
 
       });
+
+      processedRowsToInsert.push(
+
+        createProcessedRow({
+
+          orderId:
+            order.orderId,
+
+          sku:
+            order.sku,
+
+          marketplace
+
+        })
+
+      );
+
+      logRowsToInsert.push(
+
+        createLogRow({
+
+          command:
+            "MINUS",
+
+          marketplace,
+
+          sku:
+            order.sku,
+
+          qty:
+            order.qty,
+
+          stockAwal,
+
+          stockAkhir,
+
+          user
+
+        })
+
+      );
 
       processed++;
 
@@ -137,6 +259,34 @@ export async function processMinus({
       });
     }
   }
+
+  const stockUpdates =
+    createStockUpdates(
+      store
+    );
+
+  await Promise.all([
+
+    batchUpdate(
+      stockUpdates
+    ),
+
+    appendRows(
+      "PROCESSED_ORDERS",
+      processedRowsToInsert
+    ),
+
+    appendRows(
+      "NEW_PRODUCTS",
+      newProductsRowsToInsert
+    ),
+
+    appendRows(
+      "LOG",
+      logRowsToInsert
+    )
+
+  ]);
 
   return {
 

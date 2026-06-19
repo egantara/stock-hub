@@ -1,22 +1,36 @@
-import {
-  getRows,
-  updateRange
-} from "./google-sheet.js";
+export function getStockBySku({
 
-import {
-  addLog
-} from "./logs.js";
+  store,
 
-export async function setStock({
+  sku
+
+}) {
+
+  return (
+    store.stockMap.get(
+      String(sku).trim()
+    ) || null
+  );
+}
+
+export function setStock({
+
+  store,
+
   sku,
-  qty,
-  user = "SYSTEM"
+
+  qty
+
 }) {
 
   const row =
-    await getStockBySku(
+    getStockBySku({
+
+      store,
+
       sku
-    );
+
+    });
 
   if (!row) {
 
@@ -25,57 +39,33 @@ export async function setStock({
     );
   }
 
-  const stockAwal =
-    Number(
-      row.STOCK || 0
-    );
+  row.STOCK =
+    Number(qty);
 
-  await updateRange(
-    `STOCK!B${row.__rowNumber}`,
-    [[qty]]
-  );
-
-  await updateRange(
-    `STOCK!C${row.__rowNumber}`,
-    [[
-      new Date()
-        .toISOString()
-    ]]
-  );
-
-  await addLog({
-
-    command:
-      "SET",
-
-    marketplace:
-      "MANUAL",
-
-    sku,
-
-    qty,
-
-    stockAwal,
-
-    stockAkhir:
-      qty,
-
-    user
-  });
+  row.__dirty =
+    true;
 
   return qty;
 }
 
-export async function plusStock({
+export function plusStock({
+
+  store,
+
   sku,
-  qty,
-  user = "SYSTEM"
+
+  qty
+
 }) {
 
   const row =
-    await getStockBySku(
+    getStockBySku({
+
+      store,
+
       sku
-    );
+
+    });
 
   if (!row) {
 
@@ -92,28 +82,33 @@ export async function plusStock({
   const stockAkhir =
     stockAwal + qty;
 
-  await setStock({
-    sku,
-    qty:
-      stockAkhir,
-    user
-  });
+  row.STOCK =
+    stockAkhir;
+
+  row.__dirty =
+    true;
 
   return stockAkhir;
 }
 
-export async function minusStock({
+export function minusStock({
+
+  store,
+
   sku,
-  qty,
-  user = "SYSTEM",
-  marketplace =
-    "MANUAL"
+
+  qty
+
 }) {
 
   const row =
-    await getStockBySku(
+    getStockBySku({
+
+      store,
+
       sku
-    );
+
+    });
 
   if (!row) {
 
@@ -130,61 +125,61 @@ export async function minusStock({
   const stockAkhir =
     stockAwal - qty;
 
-  await updateRange(
-    `STOCK!B${row.__rowNumber}`,
-    [[stockAkhir]]
-  );
+  row.STOCK =
+    stockAkhir;
 
-  await updateRange(
-    `STOCK!C${row.__rowNumber}`,
-    [[
-      new Date()
-        .toISOString()
-    ]]
-  );
+  row.__dirty =
+    true;
 
-  await addLog({
-
-    command:
-      "MINUS",
-
-    marketplace,
-
-    sku,
-
-    qty,
+  return {
 
     stockAwal,
 
-    stockAkhir,
+    stockAkhir
 
-    user
-  });
-
-  return stockAkhir;
+  };
 }
 
-export async function getStocks() {
-  return await getRows(
-    "STOCK"
-  );
-}
-
-export async function getStockBySku(
-  sku
+export function createStockUpdates(
+  store
 ) {
 
-  const stocks =
-    await getStocks();
+  const updates = [];
 
-  return stocks.find(
-    item =>
-      String(
-        item.SKU || ""
-      ).trim()
-      ===
-      String(
-        sku
-      ).trim()
-  );
+  for (
+    const row
+    of store.stockRows
+  ) {
+
+    if (
+      !row.__dirty
+    ) {
+      continue;
+    }
+
+    updates.push({
+
+      range:
+        `STOCK!B${row.__rowNumber}`,
+
+      values:
+        [[row.STOCK]]
+
+    });
+
+    updates.push({
+
+      range:
+        `STOCK!C${row.__rowNumber}`,
+
+      values:
+        [[
+          new Date()
+            .toISOString()
+        ]]
+
+    });
+  }
+
+  return updates;
 }

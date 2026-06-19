@@ -1,67 +1,90 @@
-import {
-  getRows,
-  appendRow
-} from "./google-sheet.js";
-
-export async function isNewProduct(
-  sku
+export function buildNewProductSet(
+  rows
 ) {
 
-  const rows =
-    await getRows(
-      "NEW_PRODUCTS"
+  const skuSet =
+    new Set();
+
+  for (
+    const row
+    of rows
+  ) {
+
+    const sku =
+      String(
+        row.SKU || ""
+      ).trim();
+
+    if (!sku) {
+      continue;
+    }
+
+    skuSet.add(
+      sku
     );
+  }
 
-  return rows.some(
-    item =>
+  return skuSet;
+}
 
-      String(
-        item.SKU || ""
-      ).trim()
+export function isNewProduct({
 
-      ===
+  skuSet,
 
-      String(
-        sku
-      ).trim()
+  sku
+
+}) {
+
+  return skuSet.has(
+
+    String(
+      sku
+    ).trim()
+
   );
 }
 
-export async function addNewProduct({
+export function addNewProductToSet({
+
+  skuSet,
+
+  sku
+
+}) {
+
+  skuSet.add(
+
+    String(
+      sku
+    ).trim()
+
+  );
+}
+
+export function createNewProductRow({
 
   sku,
+
   productName,
+
   variant,
+
   marketplace
 
 }) {
 
-  const exists =
-    await isNewProduct(
-      sku
-    );
+  return [
 
-  if (exists) {
-    return false;
-  }
+    new Date()
+      .toISOString(),
 
-  await appendRow(
-    "NEW_PRODUCTS",
-    [
+    sku,
 
-      new Date()
-        .toISOString(),
+    productName,
 
-      sku,
+    variant,
 
-      productName,
+    marketplace
 
-      variant,
-
-      marketplace
-
-    ]
-  );
-
-  return true;
+  ];
 }

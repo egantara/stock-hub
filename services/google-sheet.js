@@ -75,15 +75,11 @@ if (
 }
 
 const spreadsheetId =
+
   process.env
-    .GOOGLE_SHEET_ID;
+    .GOOGLE_SHEET_ID ||
 
-if (!spreadsheetId) {
-
-  throw new Error(
-    "GOOGLE_SHEET_ID is missing"
-  );
-}
+  "1a0nB5BGO5uJv6tn9Vd_UNg8K-PEo5dMX1dtc0ty0tAM";
 
 const auth =
   new google.auth.GoogleAuth({
@@ -105,24 +101,13 @@ const sheets =
 
   });
 
-export async function getRows(
-  sheetName
+function parseRows(
+  rows
 ) {
 
-  const result =
-    await sheets.spreadsheets.values.get({
-
-      spreadsheetId,
-
-      range:
-        `${sheetName}!A:ZZ`
-
-    });
-
-  const rows =
-    result.data.values || [];
-
-  if (!rows.length) {
+  if (
+    !rows?.length
+  ) {
     return [];
   }
 
@@ -153,11 +138,83 @@ export async function getRows(
             row[colIndex] || "";
 
         }
+
       );
 
       return obj;
 
     });
+}
+
+export async function getRows(
+  sheetName
+) {
+
+  const result =
+    await sheets.spreadsheets.values.get({
+
+      spreadsheetId,
+
+      range:
+        `${sheetName}!A:ZZ`
+
+    });
+
+  return parseRows(
+    result.data.values || []
+  );
+}
+
+export async function getMultipleSheets(
+  ranges
+) {
+
+  const result =
+
+    await sheets
+      .spreadsheets
+      .values
+      .batchGet({
+
+        spreadsheetId,
+
+        ranges
+
+      });
+
+  return (
+
+    result.data
+      .valueRanges || []
+
+  ).map(
+
+    item =>
+
+      parseRows(
+        item.values || []
+      )
+
+  );
+}
+
+export async function getRawRows(
+  sheetName
+) {
+
+  const result =
+    await sheets.spreadsheets.values.get({
+
+      spreadsheetId,
+
+      range:
+        `${sheetName}!A:ZZ`
+
+    });
+
+  return (
+    result.data.values || []
+  );
 }
 
 export async function appendRow(
@@ -179,6 +236,37 @@ export async function appendRow(
 
       values:
         [values]
+
+    }
+
+  });
+}
+
+export async function appendRows(
+  sheetName,
+  rows
+) {
+
+  if (
+    !rows.length
+  ) {
+    return;
+  }
+
+  await sheets.spreadsheets.values.append({
+
+    spreadsheetId,
+
+    range:
+      sheetName,
+
+    valueInputOption:
+      "USER_ENTERED",
+
+    requestBody: {
+
+      values:
+        rows
 
     }
 
@@ -208,21 +296,29 @@ export async function updateRange(
   });
 }
 
-export async function getRawRows(
-  sheetName
+export async function batchUpdate(
+  updates
 ) {
 
-  const result =
-    await sheets.spreadsheets.values.get({
+  if (
+    !updates.length
+  ) {
+    return;
+  }
 
-      spreadsheetId,
+  await sheets.spreadsheets.values.batchUpdate({
 
-      range:
-        `${sheetName}!A:ZZ`
+    spreadsheetId,
 
-    });
+    requestBody: {
 
-  return (
-    result.data.values || []
-  );
+      valueInputOption:
+        "USER_ENTERED",
+
+      data:
+        updates
+
+    }
+
+  });
 }
