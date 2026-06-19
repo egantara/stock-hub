@@ -18,15 +18,17 @@ export default async function handler(
       "Bot hidup 🚀"
     );
 
+
+     const document =
+  req.body?.message?.document;
+
+console.log(document);
   }
 
   return res.status(200).json({
     ok: true
   });
 
-  const document =
-  req.body?.message?.document;
-
-console.log(document);
+ 
 
 }
