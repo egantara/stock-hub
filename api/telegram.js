@@ -24,4 +24,9 @@ export default async function handler(
     ok: true
   });
 
+  const document =
+  req.body?.message?.document;
+
+console.log(document);
+
 }
