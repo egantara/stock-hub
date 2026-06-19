@@ -4,10 +4,6 @@ export default async function handler(
 ) {
 
   console.log(
-    "TELEGRAM UPDATE"
-  );
-
-  console.log(
     JSON.stringify(
       req.body,
       null,
