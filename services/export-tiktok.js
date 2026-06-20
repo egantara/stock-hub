@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import ExcelJS from "exceljs";
+import XLSX from "xlsx";
 
 import {
   nowWib
@@ -48,18 +48,15 @@ export async function exportTikTok() {
   }
 
   const workbook =
-    new ExcelJS.Workbook();
-
-  await workbook.xlsx.readFile(
-    templatePath
-  );
+    XLSX.readFile(
+      templatePath
+    );
 
   const sheet =
-    workbook.worksheets[0];
+    workbook.Sheets[
+      workbook.SheetNames[0]
+    ];
 
-  //
-  // Data mulai row 6
-  //
   let rowNumber = 6;
 
   for (
@@ -75,57 +72,63 @@ export async function exportTikTok() {
         product.SKU
       );
 
-    //
-    // A
-    // Product ID
-    //
-    sheet.getCell(
+    sheet[
       `A${rowNumber}`
-    ).value =
-      String(
+    ] = {
+
+      t: "s",
+
+      v: String(
         product.TIKTOK_PRODUCT_ID || ""
-      );
+      )
 
-    //
-    // D
-    // SKU ID
-    //
-    sheet.getCell(
+    };
+
+    sheet[
       `D${rowNumber}`
-    ).value =
-      String(
+    ] = {
+
+      t: "s",
+
+      v: String(
         product.TIKTOK_VARIATION_ID || ""
-      );
+      )
 
-    //
-    // F
-    // Retail Price
-    //
-    sheet.getCell(
+    };
+
+    sheet[
       `F${rowNumber}`
-    ).value =
-      Number(
+    ] = {
+
+      t: "n",
+
+      v: Number(
         product.HARGA_TIKTOK || 0
-      );
+      )
 
-    //
-    // G
-    // Quantity
-    //
-    sheet.getCell(
+    };
+
+    sheet[
       `G${rowNumber}`
-    ).value =
-      Number(
-        stock?.STOCK || 0
-      );
+    ] = {
 
-    //
-    // I
-    // Minimum sales quantity
-    //
-    sheet.getCell(
+      t: "n",
+
+      v: Number(
+        stock?.STOCK || 0
+      )
+
+    };
+
+    sheet[
       `I${rowNumber}`
-    ).value = 1;
+    ] = {
+
+      t: "n",
+
+      v: 1
+
+    };
 
     rowNumber++;
   }
@@ -144,18 +147,55 @@ export async function exportTikTok() {
         "_"
       );
 
+  const outputDir =
+
+    process.env.VERCEL
+
+      ? "/tmp"
+
+      : path.join(
+          process.cwd(),
+          "exports"
+        );
+
+  if (
+
+    !process.env.VERCEL &&
+
+    !fs.existsSync(
+      outputDir
+    )
+
+  ) {
+
+    fs.mkdirSync(
+
+      outputDir,
+
+      {
+        recursive:
+          true
+      }
+
+    );
+  }
+
   const outputFile =
 
     path.join(
 
-      "/tmp",
+      outputDir,
 
       `tiktok-${timestamp}.xlsx`
 
     );
 
-  await workbook.xlsx.writeFile(
+  XLSX.writeFile(
+
+    workbook,
+
     outputFile
+
   );
 
   return outputFile;

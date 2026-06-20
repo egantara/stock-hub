@@ -4,6 +4,11 @@ import {
 from "../services/telegram.js";
 
 import {
+  exportTikTok
+}
+from "../services/export-tiktok.js";
+
+import {
   exportShopee
 }
 from "../services/export-shopee.js";
@@ -106,7 +111,9 @@ Commands:
 /restock
 /set
 /stock
-/exportshopee`
+/exportshopee
+/exporttiktok
+/exportall`
       );
     }
 
@@ -357,6 +364,99 @@ else if (
       "📦 Export Shopee"
 
   });
+}
+
+//
+// EXPORT TIKTOK
+//
+else if (
+
+  text ===
+    "/exporttiktok"
+
+) {
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Membuat file TikTok..."
+
+  );
+
+  const filePath =
+
+    await exportTikTok();
+
+  await sendDocument({
+
+    chatId,
+
+    filePath,
+
+    caption:
+      "📦 Export TikTok"
+
+  });
+}
+
+//
+// EXPORT ALL
+//
+else if (
+
+  text ===
+    "/exportall"
+
+) {
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Membuat file marketplace..."
+
+  );
+
+  const shopeeFile =
+
+    await exportShopee();
+
+  await sendDocument({
+
+    chatId,
+
+    filePath:
+      shopeeFile,
+
+    caption:
+      "📦 Export Shopee"
+
+  });
+
+  const tiktokFile =
+
+    await exportTikTok();
+
+  await sendDocument({
+
+    chatId,
+
+    filePath:
+      tiktokFile,
+
+    caption:
+      "📦 Export TikTok"
+
+  });
+
+  await sendMessage(
+
+    chatId,
+
+    "✅ Export selesai"
+
+  );
 }
 
 
