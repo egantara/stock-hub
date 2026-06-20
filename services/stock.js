@@ -1,3 +1,8 @@
+import {
+  nowWib
+}
+from "./datetime.js";
+
 export function getStockBySku({
 
   store,
@@ -174,8 +179,7 @@ export function createStockUpdates(
 
       values:
         [[
-          new Date()
-            .toISOString()
+          nowWib()
         ]]
 
     });

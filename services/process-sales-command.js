@@ -30,6 +30,11 @@ import {
 }
 from "./processed-orders.js";
 
+import {
+  createManualOrderId
+}
+from "./datetime.js";
+
 export async function processSalesCommand({
 
   text,
@@ -120,7 +125,9 @@ export async function processSalesCommand({
         createProcessedOrderRow({
 
           orderId:
-            `MANUAL-${Date.now()}-${processed}`,
+            createManualOrderId(
+              processed
+            ),
 
           sku:
             item.sku,

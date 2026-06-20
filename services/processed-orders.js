@@ -1,3 +1,8 @@
+import {
+  nowWib
+}
+from "./datetime.js";
+
 export function buildProcessedSet(
   rows
 ) {
@@ -87,8 +92,7 @@ export function createProcessedRow({
 
     marketplace,
 
-    new Date()
-      .toISOString()
+    nowWib()
 
   ];
 }

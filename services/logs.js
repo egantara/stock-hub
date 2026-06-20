@@ -3,6 +3,11 @@ import {
 }
 from "./google-sheet.js";
 
+import {
+  nowWib
+}
+from "./datetime.js";
+
 export function createLogRow({
 
   command,
@@ -21,25 +26,9 @@ export function createLogRow({
 
 }) {
 
-  const waktu =
-
-    new Date()
-
-      .toISOString()
-
-      .replace(
-        "T",
-        " "
-      )
-
-      .slice(
-        0,
-        19
-      );
-
   return [
 
-    waktu,
+    nowWib(),
 
     command,
 
