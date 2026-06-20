@@ -17,11 +17,46 @@ export async function exportShopee() {
   const store =
     await loadStore();
 
+  console.log(
+    "CWD:",
+    process.cwd()
+  );
+
+  const templatePath =
+    path.join(
+      process.cwd(),
+      "templates",
+      "template-shopee.xlsx"
+    );
+
+  console.log(
+    "TEMPLATE:",
+    templatePath
+  );
+
+  console.log(
+    "EXISTS:",
+    fs.existsSync(
+      templatePath
+    )
+  );
+
+  if (
+    !fs.existsSync(
+      templatePath
+    )
+  ) {
+
+    throw new Error(
+      `Template tidak ditemukan: ${templatePath}`
+    );
+  }
+
   const workbook =
     new ExcelJS.Workbook();
 
   await workbook.xlsx.readFile(
-    "./templates/template-shopee.xlsx"
+    templatePath
   );
 
   const sheet =
@@ -78,7 +113,10 @@ export async function exportShopee() {
   }
 
   const exportDir =
-    "./exports";
+    path.join(
+      process.cwd(),
+      "exports"
+    );
 
   if (
     !fs.existsSync(
@@ -97,27 +135,27 @@ export async function exportShopee() {
 
   const timestamp =
 
-  nowWib()
+    nowWib()
 
-    .replace(
-      /:/g,
-      "-"
-    )
+      .replace(
+        /:/g,
+        "-"
+      )
 
-    .replace(
-      / /g,
-      "_"
+      .replace(
+        / /g,
+        "_"
+      );
+
+  const outputFile =
+
+    path.join(
+
+      exportDir,
+
+      `shopee-${timestamp}.xlsx`
+
     );
-
-const outputFile =
-
-  path.join(
-
-    exportDir,
-
-    `shopee-${timestamp}.xlsx`
-
-  );
 
   await workbook.xlsx.writeFile(
     outputFile
