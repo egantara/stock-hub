@@ -1,7 +1,18 @@
 import {
-  setStock
+  loadStore
+}
+from "./store.js";
+
+import {
+  setStock,
+  createStockUpdates
 }
 from "./stock.js";
+
+import {
+  batchUpdate
+}
+from "./google-sheet.js";
 
 import {
   parseCommandItems
@@ -15,6 +26,9 @@ export async function processSetCommand({
   user = "TELEGRAM"
 
 }) {
+
+  const store =
+    await loadStore();
 
   const items =
     parseCommandItems({
@@ -37,15 +51,15 @@ export async function processSetCommand({
 
     try {
 
-      await setStock({
+      setStock({
+
+        store,
 
         sku:
           item.sku,
 
         qty:
-          item.qty,
-
-        user
+          item.qty
 
       });
 
@@ -64,6 +78,15 @@ export async function processSetCommand({
       });
     }
   }
+
+  const updates =
+    createStockUpdates(
+      store
+    );
+
+  await batchUpdate(
+    updates
+  );
 
   return {
 

@@ -1,4 +1,9 @@
 import {
+  loadStore
+}
+from "./store.js";
+
+import {
   getStockBySku
 }
 from "./stock.js";
@@ -9,25 +14,21 @@ export async function processStockCommand({
 
 }) {
 
+  const store =
+    await loadStore();
+
   const lines =
 
     text
-
       .split("\n")
-
       .map(
         line =>
           line.trim()
       )
-
       .filter(Boolean);
 
   const skus = [];
 
-  //
-  // single
-  // /stock sku-a
-  //
   if (
     lines.length === 1
   ) {
@@ -35,12 +36,10 @@ export async function processStockCommand({
     const sku =
 
       lines[0]
-
         .replace(
           "/stock",
           ""
         )
-
         .trim();
 
     if (!sku) {
@@ -53,15 +52,8 @@ export async function processStockCommand({
     skus.push(
       sku
     );
-  }
 
-  //
-  // multi
-  // /stock
-  // sku-a
-  // sku-b
-  //
-  else {
+  } else {
 
     for (
       let i = 1;
@@ -69,15 +61,12 @@ export async function processStockCommand({
       i++
     ) {
 
-      const sku =
-        lines[i];
-
       if (
-        sku
+        lines[i]
       ) {
 
         skus.push(
-          sku
+          lines[i]
         );
       }
     }
@@ -90,21 +79,25 @@ export async function processStockCommand({
     of skus
   ) {
 
-    const stock =
-      await getStockBySku(
+    const row =
+      getStockBySku({
+
+        store,
+
         sku
-      );
+
+      });
 
     results.push({
 
       sku,
 
       found:
-        !!stock,
+        !!row,
 
       stock:
         Number(
-          stock?.STOCK || 0
+          row?.STOCK || 0
         )
 
     });
