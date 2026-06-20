@@ -8,8 +8,6 @@ export async function parseTiktokProduct(
     XLSX.readFile(
       filePath
     );
-    
-
 
   console.log(
     "SHEETS:",
@@ -28,36 +26,57 @@ export async function parseTiktokProduct(
     );
   }
 
-      console.log(
-  "TEMPLATE KEYS:",
-  Object.keys(sheet)
-    .slice(0, 100)
-);
-
-console.log(
-  "LAST KEYS:",
-  Object.keys(sheet)
-    .slice(-100)
-);
-
   console.log(
     "RANGE:",
     sheet["!ref"]
   );
 
-  const range =
-    XLSX.utils.decode_range(
-      sheet["!ref"]
+  const lastRow =
+    Math.max(
+
+      ...Object.keys(
+        sheet
+      )
+
+        .filter(
+
+          key =>
+
+            /^[A-Z]+\d+$/.test(
+              key
+            )
+
+        )
+
+        .map(
+
+          key =>
+
+            Number(
+
+              key.match(
+                /\d+/
+              )[0]
+
+            )
+
+        )
+
     );
+
+  console.log(
+    "LAST ROW:",
+    lastRow
+  );
 
   const products = [];
 
   //
-  // Data mulai row 6
+  // Data TikTok mulai row 6
   //
   for (
     let row = 6;
-    row <= range.e.r + 1;
+    row <= lastRow;
     row++
   ) {
 
@@ -106,9 +125,6 @@ console.log(
       continue;
     }
 
-    //
-    // Debug 3 row pertama
-    //
     if (
       products.length < 3
     ) {
