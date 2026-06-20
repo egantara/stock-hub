@@ -1,34 +1,22 @@
 import {
   parseShopeeOrder
-} from "./parsers/shopee-order.js";
+}
+from "./parsers/shopee-order.js";
 
 import {
   processMinus
-} from "./services/process-minus.js";
+}
+from "./services/process-minus.js";
 
 const orders =
   await parseShopeeOrder(
     "./sample/export-pesanan-shopee.xlsx"
   );
 
-orders.push({
+console.time(
+  "processMinus"
+);
 
-  orderId:
-    "TEST-NEW-001",
-
-  sku:
-    "mug-baru-999ml-natural",
-
-  qty:
-    1,
-
-  productName:
-    "Mug Baru Test",
-
-  variant:
-    "Natural"
-
-});
 
 const result =
   await processMinus({
@@ -39,8 +27,14 @@ const result =
       "SHOPEE",
 
     user:
-      "EGA"
+      "TEST"
 
   });
 
-console.log(result);
+console.timeEnd(
+  "processMinus"
+);
+
+console.log(
+  result
+);
