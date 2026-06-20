@@ -4,6 +4,16 @@ import {
 from "../services/telegram.js";
 
 import {
+  exportShopee
+}
+from "../services/export-shopee.js";
+
+import {
+  sendDocument
+}
+from "../services/send-document.js";
+
+import {
   downloadTelegramFile
 }
 from "../services/download-telegram-file.js";
@@ -95,7 +105,8 @@ Commands:
 /sales
 /restock
 /set
-/stock`
+/stock
+/exportshopee`
       );
     }
 
@@ -314,6 +325,40 @@ Last Update : ${item.lastUpdate || "-"} WIB
 
   );
 }
+//
+// EXPORT SHOPEE
+//
+else if (
+
+  text ===
+    "/exportshopee"
+
+) {
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Membuat file Shopee..."
+
+  );
+
+  const filePath =
+
+    await exportShopee();
+
+  await sendDocument({
+
+    chatId,
+
+    filePath,
+
+    caption:
+      "📦 Export Shopee"
+
+  });
+}
+
 
     //
     // FILE TANPA COMMAND
