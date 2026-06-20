@@ -31,7 +31,7 @@ export async function parseTiktokProduct(
 
     const sku =
       String(
-        row["Seller SKU"] || ""
+        row.seller_sku || ""
       ).trim();
 
     if (!sku) {
@@ -44,34 +44,32 @@ export async function parseTiktokProduct(
 
       nama:
         String(
-          row["Product name"] || ""
+          row.product_name || ""
         ).trim(),
 
       variasi:
         String(
-          row["Variation Option"] || ""
+          row.variation_value || ""
         ).trim(),
 
       stock:
         Number(
-          row["Quantity"] || 0
+          row.quantity || 0
         ),
 
       tiktokProductId:
         String(
-          row["Product ID"] || ""
+          row.product_id || ""
         ).trim(),
 
       tiktokVariationId:
         String(
-          row["SKU ID"] || ""
+          row.sku_id || ""
         ).trim(),
 
       hargaTiktok:
         Number(
-          row[
-            "Retail Price (Local Currency)"
-          ] || 0
+          row.price || 0
         )
 
     });

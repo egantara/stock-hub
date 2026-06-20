@@ -81,23 +81,22 @@ export async function detectMarketplace(
     return "SHOPEE";
   }
 
-  //
-  // TIKTOK PRODUCT
-  //
-  if (
+//
+// TIKTOK PRODUCT
+//
+if (
 
-    "Product ID"
-      in firstRow
+  "product_id"
+    in firstRow
 
-    &&
+  &&
 
-    "Seller SKU"
-      in firstRow
+  "seller_sku"
+    in firstRow
 
-  ) {
+) {
 
-    return "TIKTOK";
-  }
-
+  return "TIKTOK";
+}
   return null;
 }
