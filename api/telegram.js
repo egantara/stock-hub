@@ -157,6 +157,32 @@ Commands:
         localPath
       );
 
+      const localPath =
+  await downloadTelegramFile(
+    document.file_id
+  );
+
+const XLSX =
+  (await import("xlsx")).default;
+
+const wb =
+  XLSX.readFile(
+    localPath
+  );
+
+const template =
+  wb.Sheets["Template"];
+
+console.log(
+  "DOWNLOADED SHEETS:",
+  wb.SheetNames
+);
+
+console.log(
+  "DOWNLOADED REF:",
+  template?.["!ref"]
+);
+
       const result =
         await processUploadedFile({
 
