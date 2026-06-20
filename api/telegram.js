@@ -302,9 +302,7 @@ Not Found
     message +=
 `SKU : ${item.sku}
 Stock : ${item.stock}
-
 Last Update : ${item.lastUpdate || "-"} WIB
-
 `;
   }
 
