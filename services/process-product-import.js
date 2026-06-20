@@ -80,37 +80,35 @@ export async function processProductImport({
 
         productRows.push([
 
-          nextNo,
+  nextNo,
 
-          product.nama || "",
+  product.nama || "",
 
-          product.shopeeProductId || "",
+  product.shopeeProductId || "",
 
-          product.tiktokProductId || "",
+  product.tiktokProductId || "",
 
-          product.sku || "",
+  product.sku || "",
 
-          product.variasi || "",
+  product.variasi || "",
 
-          "",
+  "",
 
-          product.hargaShopee || "",
+  product.hargaShopee || "",
 
-          product.hargaTiktok || "",
+  product.hargaTiktok || "",
 
-          product.shopeeVariationId || "",
+  product.shopeeVariationId || "",
 
-          product.tiktokVariationId || "",
+  product.tiktokVariationId || "",
 
-          Number(
-            product.stock || 0
-          ),
+  "",
 
-          now,
+  now,
 
-          now
+  ""
 
-        ]);
+]);
 
         stockRows.push([
 
