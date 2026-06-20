@@ -258,49 +258,64 @@ Commands:
       );
     }
 
-    //
-    // STOCK
-    //
-    else if (
+   //
+// STOCK
+//
+else if (
 
-      text.startsWith(
-        "/stock"
-      )
+  text.startsWith(
+    "/stock"
+  )
 
+) {
+
+  const result =
+
+    await processStockCommand({
+
+      text
+
+    });
+
+  let message =
+
+    "📦 Stock Information\n\n";
+
+  for (
+    const item
+    of result
+  ) {
+
+    if (
+      !item.found
     ) {
 
-      const result =
+      message +=
+`❌ ${item.sku}
+Not Found
 
-        await processStockCommand({
+`;
 
-          text
-
-        });
-
-      const rows =
-
-        result.map(
-
-          item =>
-
-            item.found
-
-              ? `${item.sku} : ${item.stock}`
-
-              : `${item.sku} : NOT FOUND`
-
-        );
-
-      await sendMessage(
-
-        chatId,
-
-`📦 Stock
-
-${rows.join("\n")}`
-
-      );
+      continue;
     }
+
+    message +=
+`SKU : ${item.sku}
+Stock : ${item.stock}
+
+Last Update : ${item.lastUpdate || "-"} WIB
+
+`;
+  }
+
+  await sendMessage(
+
+    chatId,
+
+    message.trim()
+
+  );
+}
 
     //
     // FILE TANPA COMMAND

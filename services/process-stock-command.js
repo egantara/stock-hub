@@ -93,12 +93,15 @@ export async function processStockCommand({
       sku,
 
       found:
-        !!row,
+        !!stock,
 
       stock:
         Number(
-          row?.STOCK || 0
-        )
+          stock?.STOCK || 0
+        ),
+
+         lastUpdate:
+    stock?.LAST_UPDATE || ""
 
     });
   }
