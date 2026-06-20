@@ -112,26 +112,8 @@ export async function exportShopee() {
     rowNumber++;
   }
 
-  const exportDir =
-    path.join(
-      process.cwd(),
-      "exports"
-    );
-
-  if (
-    !fs.existsSync(
-      exportDir
-    )
-  ) {
-
-    fs.mkdirSync(
-      exportDir,
-      {
-        recursive:
-          true
-      }
-    );
-  }
+const exportDir =
+  "/tmp";
 
   const timestamp =
 
