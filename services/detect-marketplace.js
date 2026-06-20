@@ -5,7 +5,9 @@ export async function detectMarketplace(
 ) {
 
   const workbook =
-    XLSX.readFile(filePath);
+    XLSX.readFile(
+      filePath
+    );
 
   const sheet =
     workbook.Sheets[
@@ -20,24 +22,70 @@ export async function detectMarketplace(
       }
     );
 
-  if (!rows.length) {
+  if (
+    !rows.length
+  ) {
     return null;
   }
 
   const firstRow =
     rows[0];
 
+  //
+  // SHOPEE ORDER
+  //
   if (
     "No. Pesanan"
     in firstRow
   ) {
+
     return "SHOPEE";
   }
 
+  //
+  // TIKTOK ORDER
+  //
   if (
     "Order ID"
     in firstRow
   ) {
+
+    return "TIKTOK";
+  }
+
+  //
+  // SHOPEE PRODUCT
+  //
+  if (
+
+    "Kode Produk"
+      in firstRow
+
+    &&
+
+    "SKU"
+      in firstRow
+
+  ) {
+
+    return "SHOPEE";
+  }
+
+  //
+  // TIKTOK PRODUCT
+  //
+  if (
+
+    "Product ID"
+      in firstRow
+
+    &&
+
+    "Seller SKU"
+      in firstRow
+
+  ) {
+
     return "TIKTOK";
   }
 
