@@ -9,17 +9,7 @@ export async function parseTiktokProduct(
       filePath
     );
     
-    console.log(
-  "TEMPLATE KEYS:",
-  Object.keys(sheet)
-    .slice(0, 100)
-);
 
-console.log(
-  "LAST KEYS:",
-  Object.keys(sheet)
-    .slice(-100)
-);
 
   console.log(
     "SHEETS:",
@@ -37,6 +27,18 @@ console.log(
       "Sheet Template tidak ditemukan"
     );
   }
+
+      console.log(
+  "TEMPLATE KEYS:",
+  Object.keys(sheet)
+    .slice(0, 100)
+);
+
+console.log(
+  "LAST KEYS:",
+  Object.keys(sheet)
+    .slice(-100)
+);
 
   console.log(
     "RANGE:",
