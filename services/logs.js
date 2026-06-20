@@ -30,9 +30,9 @@ export function createLogRow({
 
     nowWib(),
 
-    command,
-
     marketplace,
+    
+    command,
 
     sku,
 
@@ -60,4 +60,4 @@ export async function addLog(
     )
 
   );
-}
+} 
