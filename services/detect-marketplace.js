@@ -22,6 +22,11 @@ export async function detectMarketplace(
       }
     );
 
+    console.log(
+  "SHEETS:",
+  workbook.SheetNames
+);
+
   console.log(
     "ROWS:",
     rows.length

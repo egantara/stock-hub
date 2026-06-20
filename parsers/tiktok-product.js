@@ -22,6 +22,10 @@ export async function parseTiktokProduct(
       }
     );
 
+    console.log(
+  "SHEETS:",
+  workbook.SheetNames
+);
   console.log(
     "TIKTOK ROWS:",
     rows.length
