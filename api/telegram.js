@@ -156,12 +156,6 @@ Commands:
         "DOWNLOADED:",
         localPath
       );
-
-      const localPath =
-  await downloadTelegramFile(
-    document.file_id
-  );
-
 const XLSX =
   (await import("xlsx")).default;
 
