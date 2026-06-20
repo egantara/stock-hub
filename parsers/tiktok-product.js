@@ -26,69 +26,69 @@ export async function parseTiktokProduct(
     );
   }
 
-  //
-  // Header ada di row 3
-  //
-  const rows =
-    XLSX.utils.sheet_to_json(
-      sheet,
-      {
-        defval: "",
-        range: 2
-      }
+  const range =
+    XLSX.utils.decode_range(
+      sheet["!ref"]
     );
 
   console.log(
-    "TIKTOK ROWS:",
-    rows.length
+    "RANGE:",
+    sheet["!ref"]
   );
 
   const products = [];
 
+  //
+  // Data TikTok mulai row 6
+  //
   for (
-    const row
-    of rows
+    let row = 6;
+    row <= range.e.r + 1;
+    row++
   ) {
 
     const productId =
       String(
-        row["Product ID"] || ""
+        sheet[`A${row}`]?.v || ""
       ).trim();
 
-    //
-    // Skip row petunjuk
-    //
-    if (
+    const nama =
+      String(
+        sheet[`C${row}`?.v] || ""
+      ).trim();
 
-      !productId
+    const tiktokVariationId =
+      String(
+        sheet[`D${row}`]?.v || ""
+      ).trim();
 
-      ||
+    const variasi =
+      String(
+        sheet[`E${row}`]?.v || ""
+      ).trim();
 
-      productId ===
-        "Mandatory"
+    const hargaTiktok =
+      Number(
+        sheet[`F${row}`]?.v || 0
+      );
 
-      ||
-
-      productId ===
-        "Uneditable"
-
-      ||
-
-      !/^\d+$/.test(
-        productId
-      )
-
-    ) {
-
-      continue;
-    }
+    const stock =
+      Number(
+        sheet[`G${row}`]?.v || 0
+      );
 
     const sku =
       String(
-        row["Seller SKU"] || ""
+        sheet[`H${row}`]?.v || ""
       ).trim();
 
-    if (!sku) {
+    //
+    // Skip row kosong
+    //
+    if (
+      !productId &&
+      !sku
+    ) {
       continue;
     }
 
@@ -96,35 +96,18 @@ export async function parseTiktokProduct(
 
       sku,
 
-      nama:
-        String(
-          row["Product name"] || ""
-        ).trim(),
+      nama,
 
-      variasi:
-        String(
-          row["Variation Option"] || ""
-        ).trim(),
+      variasi,
 
-      stock:
-        Number(
-          row["Quantity"] || 0
-        ),
+      stock,
 
       tiktokProductId:
         productId,
 
-      tiktokVariationId:
-        String(
-          row["SKU ID"] || ""
-        ).trim(),
+      tiktokVariationId,
 
-      hargaTiktok:
-        Number(
-          row[
-            "Retail Price (Local Currency)"
-          ] || 0
-        )
+      hargaTiktok
 
     });
   }
@@ -133,6 +116,16 @@ export async function parseTiktokProduct(
     "VALID PRODUCTS:",
     products.length
   );
+
+  if (
+    products.length
+  ) {
+
+    console.log(
+      "FIRST PRODUCT:",
+      products[0]
+    );
+  }
 
   return products;
 }
