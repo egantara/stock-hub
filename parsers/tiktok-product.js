@@ -9,46 +9,38 @@ export async function parseTiktokProduct(
       filePath
     );
 
+  console.log(
+    "SHEETS:",
+    workbook.SheetNames
+  );
+
   const sheet =
     workbook.Sheets[
-      workbook.SheetNames[0]
+      "Template"
     ];
 
+  if (!sheet) {
+
+    throw new Error(
+      "Sheet Template tidak ditemukan"
+    );
+  }
+
+  //
+  // Header ada di row 3
+  //
   const rows =
     XLSX.utils.sheet_to_json(
       sheet,
       {
-        defval: ""
+        defval: "",
+        range: 2
       }
     );
 
-    console.log(
-  "SHEETS:",
-  workbook.SheetNames
-);
   console.log(
     "TIKTOK ROWS:",
     rows.length
-  );
-
-  console.log(
-    "ROW 0:",
-    rows[0]
-  );
-
-  console.log(
-    "ROW 1:",
-    rows[1]
-  );
-
-  console.log(
-    "ROW 2:",
-    rows[2]
-  );
-
-  console.log(
-    "ROW 3:",
-    rows[3]
   );
 
   const products = [];
@@ -58,9 +50,42 @@ export async function parseTiktokProduct(
     of rows
   ) {
 
+    const productId =
+      String(
+        row["Product ID"] || ""
+      ).trim();
+
+    //
+    // Skip row petunjuk
+    //
+    if (
+
+      !productId
+
+      ||
+
+      productId ===
+        "Mandatory"
+
+      ||
+
+      productId ===
+        "Uneditable"
+
+      ||
+
+      !/^\d+$/.test(
+        productId
+      )
+
+    ) {
+
+      continue;
+    }
+
     const sku =
       String(
-        row.seller_sku || ""
+        row["Seller SKU"] || ""
       ).trim();
 
     if (!sku) {
@@ -73,36 +98,41 @@ export async function parseTiktokProduct(
 
       nama:
         String(
-          row.product_name || ""
+          row["Product name"] || ""
         ).trim(),
 
       variasi:
         String(
-          row.variation_value || ""
+          row["Variation Option"] || ""
         ).trim(),
 
       stock:
         Number(
-          row.quantity || 0
+          row["Quantity"] || 0
         ),
 
       tiktokProductId:
-        String(
-          row.product_id || ""
-        ).trim(),
+        productId,
 
       tiktokVariationId:
         String(
-          row.sku_id || ""
+          row["SKU ID"] || ""
         ).trim(),
 
       hargaTiktok:
         Number(
-          row.price || 0
+          row[
+            "Retail Price (Local Currency)"
+          ] || 0
         )
 
     });
   }
+
+  console.log(
+    "VALID PRODUCTS:",
+    products.length
+  );
 
   return products;
 }
