@@ -13,6 +13,26 @@ import {
 }
 from "../services/process-uploaded-file.js";
 
+import {
+  processSalesCommand
+}
+from "../services/process-sales-command.js";
+
+import {
+  processRestockCommand
+}
+from "../services/process-restock-command.js";
+
+import {
+  processSetCommand
+}
+from "../services/process-set-command.js";
+
+import {
+  processStockCommand
+}
+from "../services/process-stock-command.js";
+
 export default async function handler(
   req,
   res
@@ -26,9 +46,13 @@ export default async function handler(
     const chatId =
       message?.chat?.id;
 
-    const caption =
+    const text =
       (
-        message?.caption || ""
+        message?.text ||
+
+        message?.caption ||
+
+        ""
       ).trim();
 
     const document =
@@ -39,8 +63,8 @@ export default async function handler(
     );
 
     console.log(
-      "CAPTION:",
-      caption
+      "TEXT:",
+      text
     );
 
     console.log(
@@ -56,22 +80,38 @@ export default async function handler(
     }
 
     //
-    // /start
+    // START
     //
-    if (caption === "/start") {
+    if (
+      text === "/start"
+    ) {
 
       await sendMessage(
         chatId,
-        "Bot hidup 🚀"
+`🚀 Stock Hub
+
+Commands:
+
+/sales
+/restock
+/set
+/stock`
       );
     }
 
     //
-    // /minus + file
+    // SALES + FILE
     //
     else if (
-      caption === "/minus" &&
+
+      text.startsWith(
+        "/sales"
+      )
+
+      &&
+
       document
+
     ) {
 
       console.log(
@@ -111,7 +151,9 @@ export default async function handler(
 
       await sendMessage(
         chatId,
-`📄 Marketplace: ${result.marketplace}
+`🛒 Sales Imported
+
+📄 Marketplace : ${result.marketplace}
 
 ✅ Processed : ${result.processed}
 ⏭️ Duplicate : ${result.duplicateOrders}
@@ -122,18 +164,188 @@ export default async function handler(
     }
 
     //
-    // file tanpa caption
+    // SALES MANUAL
     //
-    else if (document) {
+    else if (
+
+      text.startsWith(
+        "/sales"
+      )
+
+    ) {
+
+      const result =
+
+        await processSalesCommand({
+
+          text,
+
+          user:
+            "TELEGRAM"
+
+        });
 
       await sendMessage(
         chatId,
-        "⚠️ Upload file harus menggunakan caption command.\n\nContoh:\n/minus"
+`🛒 Sales Recorded
+
+✅ Processed : ${result.processed}
+📦 Total Qty : ${result.totalQty}
+❌ Error : ${result.errors.length}`
+      );
+    }
+
+    //
+    // RESTOCK
+    //
+    else if (
+
+      text.startsWith(
+        "/restock"
+      )
+
+    ) {
+
+      const result =
+
+        await processRestockCommand({
+
+          text,
+
+          user:
+            "TELEGRAM"
+
+        });
+
+      await sendMessage(
+        chatId,
+`📦 Restock Recorded
+
+✅ Processed : ${result.processed}
+📦 Total Qty : ${result.totalQty}
+❌ Error : ${result.errors.length}`
+      );
+    }
+
+    //
+    // SET
+    //
+    else if (
+
+      text.startsWith(
+        "/set"
+      )
+
+    ) {
+
+      const result =
+
+        await processSetCommand({
+
+          text,
+
+          user:
+            "TELEGRAM"
+
+        });
+
+      await sendMessage(
+        chatId,
+`✏️ Stock Updated
+
+✅ Processed : ${result.processed}
+❌ Error : ${result.errors.length}`
+      );
+    }
+
+    //
+    // STOCK
+    //
+    else if (
+
+      text.startsWith(
+        "/stock"
+      )
+
+    ) {
+
+      const result =
+
+        await processStockCommand({
+
+          text
+
+        });
+
+      const rows =
+
+        result.map(
+
+          item =>
+
+            item.found
+
+              ? `${item.sku} : ${item.stock}`
+
+              : `${item.sku} : NOT FOUND`
+
+        );
+
+      await sendMessage(
+
+        chatId,
+
+`📦 Stock
+
+${rows.join("\n")}`
+
+      );
+    }
+
+    //
+    // FILE TANPA COMMAND
+    //
+    else if (
+
+      document
+
+    ) {
+
+      await sendMessage(
+
+        chatId,
+
+`⚠️ Upload file harus menggunakan command.
+
+Contoh:
+
+/sales`
+
+      );
+    }
+
+    else {
+
+      await sendMessage(
+
+        chatId,
+
+`❓ Command tidak dikenali.
+
+Gunakan:
+
+/sales
+/restock
+/set
+/stock`
+
       );
     }
 
     return res.status(200).json({
+
       ok: true
+
     });
 
   } catch (error) {
@@ -151,15 +363,20 @@ export default async function handler(
       if (chatId) {
 
         await sendMessage(
+
           chatId,
+
           `❌ Error\n${error.message}`
+
         );
       }
 
     } catch {}
 
     return res.status(200).json({
+
       ok: false
+
     });
   }
 }
