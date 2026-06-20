@@ -244,80 +244,93 @@ export async function processProductImport({
       }
 
       if (
-        marketplace ===
-        "TIKTOK"
-      ) {
+  marketplace ===
+  "TIKTOK"
+) {
 
-        if (
+  if (
 
-          !existing.TIKTOK_PRODUCT_ID &&
+    product.tiktokProductId
 
-          product.tiktokProductId
+    &&
 
-        ) {
+    product.tiktokProductId !==
+    existing.TIKTOK_PRODUCT_ID
 
-          productUpdates.push({
+  ) {
 
-            range:
-              `PRODUCTS!D${existing.__rowNumber}`,
+    productUpdates.push({
 
-            values: [[
-              product.tiktokProductId
-            ]]
+      range:
+        `PRODUCTS!D${existing.__rowNumber}`,
 
-          });
+      values: [[
+        product.tiktokProductId
+      ]]
 
-          hasUpdate =
-            true;
-        }
+    });
 
-        if (
+    hasUpdate =
+      true;
+  }
 
-          !existing.TIKTOK_VARIATION_ID &&
+  if (
 
-          product.tiktokVariationId
+    product.tiktokVariationId
 
-        ) {
+    &&
 
-          productUpdates.push({
+    product.tiktokVariationId !==
+    existing.TIKTOK_VARIATION_ID
 
-            range:
-              `PRODUCTS!K${existing.__rowNumber}`,
+  ) {
 
-            values: [[
-              product.tiktokVariationId
-            ]]
+    productUpdates.push({
 
-          });
+      range:
+        `PRODUCTS!K${existing.__rowNumber}`,
 
-          hasUpdate =
-            true;
-        }
+      values: [[
+        product.tiktokVariationId
+      ]]
 
-        if (
+    });
 
-          !existing.HARGA_TIKTOK &&
+    hasUpdate =
+      true;
+  }
 
-          product.hargaTiktok
+  if (
 
-        ) {
+    product.hargaTiktok
 
-          productUpdates.push({
+    &&
 
-            range:
-              `PRODUCTS!I${existing.__rowNumber}`,
+    Number(
+      product.hargaTiktok
+    ) !==
 
-            values: [[
-              product.hargaTiktok
-            ]]
+    Number(
+      existing.HARGA_TIKTOK || 0
+    )
 
-          });
+  ) {
 
-          hasUpdate =
-            true;
-        }
-      }
+    productUpdates.push({
 
+      range:
+        `PRODUCTS!I${existing.__rowNumber}`,
+
+      values: [[
+        product.hargaTiktok
+      ]]
+
+    });
+
+    hasUpdate =
+      true;
+  }
+}
       if (
         hasUpdate
       ) {
