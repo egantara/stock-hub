@@ -4,6 +4,11 @@ import {
 from "../services/telegram.js";
 
 import {
+  processNewFile
+}
+from "../services/process-new-file.js";
+
+import {
   exportTikTok
 }
 from "../services/export-tiktok.js";
@@ -108,6 +113,7 @@ export default async function handler(
 Commands:
 
 /sales
+/new
 /restock
 /set
 /stock
@@ -180,6 +186,81 @@ Commands:
 ❌ Error : ${result.errors.length}`
       );
     }
+
+    //
+// NEW + FILE
+//
+else if (
+
+  text.startsWith(
+    "/new"
+  )
+
+  &&
+
+  document
+
+) {
+
+  console.log(
+    "START PROCESS"
+  );
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Memproses file..."
+
+  );
+
+  const localPath =
+
+    await downloadTelegramFile(
+
+      document.file_id
+
+    );
+
+  console.log(
+    "DOWNLOADED:",
+    localPath
+  );
+
+  const result =
+
+    await processNewFile({
+
+      filePath:
+        localPath,
+
+      user:
+        "TELEGRAM"
+
+    });
+
+  console.log(
+    "RESULT:",
+    result
+  );
+
+  await sendMessage(
+
+    chatId,
+
+`📦 Product Import
+
+📄 Marketplace : ${result.marketplace}
+
+📄 Found : ${result.found}
+
+✅ New : ${result.newProducts}
+🔄 Updated : ${result.updatedProducts}
+⏭️ Duplicate : ${result.duplicateProducts}
+❌ Error : ${result.errors.length}`
+
+  );
+}
 
     //
     // SALES MANUAL
