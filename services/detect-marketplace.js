@@ -22,6 +22,16 @@ export async function detectMarketplace(
       }
     );
 
+  console.log(
+    "ROWS:",
+    rows.length
+  );
+
+  console.log(
+    "FIRST ROW:",
+    rows[0]
+  );
+
   if (
     !rows.length
   ) {
@@ -88,24 +98,6 @@ export async function detectMarketplace(
 
     return "TIKTOK";
   }
-
-  const rows =
-  XLSX.utils.sheet_to_json(
-    sheet,
-    {
-      defval: ""
-    }
-  );
-
-console.log(
-  "ROWS:",
-  rows.length
-);
-
-console.log(
-  "FIRST ROW:",
-  rows[0]
-);
 
   return null;
 }
