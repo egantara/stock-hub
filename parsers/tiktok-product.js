@@ -26,20 +26,20 @@ export async function parseTiktokProduct(
     );
   }
 
-  const range =
-    XLSX.utils.decode_range(
-      sheet["!ref"]
-    );
-
   console.log(
     "RANGE:",
     sheet["!ref"]
   );
 
+  const range =
+    XLSX.utils.decode_range(
+      sheet["!ref"]
+    );
+
   const products = [];
 
   //
-  // Data TikTok mulai row 6
+  // Data mulai row 6
   //
   for (
     let row = 6;
@@ -54,7 +54,7 @@ export async function parseTiktokProduct(
 
     const nama =
       String(
-        sheet[`C${row}`?.v] || ""
+        sheet[`C${row}`]?.v || ""
       ).trim();
 
     const tiktokVariationId =
@@ -86,10 +86,32 @@ export async function parseTiktokProduct(
     // Skip row kosong
     //
     if (
-      !productId &&
+      !productId ||
       !sku
     ) {
       continue;
+    }
+
+    //
+    // Debug 3 row pertama
+    //
+    if (
+      products.length < 3
+    ) {
+
+      console.log({
+
+        row,
+
+        productId,
+
+        sku,
+
+        nama,
+
+        stock
+
+      });
     }
 
     products.push({
