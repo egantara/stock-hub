@@ -22,6 +22,31 @@ export async function parseTiktokProduct(
       }
     );
 
+  console.log(
+    "TIKTOK ROWS:",
+    rows.length
+  );
+
+  console.log(
+    "ROW 0:",
+    rows[0]
+  );
+
+  console.log(
+    "ROW 1:",
+    rows[1]
+  );
+
+  console.log(
+    "ROW 2:",
+    rows[2]
+  );
+
+  console.log(
+    "ROW 3:",
+    rows[3]
+  );
+
   const products = [];
 
   for (
