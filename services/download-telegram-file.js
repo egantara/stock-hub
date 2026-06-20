@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import XLSX from "xlsx";
 
 export async function downloadTelegramFile(
   fileId
@@ -30,6 +31,11 @@ export async function downloadTelegramFile(
   const filePath =
     fileData.result.file_path;
 
+  console.log(
+    "TELEGRAM FILE PATH:",
+    filePath
+  );
+
   //
   // 2. Download file
   //
@@ -56,6 +62,11 @@ export async function downloadTelegramFile(
       await response.arrayBuffer()
     );
 
+  console.log(
+    "FILE SIZE:",
+    fileBuffer.length
+  );
+
   const fileName =
     path.basename(
       filePath
@@ -68,6 +79,36 @@ export async function downloadTelegramFile(
     localPath,
     fileBuffer
   );
+
+  try {
+
+    const workbook =
+      XLSX.readFile(
+        localPath
+      );
+
+    console.log(
+      "DOWNLOADED SHEETS:",
+      workbook.SheetNames
+    );
+
+    const template =
+      workbook.Sheets[
+        "Template"
+      ];
+
+    console.log(
+      "DOWNLOADED REF:",
+      template?.["!ref"]
+    );
+
+  } catch (error) {
+
+    console.log(
+      "XLSX CHECK ERROR:",
+      error.message
+    );
+  }
 
   return localPath;
 }

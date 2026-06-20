@@ -148,45 +148,25 @@ Commands:
       );
 
       const localPath =
-        await downloadTelegramFile(
-          document.file_id
-        );
-
-      console.log(
-        "DOWNLOADED:",
-        localPath
-      );
-const XLSX =
-  (await import("xlsx")).default;
-
-const wb =
-  XLSX.readFile(
-    localPath
+  await downloadTelegramFile(
+    document.file_id
   );
 
-const template =
-  wb.Sheets["Template"];
-
 console.log(
-  "DOWNLOADED SHEETS:",
-  wb.SheetNames
+  "DOWNLOADED:",
+  localPath
 );
 
-console.log(
-  "DOWNLOADED REF:",
-  template?.["!ref"]
-);
+const result =
+  await processUploadedFile({
 
-      const result =
-        await processUploadedFile({
+    filePath:
+      localPath,
 
-          filePath:
-            localPath,
+    user:
+      "TELEGRAM"
 
-          user:
-            "TELEGRAM"
-
-        });
+  });
 
       console.log(
         "RESULT:",
@@ -246,6 +226,27 @@ else if (
     "DOWNLOADED:",
     localPath
   );
+
+  const XLSX =
+  (await import("xlsx")).default;
+
+const wb =
+  XLSX.readFile(
+    localPath
+  );
+
+console.log(
+  "DOWNLOADED SHEETS:",
+  wb.SheetNames
+);
+
+const template =
+  wb.Sheets["Template"];
+
+console.log(
+  "DOWNLOADED REF:",
+  template?.["!ref"]
+);
 
   const result =
 
