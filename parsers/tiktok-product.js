@@ -8,6 +8,18 @@ export async function parseTiktokProduct(
     XLSX.readFile(
       filePath
     );
+    
+    console.log(
+  "TEMPLATE KEYS:",
+  Object.keys(sheet)
+    .slice(0, 100)
+);
+
+console.log(
+  "LAST KEYS:",
+  Object.keys(sheet)
+    .slice(-100)
+);
 
   console.log(
     "SHEETS:",
