@@ -99,7 +99,7 @@ export async function processSalesCommand({
         createLogRow({
 
           command:
-            "MINUS",
+            "SALES",
 
           marketplace:
             "OFFLINE",

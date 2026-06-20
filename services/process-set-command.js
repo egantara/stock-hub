@@ -36,15 +36,18 @@ export async function processSetCommand({
   const store =
     await loadStore();
 
-  const items =
-    parseCommandItems({
+ const items =
+  parseCommandItems({
 
-      text,
+    text,
 
-      command:
-        "/set"
+    command:
+      "/set",
 
-    });
+    allowDuplicate:
+      false
+
+  });
 
   let processed = 0;
 
@@ -93,7 +96,7 @@ export async function processSetCommand({
         createLogRow({
 
           command:
-            "SET",
+            "SET STOCK",
 
           marketplace:
             "MANUAL",

@@ -2,7 +2,9 @@ export function parseCommandItems({
 
   text,
 
-  command
+  command,
+
+  allowDuplicate = true
 
 }) {
 
@@ -140,6 +142,65 @@ sku-b 1`
     throw new Error(
       "Tidak ada item yang diproses"
     );
+  }
+
+  //
+  // cek duplicate SKU
+  //
+  if (
+    !allowDuplicate
+  ) {
+
+    const skuSet =
+      new Set();
+
+    const duplicates =
+      new Set();
+
+    for (
+      const item
+      of items
+    ) {
+
+      const sku =
+        String(
+          item.sku
+        )
+        .trim()
+        .toLowerCase();
+
+      if (
+        skuSet.has(
+          sku
+        )
+      ) {
+
+        duplicates.add(
+          item.sku
+        );
+
+      } else {
+
+        skuSet.add(
+          sku
+        );
+      }
+    }
+
+    if (
+      duplicates.size
+    ) {
+
+      throw new Error(
+`SKU duplikat ditemukan:
+
+${[
+  ...duplicates
+].join("\n")}
+
+Gabungkan qty terlebih dahulu.`
+      );
+    }
   }
 
   return items;

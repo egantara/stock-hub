@@ -37,14 +37,17 @@ export async function processRestockCommand({
     await loadStore();
 
   const items =
-    parseCommandItems({
+  parseCommandItems({
 
-      text,
+    text,
 
-      command:
-        "/restock"
+    command:
+      "/restock",
 
-    });
+    allowDuplicate:
+      false
+
+  });
 
   let processed = 0;
 
@@ -96,7 +99,7 @@ export async function processRestockCommand({
         createLogRow({
 
           command:
-            "PLUS",
+            "RESTOCK",
 
           marketplace:
             "MANUAL",
