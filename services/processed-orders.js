@@ -92,3 +92,15 @@ export function createProcessedRow({
 
   ];
 }
+
+//
+// alias untuk command manual
+//
+export function createProcessedOrderRow(
+  params
+) {
+
+  return createProcessedRow(
+    params
+  );
+}

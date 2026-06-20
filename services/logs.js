@@ -1,3 +1,8 @@
+import {
+  appendRow
+}
+from "./google-sheet.js";
+
 export function createLogRow({
 
   command,
@@ -51,4 +56,19 @@ export function createLogRow({
     user
 
   ];
+}
+
+export async function addLog(
+  params
+) {
+
+  await appendRow(
+
+    "LOG",
+
+    createLogRow(
+      params
+    )
+
+  );
 }

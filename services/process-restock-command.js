@@ -10,7 +10,8 @@ import {
 from "./stock.js";
 
 import {
-  batchUpdate
+  batchUpdate,
+  appendRows
 }
 from "./google-sheet.js";
 
@@ -18,6 +19,11 @@ import {
   parseCommandItems
 }
 from "./parse-command-items.js";
+
+import {
+  createLogRow
+}
+from "./logs.js";
 
 export async function processRestockCommand({
 
@@ -46,6 +52,8 @@ export async function processRestockCommand({
 
   const errors = [];
 
+  const logRows = [];
+
   for (
     const item
     of items
@@ -53,22 +61,61 @@ export async function processRestockCommand({
 
     try {
 
-      plusStock({
+      const row =
+        store.stockMap.get(
+          String(
+            item.sku
+          ).trim()
+        );
 
-        store,
+      const stockAwal =
+        Number(
+          row?.STOCK || 0
+        );
 
-        sku:
-          item.sku,
+      const stockAkhir =
+        plusStock({
 
-        qty:
-          item.qty
+          store,
 
-      });
+          sku:
+            item.sku,
+
+          qty:
+            item.qty
+
+        });
 
       processed++;
 
       totalQty +=
         item.qty;
+
+      logRows.push(
+
+        createLogRow({
+
+          command:
+            "PLUS",
+
+          marketplace:
+            "MANUAL",
+
+          sku:
+            item.sku,
+
+          qty:
+            item.qty,
+
+          stockAwal,
+
+          stockAkhir,
+
+          user
+
+        })
+
+      );
 
     } catch (error) {
 
@@ -84,14 +131,22 @@ export async function processRestockCommand({
     }
   }
 
-  const updates =
-    createStockUpdates(
-      store
-    );
+  await Promise.all([
 
-  await batchUpdate(
-    updates
-  );
+    batchUpdate(
+
+      createStockUpdates(
+        store
+      )
+
+    ),
+
+    appendRows(
+      "LOG",
+      logRows
+    )
+
+  ]);
 
   return {
 

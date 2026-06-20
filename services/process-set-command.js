@@ -10,7 +10,8 @@ import {
 from "./stock.js";
 
 import {
-  batchUpdate
+  batchUpdate,
+  appendRows
 }
 from "./google-sheet.js";
 
@@ -18,6 +19,11 @@ import {
   parseCommandItems
 }
 from "./parse-command-items.js";
+
+import {
+  createLogRow
+}
+from "./logs.js";
 
 export async function processSetCommand({
 
@@ -44,12 +50,26 @@ export async function processSetCommand({
 
   const errors = [];
 
+  const logRows = [];
+
   for (
     const item
     of items
   ) {
 
     try {
+
+      const row =
+        store.stockMap.get(
+          String(
+            item.sku
+          ).trim()
+        );
+
+      const stockAwal =
+        Number(
+          row?.STOCK || 0
+        );
 
       setStock({
 
@@ -63,7 +83,36 @@ export async function processSetCommand({
 
       });
 
+      const stockAkhir =
+        item.qty;
+
       processed++;
+
+      logRows.push(
+
+        createLogRow({
+
+          command:
+            "SET",
+
+          marketplace:
+            "MANUAL",
+
+          sku:
+            item.sku,
+
+          qty:
+            item.qty,
+
+          stockAwal,
+
+          stockAkhir,
+
+          user
+
+        })
+
+      );
 
     } catch (error) {
 
@@ -72,21 +121,29 @@ export async function processSetCommand({
         sku:
           item.sku,
 
-        error:
-          error.message
+          error:
+            error.message
 
       });
     }
   }
 
-  const updates =
-    createStockUpdates(
-      store
-    );
+  await Promise.all([
 
-  await batchUpdate(
-    updates
-  );
+    batchUpdate(
+
+      createStockUpdates(
+        store
+      )
+
+    ),
+
+    appendRows(
+      "LOG",
+      logRows
+    )
+
+  ]);
 
   return {
 

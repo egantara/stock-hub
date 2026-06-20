@@ -10,7 +10,8 @@ import {
 from "./stock.js";
 
 import {
-  batchUpdate
+  batchUpdate,
+  appendRows
 }
 from "./google-sheet.js";
 
@@ -18,6 +19,16 @@ import {
   parseCommandItems
 }
 from "./parse-command-items.js";
+
+import {
+  createLogRow
+}
+from "./logs.js";
+
+import {
+  createProcessedOrderRow
+}
+from "./processed-orders.js";
 
 export async function processSalesCommand({
 
@@ -47,6 +58,10 @@ export async function processSalesCommand({
 
   const errors = [];
 
+  const logRows = [];
+
+  const processedRows = [];
+
   for (
     const item
     of items
@@ -54,7 +69,10 @@ export async function processSalesCommand({
 
     try {
 
-      minusStock({
+      const {
+        stockAwal,
+        stockAkhir
+      } = minusStock({
 
         store,
 
@@ -71,6 +89,49 @@ export async function processSalesCommand({
       totalQty +=
         item.qty;
 
+      logRows.push(
+
+        createLogRow({
+
+          command:
+            "MINUS",
+
+          marketplace:
+            "OFFLINE",
+
+          sku:
+            item.sku,
+
+          qty:
+            item.qty,
+
+          stockAwal,
+
+          stockAkhir,
+
+          user
+
+        })
+
+      );
+
+      processedRows.push(
+
+        createProcessedOrderRow({
+
+          orderId:
+            `MANUAL-${Date.now()}-${processed}`,
+
+          sku:
+            item.sku,
+
+          marketplace:
+            "OFFLINE"
+
+        })
+
+      );
+
     } catch (error) {
 
       errors.push({
@@ -85,14 +146,27 @@ export async function processSalesCommand({
     }
   }
 
-  const updates =
-    createStockUpdates(
-      store
-    );
+  await Promise.all([
 
-  await batchUpdate(
-    updates
-  );
+    batchUpdate(
+
+      createStockUpdates(
+        store
+      )
+
+    ),
+
+    appendRows(
+      "LOG",
+      logRows
+    ),
+
+    appendRows(
+      "PROCESSED_ORDERS",
+      processedRows
+    )
+
+  ]);
 
   return {
 
