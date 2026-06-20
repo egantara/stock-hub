@@ -1,10 +1,18 @@
 import {
-  exportShopee
+  buildShopeeRows
 }
 from "./services/export-shopee.js";
 
+console.time(
+  "buildShopeeRows"
+);
+
 const file =
-  await exportShopee();
+  await buildShopeeRows();
+
+console.timeEnd(
+  "buildShopeeRows"
+);
 
 console.log(
   file
