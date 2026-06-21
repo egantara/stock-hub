@@ -55,21 +55,42 @@ export async function processProductImport({
 
     store.productRows.length + 1;
 
+    const importedSkuSet =
+  new Set();
+
   const now =
     nowWib();
 
   for (
-    const product
-    of products
-  ) {
+  const product
+  of products
+) {
 
-    try {
+  try {
 
-      const existing =
+    //
+    // DUPLICATE SKU DALAM FILE
+    //
+    if (
+      importedSkuSet.has(
+        product.sku
+      )
+    ) {
 
-        store.productMap.get(
-          product.sku
-        );
+      duplicateProducts++;
+
+      continue;
+    }
+
+    importedSkuSet.add(
+      product.sku
+    );
+
+    const existing =
+
+      store.productMap.get(
+        product.sku
+      );
 
       //
       // NEW PRODUCT
@@ -167,79 +188,89 @@ export async function processProductImport({
         false;
 
       if (
-        marketplace ===
-        "SHOPEE"
-      ) {
+  marketplace ===
+  "SHOPEE"
+) {
 
-        if (
+  if (
 
-          !existing.SHOPEE_PRODUCT_ID &&
+    product.shopeeProductId
 
-          product.shopeeProductId
+    &&
 
-        ) {
+    product.shopeeProductId !==
+    existing.SHOPEE_PRODUCT_ID
 
-          productUpdates.push({
+  ) {
 
-            range:
-              `PRODUCTS!C${existing.__rowNumber}`,
+    productUpdates.push({
 
-            values: [[
-              product.shopeeProductId
-            ]]
+      range:
+        `PRODUCTS!C${existing.__rowNumber}`,
 
-          });
+      values: [[
+        product.shopeeProductId
+      ]]
 
-          hasUpdate =
-            true;
-        }
+    });
 
-        if (
+    hasUpdate =
+      true;
+  }
 
-          !existing.SHOPEE_VARIATION_ID &&
+  if (
 
-          product.shopeeVariationId
+    product.shopeeVariationId
 
-        ) {
+    &&
 
-          productUpdates.push({
+    product.shopeeVariationId !==
+    existing.SHOPEE_VARIATION_ID
 
-            range:
-              `PRODUCTS!J${existing.__rowNumber}`,
+  ) {
 
-            values: [[
-              product.shopeeVariationId
-            ]]
+    productUpdates.push({
 
-          });
+      range:
+        `PRODUCTS!J${existing.__rowNumber}`,
 
-          hasUpdate =
-            true;
-        }
+      values: [[
+        product.shopeeVariationId
+      ]]
 
-        if (
+    });
 
-          !existing.HARGA_SHOPEE &&
+    hasUpdate =
+      true;
+  }
 
-          product.hargaShopee
+  if (
 
-        ) {
+    Number(
+      existing.HARGA_SHOPEE || 0
+    ) !==
 
-          productUpdates.push({
+    Number(
+      product.hargaShopee || 0
+    )
 
-            range:
-              `PRODUCTS!H${existing.__rowNumber}`,
+  ) {
 
-            values: [[
-              product.hargaShopee
-            ]]
+    productUpdates.push({
 
-          });
+      range:
+        `PRODUCTS!H${existing.__rowNumber}`,
 
-          hasUpdate =
-            true;
-        }
-      }
+      values: [[
+        product.hargaShopee
+      ]]
+
+    });
+
+    hasUpdate =
+      true;
+  }
+}
 
       if (
   marketplace ===
@@ -300,34 +331,30 @@ export async function processProductImport({
 
   if (
 
-    product.hargaTiktok
+  Number(
+    existing.HARGA_TIKTOK || 0
+  ) !==
 
-    &&
+  Number(
+    product.hargaTiktok || 0
+  )
 
-    Number(
+) {
+
+  productUpdates.push({
+
+    range:
+      `PRODUCTS!I${existing.__rowNumber}`,
+
+    values: [[
       product.hargaTiktok
-    ) !==
+    ]]
 
-    Number(
-      existing.HARGA_TIKTOK || 0
-    )
+  });
 
-  ) {
-
-    productUpdates.push({
-
-      range:
-        `PRODUCTS!I${existing.__rowNumber}`,
-
-      values: [[
-        product.hargaTiktok
-      ]]
-
-    });
-
-    hasUpdate =
-      true;
-  }
+  hasUpdate =
+    true;
+}
 }
       if (
         hasUpdate

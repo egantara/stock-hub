@@ -9,6 +9,11 @@ export async function detectMarketplace(
       filePath
     );
 
+  console.log(
+    "SHEETS:",
+    workbook.SheetNames
+  );
+
   const sheet =
     workbook.Sheets[
       workbook.SheetNames[0]
@@ -21,11 +26,6 @@ export async function detectMarketplace(
         defval: ""
       }
     );
-
-    console.log(
-  "SHEETS:",
-  workbook.SheetNames
-);
 
   console.log(
     "ROWS:",
@@ -51,7 +51,7 @@ export async function detectMarketplace(
   //
   if (
     "No. Pesanan"
-    in firstRow
+      in firstRow
   ) {
 
     return "SHOPEE";
@@ -62,7 +62,7 @@ export async function detectMarketplace(
   //
   if (
     "Order ID"
-    in firstRow
+      in firstRow
   ) {
 
     return "TIKTOK";
@@ -73,35 +73,44 @@ export async function detectMarketplace(
   //
   if (
 
-    "Kode Produk"
-      in firstRow
+    (
+      "Kode Produk"
+        in firstRow
+    )
 
-    &&
+    ||
 
-    "SKU"
-      in firstRow
+    (
+      "SKU"
+        in firstRow
+    )
 
   ) {
 
     return "SHOPEE";
   }
 
-//
-// TIKTOK PRODUCT
-//
-if (
+  //
+  // TIKTOK PRODUCT
+  //
+  if (
 
-  "product_id"
-    in firstRow
+    (
+      "product_id"
+        in firstRow
+    )
 
-  &&
+    ||
 
-  "seller_sku"
-    in firstRow
+    (
+      "seller_sku"
+        in firstRow
+    )
 
-) {
+  ) {
 
-  return "TIKTOK";
-}
+    return "TIKTOK";
+  }
+
   return null;
 }
