@@ -305,14 +305,33 @@ console.log(
 
         });
 
-      await sendMessage(
-        chatId,
+      let errorText = "";
+
+if (
+  result.errors.length
+) {
+
+  errorText =
+    "\n\n" +
+
+    result.errors
+      .slice(0, 10)
+      .map(
+        item =>
+`❌ ${item.sku}
+${item.error}`
+      )
+      .join("\n\n");
+}
+
+await sendMessage(
+  chatId,
 `🛒 Sales Recorded
 
 ✅ Processed : ${result.processed}
 📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}`
-      );
+❌ Error : ${result.errors.length}${errorText}`
+);
     }
 
     //
