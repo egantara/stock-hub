@@ -69,26 +69,28 @@ export async function detectMarketplace(
   }
 
   //
-  // SHOPEE PRODUCT
-  //
-  if (
+// SHOPEE PRODUCT
+//
+if (
 
-    (
-      "Kode Produk"
-        in firstRow
-    )
+  Object.keys(firstRow).includes(
+    "et_title_product_id"
+  )
 
-    ||
+  ||
 
-    (
-      "SKU"
-        in firstRow
-    )
+  Object.keys(firstRow).includes(
+    "et_title_variation_sku"
+  )
 
-  ) {
+) {
 
-    return "SHOPEE";
-  }
+  console.log(
+    "DETECTED SHOPEE PRODUCT"
+  );
+
+  return "SHOPEE";
+}
 
   //
   // TIKTOK PRODUCT
@@ -112,5 +114,10 @@ export async function detectMarketplace(
     return "TIKTOK";
   }
 
+
+  console.log(
+  "FIRST ROW KEYS:",
+  Object.keys(firstRow)
+);
   return null;
 }
