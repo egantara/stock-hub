@@ -64,13 +64,24 @@ export async function exportShopee() {
 
   let rowNumber = 7;
 
+  console.log(
+    "EXPORT PRODUCTS:",
+    store.productRows.length
+  );
+
   for (
     const product
-    of store.productRows.slice(
-      0,
-      3
-    )
+    of store.productRows
   ) {
+
+    //
+    // Hanya SKU yang sudah punya data Shopee
+    //
+    if (
+      !product.SHOPEE_PRODUCT_ID
+    ) {
+      continue;
+    }
 
     const stock =
       store.stockMap.get(
@@ -112,31 +123,29 @@ export async function exportShopee() {
     rowNumber++;
   }
 
-const exportDir =
-  "/tmp";
+  console.log(
+    "EXPORTED ROWS:",
+    rowNumber - 7
+  );
+
+  const exportDir =
+    "/tmp";
 
   const timestamp =
-
     nowWib()
-
       .replace(
         /:/g,
         "-"
       )
-
       .replace(
         / /g,
         "_"
       );
 
   const outputFile =
-
     path.join(
-
       exportDir,
-
       `shopee-${timestamp}.xlsx`
-
     );
 
   await workbook.xlsx.writeFile(

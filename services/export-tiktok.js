@@ -59,13 +59,24 @@ export async function exportTikTok() {
 
   let rowNumber = 6;
 
+  console.log(
+    "EXPORT PRODUCTS:",
+    store.productRows.length
+  );
+
   for (
     const product
-    of store.productRows.slice(
-      0,
-      3
-    )
+    of store.productRows
   ) {
+
+    //
+    // Hanya SKU yang sudah punya data TikTok
+    //
+    if (
+      !product.TIKTOK_PRODUCT_ID
+    ) {
+      continue;
+    }
 
     const stock =
       store.stockMap.get(
@@ -132,6 +143,17 @@ export async function exportTikTok() {
 
     rowNumber++;
   }
+
+  console.log(
+    "EXPORTED ROWS:",
+    rowNumber - 6
+  );
+
+  //
+  // Update range agar semua row terbaca
+  //
+  sheet["!ref"] =
+    `A1:I${rowNumber - 1}`;
 
   const timestamp =
 
