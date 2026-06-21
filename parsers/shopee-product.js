@@ -9,6 +9,11 @@ export async function parseShopeeProduct(
       filePath
     );
 
+  console.log(
+    "SHEETS:",
+    workbook.SheetNames
+  );
+
   const sheet =
     workbook.Sheets[
       workbook.SheetNames[0]
@@ -22,6 +27,31 @@ export async function parseShopeeProduct(
       }
     );
 
+  console.log(
+    "SHOPEE ROWS:",
+    rows.length
+  );
+
+  if (
+    rows.length
+  ) {
+
+    console.log(
+      "SHOPEE ROW 0:",
+      rows[0]
+    );
+
+    console.log(
+      "SHOPEE ROW 1:",
+      rows[1]
+    );
+
+    console.log(
+      "SHOPEE ROW 2:",
+      rows[2]
+    );
+  }
+
   const products = [];
 
   for (
@@ -29,10 +59,29 @@ export async function parseShopeeProduct(
     of rows
   ) {
 
-    const sku =
+    //
+    // FORMAT BARU SHOPEE
+    //
+    const skuBaru =
+      String(
+        row.et_title_variation_sku ||
+
+        row.et_title_parent_sku ||
+
+        ""
+      ).trim();
+
+    //
+    // FORMAT LAMA SHOPEE
+    //
+    const skuLama =
       String(
         row["SKU"] || ""
       ).trim();
+
+    const sku =
+      skuBaru ||
+      skuLama;
 
     if (!sku) {
       continue;
@@ -44,35 +93,86 @@ export async function parseShopeeProduct(
 
       nama:
         String(
-          row["Nama Produk"] || ""
+
+          row.et_title_product_name ||
+
+          row["Nama Produk"] ||
+
+          ""
+
         ).trim(),
 
       variasi:
         String(
-          row["Nama Variasi"] || ""
+
+          row.et_title_variation_name ||
+
+          row["Nama Variasi"] ||
+
+          ""
+
         ).trim(),
 
       stock:
         Number(
-          row["Stok"] || 0
+
+          row.et_title_variation_stock ||
+
+          row["Stok"] ||
+
+          0
+
         ),
 
       shopeeProductId:
         String(
-          row["Kode Produk"] || ""
+
+          row.et_title_product_id ||
+
+          row["Kode Produk"] ||
+
+          ""
+
         ).trim(),
 
       shopeeVariationId:
         String(
-          row["Kode Variasi"] || ""
+
+          row.et_title_variation_id ||
+
+          row["Kode Variasi"] ||
+
+          ""
+
         ).trim(),
 
       hargaShopee:
         Number(
-          row["Harga"] || 0
+
+          row.et_title_variation_price ||
+
+          row["Harga"] ||
+
+          0
+
         )
 
     });
+  }
+
+  console.log(
+    "SHOPEE PRODUCTS:",
+    products.length
+  );
+
+  if (
+    products.length
+  ) {
+
+    console.log(
+      "FIRST PRODUCT:",
+      products[0]
+    );
   }
 
   return products;
