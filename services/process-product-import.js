@@ -100,35 +100,20 @@ export async function processProductImport({
       ) {
 
         productRows.push([
-
   nextNo,
-
   product.nama || "",
-
   product.shopeeProductId || "",
-
   product.tiktokProductId || "",
-
   product.sku || "",
-
   product.variasi || "",
-
   "",
-
   product.hargaShopee || "",
-
   product.hargaTiktok || "",
-
   product.shopeeVariationId || "",
-
   product.tiktokVariationId || "",
-
-  "",
-
-  now,
-
-  ""
-
+  null,    // STOCK (formula)
+  now,     // CREATED_AT
+  null     // LAST_UPDATE (formula)
 ]);
 
         stockRows.push([
