@@ -86,7 +86,24 @@ export async function parseShopeeProduct(
     if (!sku) {
       continue;
     }
+if (
 
+  productId === "sales_info"
+
+  ||
+
+  sku.startsWith("{")
+
+  ||
+
+  !/^\d+$/.test(
+    String(productId)
+  )
+
+) {
+
+  continue;
+}
     products.push({
 
       sku,
