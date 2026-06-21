@@ -182,7 +182,6 @@ const result =
 ✅ Processed : ${result.processed}
 ⏭️ Duplicate : ${result.duplicateOrders}
 📦 Total Qty : ${result.totalQty}
-🆕 New SKU : ${result.newProducts}
 ❌ Error : ${result.errors.length}`
       );
     }
@@ -227,28 +226,7 @@ else if (
     localPath
   );
 
-  const XLSX =
-  (await import("xlsx")).default;
-
-const wb =
-  XLSX.readFile(
-    localPath
-  );
-
-console.log(
-  "DOWNLOADED SHEETS:",
-  wb.SheetNames
-);
-
-const template =
-  wb.Sheets["Template"];
-
-console.log(
-  "DOWNLOADED REF:",
-  template?.["!ref"]
-);
-
-  const result =
+    const result =
 
     await processNewFile({
 

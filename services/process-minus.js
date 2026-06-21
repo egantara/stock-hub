@@ -22,14 +22,6 @@ import {
 from "./processed-orders.js";
 
 import {
-  buildNewProductSet,
-  isNewProduct,
-  addNewProductToSet,
-  createNewProductRow
-}
-from "./new-products.js";
-
-import {
   createLogRow
 }
 from "./logs.js";
@@ -37,7 +29,6 @@ from "./logs.js";
 import {
   appendRows,
   batchUpdate,
-  getRows
 }
 from "./google-sheet.js";
 
@@ -50,29 +41,15 @@ export async function processMinus({
   const store =
     await loadStore();
 
-  const newProductRows =
-    await getRows(
-      "NEW_PRODUCTS"
-    );
-
-  const newProductSet =
-    buildNewProductSet(
-      newProductRows
-    );
-
   let processed = 0;
 
   let duplicateOrders = 0;
 
   let totalQty = 0;
 
-  let newProducts = 0;
-
   const errors = [];
 
   const processedRowsToInsert = [];
-
-  const newProductsRowsToInsert = [];
 
   const logRowsToInsert = [];
 
@@ -116,55 +93,21 @@ export async function processMinus({
 
       if (!product) {
 
-        const alreadyExists =
-          isNewProduct({
+  errors.push({
 
-            skuSet:
-              newProductSet,
+    orderId:
+      order.orderId,
 
-            sku:
-              order.sku
+    sku:
+      order.sku,
 
-          });
+    error:
+      "SKU tidak ditemukan"
 
-        if (
-          !alreadyExists
-        ) {
+  });
 
-          addNewProductToSet({
-
-            skuSet:
-              newProductSet,
-
-            sku:
-              order.sku
-
-          });
-
-          newProductsRowsToInsert.push(
-
-            createNewProductRow({
-
-              sku:
-                order.sku,
-
-              productName:
-                order.productName,
-
-              variant:
-                order.variant,
-
-              marketplace
-
-            })
-
-          );
-
-          newProducts++;
-        }
-
-        continue;
-      }
+  continue;
+}
 
       const {
 
@@ -277,11 +220,6 @@ export async function processMinus({
     ),
 
     appendRows(
-      "NEW_PRODUCTS",
-      newProductsRowsToInsert
-    ),
-
-    appendRows(
       "LOG",
       logRowsToInsert
     )
@@ -295,8 +233,6 @@ export async function processMinus({
     duplicateOrders,
 
     totalQty,
-
-    newProducts,
 
     errors
 
