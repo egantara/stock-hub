@@ -127,6 +127,15 @@ export function minusStock({
       row.STOCK || 0
     );
 
+  if (
+    stockAwal < qty
+  ) {
+
+    throw new Error(
+      `Stock tidak cukup (${stockAwal})`
+    );
+  }
+
   const stockAkhir =
     stockAwal - qty;
 
