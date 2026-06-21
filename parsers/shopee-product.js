@@ -59,16 +59,29 @@ export async function parseShopeeProduct(
     of rows
   ) {
 
+    const productId =
+      String(
+
+        row.et_title_product_id ||
+
+        row["Kode Produk"] ||
+
+        ""
+
+      ).trim();
+
     //
     // FORMAT BARU SHOPEE
     //
     const skuBaru =
       String(
+
         row.et_title_variation_sku ||
 
         row.et_title_parent_sku ||
 
         ""
+
       ).trim();
 
     //
@@ -83,27 +96,40 @@ export async function parseShopeeProduct(
       skuBaru ||
       skuLama;
 
+    //
+    // SKIP METADATA
+    //
+    if (
+
+      productId ===
+        "sales_info"
+
+      ||
+
+      productId ===
+        "Kode Produk"
+
+      ||
+
+      sku.startsWith(
+        "{"
+      )
+
+      ||
+
+      !/^\d+$/.test(
+        productId
+      )
+
+    ) {
+
+      continue;
+    }
+
     if (!sku) {
       continue;
     }
-if (
 
-  productId === "sales_info"
-
-  ||
-
-  sku.startsWith("{")
-
-  ||
-
-  !/^\d+$/.test(
-    String(productId)
-  )
-
-) {
-
-  continue;
-}
     products.push({
 
       sku,
@@ -142,15 +168,7 @@ if (
         ),
 
       shopeeProductId:
-        String(
-
-          row.et_title_product_id ||
-
-          row["Kode Produk"] ||
-
-          ""
-
-        ).trim(),
+        productId,
 
       shopeeVariationId:
         String(
