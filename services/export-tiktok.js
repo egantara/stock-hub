@@ -70,7 +70,7 @@ export async function exportTikTok() {
   ) {
 
     //
-    // Hanya SKU yang sudah punya data TikTok
+    // Hanya produk TikTok
     //
     if (
       !product.TIKTOK_PRODUCT_ID
@@ -83,6 +83,9 @@ export async function exportTikTok() {
         product.SKU
       );
 
+    //
+    // A = Product ID
+    //
     sheet[
       `A${rowNumber}`
     ] = {
@@ -95,6 +98,24 @@ export async function exportTikTok() {
 
     };
 
+    //
+    // C = Product Name
+    //
+    sheet[
+      `C${rowNumber}`
+    ] = {
+
+      t: "s",
+
+      v: String(
+        product.NAMA || ""
+      )
+
+    };
+
+    //
+    // D = SKU ID
+    //
     sheet[
       `D${rowNumber}`
     ] = {
@@ -107,6 +128,24 @@ export async function exportTikTok() {
 
     };
 
+    //
+    // E = Variation Option
+    //
+    sheet[
+      `E${rowNumber}`
+    ] = {
+
+      t: "s",
+
+      v: String(
+        product.VARIASI || ""
+      )
+
+    };
+
+    //
+    // F = Retail Price
+    //
     sheet[
       `F${rowNumber}`
     ] = {
@@ -119,6 +158,9 @@ export async function exportTikTok() {
 
     };
 
+    //
+    // G = Quantity
+    //
     sheet[
       `G${rowNumber}`
     ] = {
@@ -131,6 +173,24 @@ export async function exportTikTok() {
 
     };
 
+    //
+    // H = Seller SKU
+    //
+    sheet[
+      `H${rowNumber}`
+    ] = {
+
+      t: "s",
+
+      v: String(
+        product.SKU || ""
+      )
+
+    };
+
+    //
+    // I = Minimum sales quantity
+    //
     sheet[
       `I${rowNumber}`
     ] = {
@@ -150,7 +210,7 @@ export async function exportTikTok() {
   );
 
   //
-  // Update range agar semua row terbaca
+  // Update range
   //
   sheet["!ref"] =
     `A1:I${rowNumber - 1}`;
