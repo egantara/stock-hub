@@ -75,7 +75,7 @@ export async function exportShopee() {
   ) {
 
     //
-    // Hanya SKU yang sudah punya data Shopee
+    // Hanya produk Shopee
     //
     if (
       !product.SHOPEE_PRODUCT_ID
@@ -88,6 +88,9 @@ export async function exportShopee() {
         product.SKU
       );
 
+    //
+    // A = Kode Produk
+    //
     sheet.getCell(
       `A${rowNumber}`
     ).value =
@@ -95,6 +98,19 @@ export async function exportShopee() {
         product.SHOPEE_PRODUCT_ID || ""
       );
 
+    //
+    // B = Nama Produk
+    //
+    sheet.getCell(
+      `B${rowNumber}`
+    ).value =
+      String(
+        product.NAMA || ""
+      );
+
+    //
+    // C = Kode Variasi
+    //
     sheet.getCell(
       `C${rowNumber}`
     ).value =
@@ -102,6 +118,37 @@ export async function exportShopee() {
         product.SHOPEE_VARIATION_ID || ""
       );
 
+    //
+    // D = Nama Variasi
+    //
+    sheet.getCell(
+      `D${rowNumber}`
+    ).value =
+      String(
+        product.VARIASI || ""
+      );
+
+    //
+    // E = SKU Induk
+    // skip
+    //
+    sheet.getCell(
+      `E${rowNumber}`
+    ).value = "";
+
+    //
+    // F = SKU
+    //
+    sheet.getCell(
+      `F${rowNumber}`
+    ).value =
+      String(
+        product.SKU || ""
+      );
+
+    //
+    // G = Harga
+    //
     sheet.getCell(
       `G${rowNumber}`
     ).value =
@@ -109,6 +156,9 @@ export async function exportShopee() {
         product.HARGA_SHOPEE || 0
       );
 
+    //
+    // I = Stok
+    //
     sheet.getCell(
       `I${rowNumber}`
     ).value =
@@ -116,6 +166,9 @@ export async function exportShopee() {
         stock?.STOCK || 0
       );
 
+    //
+    // J = Min Pembelian
+    //
     sheet.getCell(
       `J${rowNumber}`
     ).value = 1;
