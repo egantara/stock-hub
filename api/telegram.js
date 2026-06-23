@@ -108,8 +108,8 @@ export default async function handler(
 
       await sendMessage(
         chatId,
-        `Chat ID: ${chatId}`,
-`🚀 Stock Hub
+        `Chat ID: ${chatId}
+🚀 Stock Hub
 
 Commands:
 
