@@ -25,25 +25,128 @@ export async function exportLog() {
       "LOG"
     );
 
-  if (
-    rows.length
-  ) {
+  sheet.columns = [
 
-    sheet.columns =
+    {
+      header: "NO",
+      key: "NO",
+      width: 10
+    },
 
-      Object.keys(
-        rows[0]
-      ).map(
-        key => ({
-          header: key,
-          key
-        })
-      );
+    {
+      header: "TIMESTAMP",
+      key: "TIMESTAMP",
+      width: 25
+    },
 
-    sheet.addRows(
-      rows
-    );
-  }
+    {
+      header: "COMMAND",
+      key: "COMMAND",
+      width: 20
+    },
+
+    {
+      header: "MARKETPLACE",
+      key: "MARKETPLACE",
+      width: 20
+    },
+
+    {
+      header: "SKU",
+      key: "SKU",
+      width: 40
+    },
+
+    {
+      header: "QTY",
+      key: "QTY",
+      width: 10
+    },
+
+    {
+      header: "STOCK_AWAL",
+      key: "STOCK_AWAL",
+      width: 15
+    },
+
+    {
+      header: "STOCK_AKHIR",
+      key: "STOCK_AKHIR",
+      width: 15
+    },
+
+    {
+      header: "USER",
+      key: "USER",
+      width: 20
+    }
+
+  ];
+
+  //
+  // Freeze Header
+  //
+  sheet.views = [
+
+    {
+      state: "frozen",
+      ySplit: 1
+    }
+
+  ];
+
+  //
+  // Auto Filter
+  //
+  sheet.autoFilter = {
+
+    from: "A1",
+
+    to: "I1"
+
+  };
+
+  rows.forEach(
+
+    (
+      row,
+      index
+    ) => {
+
+      sheet.addRow({
+
+        NO:
+          index + 1,
+
+        TIMESTAMP:
+          row.TIMESTAMP || "",
+
+        COMMAND:
+          row.COMMAND || "",
+
+        MARKETPLACE:
+          row.MARKETPLACE || "",
+
+        SKU:
+          row.SKU || "",
+
+        QTY:
+          row.QTY || "",
+
+        STOCK_AWAL:
+          row.STOCK_AWAL || "",
+
+        STOCK_AKHIR:
+          row.STOCK_AKHIR || "",
+
+        USER:
+          row.USER || ""
+
+      });
+
+    }
+
+  );
 
   const timestamp =
 
@@ -60,11 +163,19 @@ export async function exportLog() {
       );
 
   const filePath =
-    `/tmp/log-${timestamp}.xlsx`;
+
+    `/tmp/backup-log-${timestamp}.xlsx`;
 
   await workbook.xlsx.writeFile(
     filePath
   );
 
-  return filePath;
+  return {
+
+    filePath,
+
+    totalRows:
+      rows.length
+
+  };
 }

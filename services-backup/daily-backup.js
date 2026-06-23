@@ -41,7 +41,7 @@ export async function dailyBackup({
   //
   // EXPORT PROCESSED
   //
-  const processedFile =
+  const processedBackup =
 
     await exportProcessed();
 
@@ -50,17 +50,19 @@ export async function dailyBackup({
     chatId,
 
     filePath:
-      processedFile,
+      processedBackup.filePath,
 
     caption:
-      "📦 Backup PROCESSED_ORDERS"
+`📦 Backup PROCESSED_ORDERS
+
+Rows : ${processedBackup.totalRows}`
 
   });
 
   //
   // EXPORT LOG
   //
-  const logFile =
+  const logBackup =
 
     await exportLog();
 
@@ -69,35 +71,37 @@ export async function dailyBackup({
     chatId,
 
     filePath:
-      logFile,
+      logBackup.filePath,
 
     caption:
-      "📦 Backup LOG"
+`📦 Backup LOG
+
+Rows : ${logBackup.totalRows}`
 
   });
 
   //
-  // CLEANUP
+  // CLEANUP LOG
   //
   await cleanupLog();
 
-  const processedResult =
+  //
+  // CLEANUP PROCESSED_ORDERS
+  // Simpan 14 hari terakhir
+  //
+  await cleanupProcessed();
 
-    await cleanupProcessed();
-
+  //
+  // SUMMARY
+  //
   await sendMessage(
 
     chatId,
 
 `✅ Daily Backup Selesai
 
-📄 PROCESSED_ORDERS
-Total : ${processedResult.total}
-Disimpan : ${processedResult.kept}
-Dihapus : ${processedResult.deleted}
-
-📄 LOG
-Dibersihkan seluruhnya`
+📄 PROCESSED_ORDERS : Data H+14 dihapus
+📄 LOG : Dibersihkan seluruhnya`
 
   );
 

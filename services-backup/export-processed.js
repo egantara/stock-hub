@@ -25,25 +25,92 @@ export async function exportProcessed() {
       "PROCESSED_ORDERS"
     );
 
-  if (
-    rows.length
-  ) {
+  sheet.columns = [
 
-    sheet.columns =
+    {
+      header: "NO",
+      key: "NO",
+      width: 10
+    },
 
-      Object.keys(
-        rows[0]
-      ).map(
-        key => ({
-          header: key,
-          key
-        })
-      );
+    {
+      header: "ORDER_ID",
+      key: "ORDER_ID",
+      width: 30
+    },
 
-    sheet.addRows(
-      rows
-    );
-  }
+    {
+      header: "SKU",
+      key: "SKU",
+      width: 40
+    },
+
+    {
+      header: "MARKETPLACE",
+      key: "MARKETPLACE",
+      width: 20
+    },
+
+    {
+      header: "TIMESTAMP",
+      key: "TIMESTAMP",
+      width: 25
+    }
+
+  ];
+
+  //
+  // Freeze Header
+  //
+  sheet.views = [
+
+    {
+      state: "frozen",
+      ySplit: 1
+    }
+
+  ];
+
+  //
+  // Auto Filter
+  //
+  sheet.autoFilter = {
+
+    from: "A1",
+
+    to: "E1"
+
+  };
+
+  rows.forEach(
+
+    (
+      row,
+      index
+    ) => {
+
+      sheet.addRow({
+
+        NO:
+          index + 1,
+
+        ORDER_ID:
+          row.ORDER_ID || "",
+
+        SKU:
+          row.SKU || "",
+
+        MARKETPLACE:
+          row.MARKETPLACE || "",
+
+        TIMESTAMP:
+          row.TIMESTAMP || ""
+
+      });
+
+    }
+
+  );
 
   const timestamp =
 
@@ -60,11 +127,19 @@ export async function exportProcessed() {
       );
 
   const filePath =
-    `/tmp/processed-orders-${timestamp}.xlsx`;
+
+    `/tmp/backup-processed-orders-${timestamp}.xlsx`;
 
   await workbook.xlsx.writeFile(
     filePath
   );
 
-  return filePath;
+  return {
+
+    filePath,
+
+    totalRows:
+      rows.length
+
+  };
 }
