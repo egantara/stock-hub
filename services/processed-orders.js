@@ -52,7 +52,7 @@ export function isProcessed({
 
   return processedSet.has(
 
-    `${orderId}|${sku}`
+    `${String(orderId).trim()}|${String(sku).trim()}`
 
   );
 }
@@ -69,7 +69,7 @@ export function addProcessedToSet({
 
   processedSet.add(
 
-    `${orderId}|${sku}`
+    `${String(orderId).trim()}|${String(sku).trim()}`
 
   );
 }
@@ -86,11 +86,17 @@ export function createProcessedRow({
 
   return [
 
-    orderId,
+    String(
+      orderId || ""
+    ).trim(),
 
-    sku,
+    String(
+      sku || ""
+    ).trim(),
 
-    marketplace,
+    String(
+      marketplace || ""
+    ).trim(),
 
     nowWib()
 

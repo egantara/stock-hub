@@ -101,6 +101,11 @@ const sheets =
 
   });
 
+export async function getSheets() {
+
+  return sheets;
+}
+
 function parseRows(
   rows
 ) {
@@ -151,14 +156,17 @@ export async function getRows(
 ) {
 
   const result =
-    await sheets.spreadsheets.values.get({
+    await sheets
+      .spreadsheets
+      .values
+      .get({
 
-      spreadsheetId,
+        spreadsheetId,
 
-      range:
-        `${sheetName}!A:ZZ`
+        range:
+          `${sheetName}!A:ZZ`
 
-    });
+      });
 
   return parseRows(
     result.data.values || []
@@ -203,14 +211,17 @@ export async function getRawRows(
 ) {
 
   const result =
-    await sheets.spreadsheets.values.get({
+    await sheets
+      .spreadsheets
+      .values
+      .get({
 
-      spreadsheetId,
+        spreadsheetId,
 
-      range:
-        `${sheetName}!A:ZZ`
+        range:
+          `${sheetName}!A:ZZ`
 
-    });
+      });
 
   return (
     result.data.values || []
@@ -222,24 +233,27 @@ export async function appendRow(
   values
 ) {
 
-  await sheets.spreadsheets.values.append({
+  await sheets
+    .spreadsheets
+    .values
+    .append({
 
-    spreadsheetId,
+      spreadsheetId,
 
-    range:
-      sheetName,
+      range:
+        sheetName,
 
-    valueInputOption:
-      "USER_ENTERED",
+      valueInputOption:
+        "USER_ENTERED",
 
-    requestBody: {
+      requestBody: {
 
-      values:
-        [values]
+        values:
+          [values]
 
-    }
+      }
 
-  });
+    });
 }
 
 export async function appendRows(
@@ -253,24 +267,27 @@ export async function appendRows(
     return;
   }
 
-  await sheets.spreadsheets.values.append({
+  await sheets
+    .spreadsheets
+    .values
+    .append({
 
-    spreadsheetId,
+      spreadsheetId,
 
-    range:
-      sheetName,
+      range:
+        sheetName,
 
-    valueInputOption:
-      "USER_ENTERED",
+      valueInputOption:
+        "USER_ENTERED",
 
-    requestBody: {
+      requestBody: {
 
-      values:
-        rows
+        values:
+          rows
 
-    }
+      }
 
-  });
+    });
 }
 
 export async function updateRange(
@@ -278,22 +295,25 @@ export async function updateRange(
   values
 ) {
 
-  await sheets.spreadsheets.values.update({
+  await sheets
+    .spreadsheets
+    .values
+    .update({
 
-    spreadsheetId,
+      spreadsheetId,
 
-    range,
+      range,
 
-    valueInputOption:
-      "USER_ENTERED",
+      valueInputOption:
+        "USER_ENTERED",
 
-    requestBody: {
+      requestBody: {
 
-      values
+        values
 
-    }
+      }
 
-  });
+    });
 }
 
 export async function batchUpdate(
@@ -306,19 +326,98 @@ export async function batchUpdate(
     return;
   }
 
-  await sheets.spreadsheets.values.batchUpdate({
+  await sheets
+    .spreadsheets
+    .values
+    .batchUpdate({
 
-    spreadsheetId,
+      spreadsheetId,
 
-    requestBody: {
+      requestBody: {
 
-      valueInputOption:
-        "USER_ENTERED",
+        valueInputOption:
+          "USER_ENTERED",
 
-      data:
-        updates
+        data:
+          updates
 
-    }
+      }
 
-  });
+    });
+}
+
+export async function clearSheet(
+  sheetName
+) {
+
+  await sheets
+    .spreadsheets
+    .values
+    .clear({
+
+      spreadsheetId,
+
+      range:
+        `${sheetName}!A2:ZZ`
+
+    });
+}
+
+export async function deleteRows(
+  sheetId,
+  startIndex,
+  endIndex
+) {
+
+  await sheets
+    .spreadsheets
+    .batchUpdate({
+
+      spreadsheetId,
+
+      requestBody: {
+
+        requests: [
+
+          {
+
+            deleteDimension: {
+
+              range: {
+
+                sheetId,
+
+                dimension:
+                  "ROWS",
+
+                startIndex,
+
+                endIndex
+
+              }
+
+            }
+
+          }
+
+        ]
+
+      }
+
+    });
+}
+
+export async function getSpreadsheet() {
+
+  const result =
+
+    await sheets
+      .spreadsheets
+      .get({
+
+        spreadsheetId
+
+      });
+
+  return result.data;
 }
