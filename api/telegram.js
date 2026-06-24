@@ -1,3 +1,5 @@
+import fs from "fs";
+
 import {
   sendMessage
 }
@@ -52,6 +54,30 @@ import {
   processStockCommand
 }
 from "../services/process-stock-command.js";
+
+function safeDelete(
+  filePath
+) {
+
+  try {
+
+    fs.unlinkSync(
+      filePath
+    );
+
+    console.log(
+      "DELETED:",
+      filePath
+    );
+
+  } catch (error) {
+
+    console.log(
+      "DELETE FAILED:",
+      filePath
+    );
+  }
+}
 
 export default async function handler(
   req,
@@ -451,18 +477,22 @@ else if (
 
   const filePath =
 
-    await exportShopee();
+  await exportShopee();
 
-  await sendDocument({
+await sendDocument({
 
-    chatId,
+  chatId,
 
-    filePath,
+  filePath,
 
-    caption:
-      "📦 Export Shopee"
+  caption:
+    "📦 Export Shopee"
 
-  });
+});
+
+safeDelete(
+  filePath
+);
 }
 
 //
@@ -485,18 +515,22 @@ else if (
 
   const filePath =
 
-    await exportTikTok();
+  await exportTikTok();
 
-  await sendDocument({
+await sendDocument({
 
-    chatId,
+  chatId,
 
-    filePath,
+  filePath,
 
-    caption:
-      "📦 Export TikTok"
+  caption:
+    "📦 Export TikTok"
 
-  });
+});
+
+safeDelete(
+  filePath
+);
 }
 
 //
@@ -519,43 +553,51 @@ else if (
 
   const shopeeFile =
 
-    await exportShopee();
+  await exportShopee();
 
-  await sendDocument({
+await sendDocument({
 
-    chatId,
+  chatId,
 
-    filePath:
-      shopeeFile,
+  filePath:
+    shopeeFile,
 
-    caption:
-      "📦 Export Shopee"
+  caption:
+    "📦 Export Shopee"
 
-  });
+});
 
-  const tiktokFile =
+safeDelete(
+  shopeeFile
+);
 
-    await exportTikTok();
+const tiktokFile =
 
-  await sendDocument({
+  await exportTikTok();
 
-    chatId,
+await sendDocument({
 
-    filePath:
-      tiktokFile,
+  chatId,
 
-    caption:
-      "📦 Export TikTok"
+  filePath:
+    tiktokFile,
 
-  });
+  caption:
+    "📦 Export TikTok"
 
-  await sendMessage(
+});
 
-    chatId,
+safeDelete(
+  tiktokFile
+);
 
-    "✅ Export selesai"
+await sendMessage(
 
-  );
+  chatId,
+
+  "✅ Export selesai"
+
+);
 }
 
 

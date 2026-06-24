@@ -1,3 +1,5 @@
+import fs from "fs";
+
 import {
   exportLog
 }
@@ -28,6 +30,30 @@ import {
 }
 from "../services/telegram.js";
 
+function safeDelete(
+  filePath
+) {
+
+  try {
+
+    fs.unlinkSync(
+      filePath
+    );
+
+    console.log(
+      "DELETED:",
+      filePath
+    );
+
+  } catch (error) {
+
+    console.log(
+      "DELETE FAILED:",
+      filePath
+    );
+  }
+}
+
 export async function dailyBackup({
 
   chatId
@@ -38,12 +64,19 @@ export async function dailyBackup({
     "DAILY BACKUP START"
   );
 
-  //
-  // EXPORT PROCESSED
-  //
-  const processedBackup =
+  let backupSuccess =
+    false;
 
-    await exportProcessed();
+  try {
+
+    //
+    // EXPORT PROCESSED
+    //
+    const processedBackup =
+
+  await exportProcessed();
+
+try {
 
   await sendDocument({
 
@@ -59,12 +92,22 @@ Rows : ${processedBackup.totalRows}`
 
   });
 
-  //
-  // EXPORT LOG
-  //
-  const logBackup =
+} finally {
 
-    await exportLog();
+  safeDelete(
+    processedBackup.filePath
+  );
+
+}
+
+    //
+    // EXPORT LOG
+    //
+    const logBackup =
+
+  await exportLog();
+
+try {
 
   await sendDocument({
 
@@ -80,34 +123,69 @@ Rows : ${logBackup.totalRows}`
 
   });
 
-  //
-  // CLEANUP LOG
-  //
-  await cleanupLog();
+} finally {
 
-  //
-  // CLEANUP PROCESSED_ORDERS
-  // Simpan 14 hari terakhir
-  //
-  await cleanupProcessed();
+  safeDelete(
+    logBackup.filePath
+  );
 
-  //
-  // SUMMARY
-  //
-  await sendMessage(
+}
 
-    chatId,
+    //
+    // BACKUP BERHASIL
+    //
+    backupSuccess =
+      true;
+
+    //
+    // CLEANUP LOG
+    //
+    await cleanupLog();
+
+    //
+    // CLEANUP PROCESSED_ORDERS
+    // Simpan 14 hari terakhir
+    //
+    await cleanupProcessed();
+
+    //
+    // SUMMARY
+    //
+    await sendMessage(
+
+      chatId,
 
 `✅ Daily Backup Selesai
 
 📄 PROCESSED_ORDERS : Data H+14 dihapus
 📄 LOG : Dibersihkan seluruhnya`
 
-  );
+    );
 
-  console.log(
-    "DAILY BACKUP FINISH"
-  );
+    console.log(
+      "DAILY BACKUP FINISH"
+    );
 
-  return true;
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "DAILY BACKUP ERROR:",
+      error
+    );
+
+    throw error;
+
+  } finally {
+
+    if (
+      !backupSuccess
+    ) {
+
+      console.log(
+        "BACKUP FAILED - CLEANUP SKIPPED"
+      );
+    }
+  }
 }
