@@ -1,7 +1,7 @@
 import {
   clearSheet
 }
-from "../services/google-sheet.js";
+from "../services/google/google-sheet.js";
 
 export async function cleanupLog() {
 

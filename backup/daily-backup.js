@@ -23,12 +23,12 @@ from "./cleanup-processed.js";
 import {
   sendDocument
 }
-from "../services/send-document.js";
+from "../services/telegram/send-document.js";
 
 import {
   sendMessage
 }
-from "../services/telegram.js";
+from "../services//telegram/telegram.js";
 
 function safeDelete(
   filePath

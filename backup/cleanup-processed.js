@@ -3,7 +3,7 @@ import {
   clearSheet,
   appendRows
 }
-from "../services/google-sheet.js";
+from "../services/google/google-sheet.js";
 
 export async function cleanupProcessed() {
 
