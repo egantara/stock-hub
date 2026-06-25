@@ -1,12 +1,12 @@
 import {
   loadStore
 }
-from "./store.js";
+from "../google/store.js";
 
 import {
   findProduct
 }
-from "../product/products.js";
+from "../product/product.js";
 
 import {
   minusStock,
