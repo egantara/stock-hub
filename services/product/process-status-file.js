@@ -6,7 +6,7 @@ from "../marketplace/detect-marketplace.js";
 import {
   parseShopeeProduct
 }
-from "../order/parsers/shopee-order.js";
+from "../order/parsers/shopee-product.js";
 
 import {
   parseTiktokProduct
