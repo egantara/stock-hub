@@ -72,11 +72,7 @@ export async function exportTikTok() {
     //
     // Hanya produk TikTok
     //
-    if (
-      !product.TIKTOK_PRODUCT_ID
-    ) {
-      continue;
-    }
+    !product.TIKTOK_PRODUCT_ID
 
     const stock =
       store.stockMap.get(

@@ -19,6 +19,36 @@ import {
 }
 from "./datetime.js";
 
+function mergeMarketplace(
+  current,
+  incoming
+) {
+
+  const values =
+    String(
+      current || ""
+    )
+      .split(",")
+      .map(
+        item =>
+          item.trim()
+      )
+      .filter(Boolean);
+
+  if (
+    !values.includes(
+      incoming
+    )
+  ) {
+
+    values.push(
+      incoming
+    );
+  }
+
+  return values.join(",");
+}
+
 export async function processProductImport({
 
   products,
@@ -106,14 +136,15 @@ export async function processProductImport({
   product.tiktokProductId || "",
   product.sku || "",
   product.variasi || "",
-  "",
   product.hargaShopee || "",
   product.hargaTiktok || "",
   product.shopeeVariationId || "",
   product.tiktokVariationId || "",
-  null,    // STOCK (formula)
-  now,     // CREATED_AT
-  null     // LAST_UPDATE (formula)
+  null,
+  now,
+  null,
+  marketplace,
+  "ACTIVE"
 ]);
 
         stockRows.push([
@@ -171,6 +202,68 @@ export async function processProductImport({
       //
       let hasUpdate =
         false;
+
+        const newMarketplace =
+  mergeMarketplace(
+    existing.MARKETPLACE,
+    marketplace
+  );
+
+if (
+  newMarketplace !==
+  existing.MARKETPLACE
+) {
+
+  productUpdates.push({
+
+    range:
+      `PRODUCTS!N${existing.__rowNumber}`,
+
+    values: [[
+      newMarketplace
+    ]]
+
+  });
+
+  hasUpdate =
+    true;
+}
+const status =
+
+  String(
+    existing.STATUS || ""
+  )
+
+    .trim()
+
+    .toUpperCase();
+
+if (
+
+  status !==
+  "DISCONTINUED"
+
+  &&
+
+  status !==
+  "ACTIVE"
+
+) {
+
+  productUpdates.push({
+
+    range:
+      `PRODUCTS!O${existing.__rowNumber}`,
+
+    values: [[
+      "ACTIVE"
+    ]]
+
+  });
+
+  hasUpdate =
+    true;
+}
 
       if (
   marketplace ===
@@ -398,6 +491,65 @@ export async function processProductImport({
       });
     }
   }
+
+  for (
+  const row
+  of store.productRows
+) {
+
+  if (
+
+  String(
+    row.STATUS || ""
+  )
+    .trim()
+    .toUpperCase()
+
+  ===
+
+  "DISCONTINUED"
+
+) {
+
+  continue;
+
+}
+
+  if (
+    !String(
+      row.MARKETPLACE || ""
+    )
+      .split(",")
+      .includes(
+        marketplace
+      )
+  ) {
+
+    continue;
+  }
+
+  if (
+
+    importedSkuSet.has(
+      row.SKU
+    )
+
+  ) {
+
+    continue;
+  }
+
+  productUpdates.push({
+
+    range:
+      `PRODUCTS!O${row.__rowNumber}`,
+
+    values: [[
+      "NON-ACTIVE"
+    ]]
+
+  });
+}
 
   await Promise.all([
 

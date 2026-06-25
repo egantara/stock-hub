@@ -78,10 +78,17 @@ export async function exportShopee() {
     // Hanya produk Shopee
     //
     if (
-      !product.SHOPEE_PRODUCT_ID
-    ) {
-      continue;
-    }
+
+  !product.SHOPEE_PRODUCT_ID ||
+
+  product.STATUS !==
+    "ACTIVE"
+
+) {
+
+  continue;
+
+}
 
     const stock =
       store.stockMap.get(
