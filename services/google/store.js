@@ -6,7 +6,7 @@ from "./google/google-sheet.js";
 import {
   buildProcessedSet
 }
-from "./processed-orders.js";
+from "../stock/processed-orders.js"
 
 export async function loadStore() {
 
