@@ -1,7 +1,7 @@
 import {
   detectMarketplace
 }
-from "./detect-marketplace.js";
+from "./marketplace/detect-marketplace.js";
 
 import {
   parseShopeeOrder
@@ -16,7 +16,7 @@ from "../parsers/tiktok-order.js";
 import {
   processMinus
 }
-from "./process-minus.js";
+from "./stock/process-minus.js";
 
 export async function processUploadedFile({
   filePath,

@@ -7,17 +7,17 @@ import {
   appendRows,
   batchUpdate
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
 import {
   nowWib
 }
-from "./datetime.js";
+from "../utils/datetime.js";
 
 function mergeMarketplace(
   current,

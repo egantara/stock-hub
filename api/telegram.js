@@ -3,12 +3,12 @@ import fs from "fs";
 import {
   processStatusFile
 }
-from "../services/process-status-file.js";
+from "../services/product/process-status-file.js";
 
 import {
   processStatusCommand
 }
-from "../services/process-status-command.js";
+from "../services/product/process-status-command.js";
 
 import {
   sendMessage
@@ -23,12 +23,12 @@ from "../services/process-new-file.js";
 import {
   exportTikTok
 }
-from "../services/export-tiktok.js";
+from "../services/marketplace/export-tiktok.js";
 
 import {
   exportShopee
 }
-from "../services/export-shopee.js";
+from "../services/marketplace/export-shopee.js";
 
 import {
   sendDocument
@@ -48,22 +48,22 @@ from "../services/process-uploaded-file.js";
 import {
   processSalesCommand
 }
-from "../services/process-sales-command.js";
+from "../services/stock/process-sales-command.js";
 
 import {
   processRestockCommand
 }
-from "../services/process-restock-command.js";
+from "../services/stock/process-restock-command.js";
 
 import {
   processSetCommand
 }
-from "../services/process-set-command.js";
+from "../services/stock/process-set-command.js";
 
 import {
   processStockCommand
 }
-from "../services/process-stock-command.js";
+from "../services/stock/process-stock-command.js";
 
 function safeDelete(
   filePath

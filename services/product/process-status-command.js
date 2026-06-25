@@ -6,17 +6,17 @@ from "./store.js";
 import {
   batchUpdate
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
 import {
   appendRows
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 export async function processStatusCommand({
 

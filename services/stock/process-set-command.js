@@ -4,7 +4,7 @@ import {
 from "./store.js";
 
 import {
-  plusStock,
+  setStock,
   createStockUpdates
 }
 from "./stock.js";
@@ -13,19 +13,19 @@ import {
   batchUpdate,
   appendRows
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   parseCommandItems
 }
-from "./parse-command-items.js";
+from "../utils/parse-command-items.js";
 
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
-export async function processRestockCommand({
+export async function processSetCommand({
 
   text,
 
@@ -36,13 +36,13 @@ export async function processRestockCommand({
   const store =
     await loadStore();
 
-  const items =
+ const items =
   parseCommandItems({
 
     text,
 
     command:
-      "/restock",
+      "/set",
 
     allowDuplicate:
       false
@@ -50,8 +50,6 @@ export async function processRestockCommand({
   });
 
   let processed = 0;
-
-  let totalQty = 0;
 
   const errors = [];
 
@@ -76,30 +74,29 @@ export async function processRestockCommand({
           row?.STOCK || 0
         );
 
+      setStock({
+
+        store,
+
+        sku:
+          item.sku,
+
+        qty:
+          item.qty
+
+      });
+
       const stockAkhir =
-        plusStock({
-
-          store,
-
-          sku:
-            item.sku,
-
-          qty:
-            item.qty
-
-        });
+        item.qty;
 
       processed++;
-
-      totalQty +=
-        item.qty;
 
       logRows.push(
 
         createLogRow({
 
           command:
-            "RESTOCK",
+            "SET STOCK",
 
           marketplace:
             "MANUAL",
@@ -127,8 +124,8 @@ export async function processRestockCommand({
         sku:
           item.sku,
 
-        error:
-          error.message
+          error:
+            error.message
 
       });
     }
@@ -154,8 +151,6 @@ export async function processRestockCommand({
   return {
 
     processed,
-
-    totalQty,
 
     errors
 

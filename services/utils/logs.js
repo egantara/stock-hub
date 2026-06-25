@@ -1,7 +1,7 @@
 import {
   appendRow
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   nowWib

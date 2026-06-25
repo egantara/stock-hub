@@ -4,7 +4,7 @@ import {
 from "./store.js";
 
 import {
-  minusStock,
+  plusStock,
   createStockUpdates
 }
 from "./stock.js";
@@ -13,29 +13,19 @@ import {
   batchUpdate,
   appendRows
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   parseCommandItems
 }
-from "./parse-command-items.js";
+from "../utils/parse-command-items.js";
 
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
-import {
-  createProcessedOrderRow
-}
-from "./processed-orders.js";
-
-import {
-  createManualOrderId
-}
-from "./datetime.js";
-
-export async function processSalesCommand({
+export async function processRestockCommand({
 
   text,
 
@@ -47,15 +37,17 @@ export async function processSalesCommand({
     await loadStore();
 
   const items =
+  parseCommandItems({
 
-    parseCommandItems({
+    text,
 
-      text,
+    command:
+      "/restock",
 
-      command:
-        "/sales"
+    allowDuplicate:
+      false
 
-    });
+  });
 
   let processed = 0;
 
@@ -65,8 +57,6 @@ export async function processSalesCommand({
 
   const logRows = [];
 
-  const processedRows = [];
-
   for (
     const item
     of items
@@ -74,20 +64,30 @@ export async function processSalesCommand({
 
     try {
 
-      const {
-        stockAwal,
-        stockAkhir
-      } = minusStock({
+      const row =
+        store.stockMap.get(
+          String(
+            item.sku
+          ).trim()
+        );
 
-        store,
+      const stockAwal =
+        Number(
+          row?.STOCK || 0
+        );
 
-        sku:
-          item.sku,
+      const stockAkhir =
+        plusStock({
 
-        qty:
-          item.qty
+          store,
 
-      });
+          sku:
+            item.sku,
+
+          qty:
+            item.qty
+
+        });
 
       processed++;
 
@@ -99,10 +99,10 @@ export async function processSalesCommand({
         createLogRow({
 
           command:
-            "SALES",
+            "RESTOCK",
 
           marketplace:
-            "OFFLINE",
+            "MANUAL",
 
           sku:
             item.sku,
@@ -115,25 +115,6 @@ export async function processSalesCommand({
           stockAkhir,
 
           user
-
-        })
-
-      );
-
-      processedRows.push(
-
-        createProcessedOrderRow({
-
-          orderId:
-            createManualOrderId(
-              processed
-            ),
-
-          sku:
-            item.sku,
-
-          marketplace:
-            "OFFLINE"
 
         })
 
@@ -166,11 +147,6 @@ export async function processSalesCommand({
     appendRows(
       "LOG",
       logRows
-    ),
-
-    appendRows(
-      "PROCESSED_ORDERS",
-      processedRows
     )
 
   ]);

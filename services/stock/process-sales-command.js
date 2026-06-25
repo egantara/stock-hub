@@ -4,7 +4,7 @@ import {
 from "./store.js";
 
 import {
-  setStock,
+  minusStock,
   createStockUpdates
 }
 from "./stock.js";
@@ -13,19 +13,29 @@ import {
   batchUpdate,
   appendRows
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 import {
   parseCommandItems
 }
-from "./parse-command-items.js";
+from "../utils/parse-command-items.js";
 
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
-export async function processSetCommand({
+import {
+  createProcessedOrderRow
+}
+from "./processed-orders.js";
+
+import {
+  createManualOrderId
+}
+from "../utils/datetime.js";
+
+export async function processSalesCommand({
 
   text,
 
@@ -36,24 +46,26 @@ export async function processSetCommand({
   const store =
     await loadStore();
 
- const items =
-  parseCommandItems({
+  const items =
 
-    text,
+    parseCommandItems({
 
-    command:
-      "/set",
+      text,
 
-    allowDuplicate:
-      false
+      command:
+        "/sales"
 
-  });
+    });
 
   let processed = 0;
+
+  let totalQty = 0;
 
   const errors = [];
 
   const logRows = [];
+
+  const processedRows = [];
 
   for (
     const item
@@ -62,19 +74,10 @@ export async function processSetCommand({
 
     try {
 
-      const row =
-        store.stockMap.get(
-          String(
-            item.sku
-          ).trim()
-        );
-
-      const stockAwal =
-        Number(
-          row?.STOCK || 0
-        );
-
-      setStock({
+      const {
+        stockAwal,
+        stockAkhir
+      } = minusStock({
 
         store,
 
@@ -86,20 +89,20 @@ export async function processSetCommand({
 
       });
 
-      const stockAkhir =
-        item.qty;
-
       processed++;
+
+      totalQty +=
+        item.qty;
 
       logRows.push(
 
         createLogRow({
 
           command:
-            "SET STOCK",
+            "SALES",
 
           marketplace:
-            "MANUAL",
+            "OFFLINE",
 
           sku:
             item.sku,
@@ -117,6 +120,25 @@ export async function processSetCommand({
 
       );
 
+      processedRows.push(
+
+        createProcessedOrderRow({
+
+          orderId:
+            createManualOrderId(
+              processed
+            ),
+
+          sku:
+            item.sku,
+
+          marketplace:
+            "OFFLINE"
+
+        })
+
+      );
+
     } catch (error) {
 
       errors.push({
@@ -124,8 +146,8 @@ export async function processSetCommand({
         sku:
           item.sku,
 
-          error:
-            error.message
+        error:
+          error.message
 
       });
     }
@@ -144,6 +166,11 @@ export async function processSetCommand({
     appendRows(
       "LOG",
       logRows
+    ),
+
+    appendRows(
+      "PROCESSED_ORDERS",
+      processedRows
     )
 
   ]);
@@ -151,6 +178,8 @@ export async function processSetCommand({
   return {
 
     processed,
+
+    totalQty,
 
     errors
 

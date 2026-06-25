@@ -6,7 +6,7 @@ from "./store.js";
 import {
   findProduct
 }
-from "./products.js";
+from "../product/products.js";
 
 import {
   minusStock,
@@ -24,13 +24,13 @@ from "./processed-orders.js";
 import {
   createLogRow
 }
-from "./logs.js";
+from "../utils/logs.js";
 
 import {
   appendRows,
   batchUpdate,
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 export async function processMinus({
   orders,

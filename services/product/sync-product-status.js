@@ -6,7 +6,7 @@ from "./store.js";
 import {
   batchUpdate
 }
-from "./google-sheet.js";
+from "../google/google-sheet.js";
 
 export async function syncProductStatus({
 

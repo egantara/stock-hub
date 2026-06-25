@@ -1,7 +1,7 @@
 import {
   detectMarketplace
 }
-from "./detect-marketplace.js";
+from "./marketplace/detect-marketplace.js";
 
 import {
   parseShopeeProduct
@@ -14,11 +14,11 @@ import {
 from "../parsers/tiktok-product.js";
 
 import {
-  syncProductStatus
+  processProductImport
 }
-from "./sync-product-status.js";
+from "./product/process-product-import.js";
 
-export async function processStatusFile({
+export async function processNewFile({
 
   filePath,
 
@@ -26,10 +26,20 @@ export async function processStatusFile({
 
 }) {
 
+  console.log(
+    "PROCESS FILE:",
+    filePath
+  );
+
   const marketplace =
     await detectMarketplace(
       filePath
     );
+
+  console.log(
+    "MARKETPLACE:",
+    marketplace
+  );
 
   if (
     !marketplace
@@ -51,6 +61,11 @@ export async function processStatusFile({
       await parseShopeeProduct(
         filePath
       );
+
+    console.log(
+      "SHOPEE PRODUCTS:",
+      products.length
+    );
   }
 
   if (
@@ -62,15 +77,37 @@ export async function processStatusFile({
       await parseTiktokProduct(
         filePath
       );
+
+    console.log(
+      "TIKTOK PRODUCTS:",
+      products.length
+    );
   }
 
-  return await syncProductStatus({
+  console.log(
+    "START PRODUCT IMPORT"
+  );
 
-    products,
+  const result =
+    await processProductImport({
+
+      products,
+
+      marketplace,
+
+      user
+
+    });
+
+  console.log(
+    "FINISH PRODUCT IMPORT"
+  );
+
+  return {
 
     marketplace,
 
-    user
+    ...result
 
-  });
+  };
 }
