@@ -170,6 +170,22 @@ export async function router({
   }
 
   //
+  // BACKUP
+  //
+
+  if (
+  text === "/backup"
+) {
+
+  return handleBackup({
+
+    chatId
+
+  });
+
+}
+
+  //
   // UNKNOWN
   //
   return handleUnknown({
