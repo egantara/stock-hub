@@ -228,42 +228,6 @@ if (
   hasUpdate =
     true;
 }
-const status =
-
-  String(
-    existing.STATUS || ""
-  )
-
-    .trim()
-
-    .toUpperCase();
-
-if (
-
-  status !==
-  "DISCONTINUED"
-
-  &&
-
-  status !==
-  "ACTIVE"
-
-) {
-
-  productUpdates.push({
-
-    range:
-      `PRODUCTS!O${existing.__rowNumber}`,
-
-    values: [[
-      "ACTIVE"
-    ]]
-
-  });
-
-  hasUpdate =
-    true;
-}
 
       if (
   marketplace ===
@@ -491,65 +455,6 @@ if (
       });
     }
   }
-
-  for (
-  const row
-  of store.productRows
-) {
-
-  if (
-
-  String(
-    row.STATUS || ""
-  )
-    .trim()
-    .toUpperCase()
-
-  ===
-
-  "DISCONTINUED"
-
-) {
-
-  continue;
-
-}
-
-  if (
-    !String(
-      row.MARKETPLACE || ""
-    )
-      .split(",")
-      .includes(
-        marketplace
-      )
-  ) {
-
-    continue;
-  }
-
-  if (
-
-    importedSkuSet.has(
-      row.SKU
-    )
-
-  ) {
-
-    continue;
-  }
-
-  productUpdates.push({
-
-    range:
-      `PRODUCTS!O${row.__rowNumber}`,
-
-    values: [[
-      "NON-ACTIVE"
-    ]]
-
-  });
-}
 
   await Promise.all([
 
