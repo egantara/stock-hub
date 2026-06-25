@@ -24,6 +24,11 @@ import {
 from "./handlers/export.js";
 
 import {
+  handleBackup
+}
+from "./handlers/backup.js";
+
+import {
   handleUnknown
 }
 from "./handlers/unknown.js";
