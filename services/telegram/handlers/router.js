@@ -24,6 +24,11 @@ import {
 from "./handlers/export.js";
 
 import {
+  handleBackup
+}
+from "./handlers/backup.js";
+
+import {
   handleUnknown
 }
 from "./handlers/unknown.js";
@@ -168,6 +173,23 @@ export async function router({
 
     });
   }
+
+  //
+  // EXPORT
+  //
+  
+if (
+  text === "/backup"
+) {
+
+  return handleBackup({
+
+    chatId
+
+  });
+
+}
+
 
   //
   // UNKNOWN
