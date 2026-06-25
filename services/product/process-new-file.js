@@ -16,7 +16,7 @@ from "../order/parsers/tiktok-product.js";
 import {
   processProductImport
 }
-from "./product/process-product-import.js";
+from "./process-product-import.js";
 
 export async function processNewFile({
 
