@@ -1,7 +1,7 @@
 import {
   loadStore
 }
-from "./store.js";
+from "../google/store.js";
 
 import {
   batchUpdate
