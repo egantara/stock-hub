@@ -16,7 +16,7 @@ from "./parsers/tiktok-order.js";
 import {
   processMinus
 }
-from "./stock/process-minus.js";
+from ".process-minus.js";
 
 export async function processUploadedFile({
   filePath,
