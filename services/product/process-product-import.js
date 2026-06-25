@@ -1,7 +1,7 @@
 import {
   loadStore
 }
-from "..google/store.js";
+from "../google/store.js";
 
 import {
   appendRows,
