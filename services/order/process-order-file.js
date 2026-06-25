@@ -1,7 +1,7 @@
 import {
   detectMarketplace
 }
-from "./marketplace/detect-marketplace.js";
+from ".detect-marketplace.js";
 
 import {
   parseShopeeOrder
