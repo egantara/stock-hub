@@ -10,7 +10,7 @@ from "../utils/datetime.js";
 import {
   loadStore
 }
-from "./store.js";
+from "../google/store.js";
 
 export async function exportTikTok() {
 
