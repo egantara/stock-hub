@@ -1,6 +1,16 @@
 import fs from "fs";
 
 import {
+  processStatusFile
+}
+from "../services/process-status-file.js";
+
+import {
+  processStatusCommand
+}
+from "../services/process-status-command.js";
+
+import {
   sendMessage
 }
 from "../services/telegram.js";
@@ -140,6 +150,7 @@ Commands:
 
 /sales
 /new
+/syncstatus
 /restock
 /set
 /stock
@@ -287,6 +298,79 @@ else if (
   );
 }
 
+//
+// SYNC STATUS + FILE
+//
+else if (
+
+  text.startsWith(
+    "/syncstatus"
+  )
+
+  &&
+
+  document
+
+) {
+
+  console.log(
+    "START SYNC STATUS"
+  );
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Sinkronisasi status produk..."
+
+  );
+
+  const localPath =
+
+    await downloadTelegramFile(
+
+      document.file_id
+
+    );
+
+  console.log(
+    "DOWNLOADED:",
+    localPath
+  );
+
+  const result =
+
+    await processStatusFile({
+
+      filePath:
+        localPath,
+
+      user:
+        "TELEGRAM"
+
+    });
+
+  console.log(
+    "RESULT:",
+    result
+  );
+
+  await sendMessage(
+
+    chatId,
+
+`📦 Status Product Updated
+
+Marketplace : ${result.marketplace}
+
+✅ Active : ${result.active}
+⏸️ Non Active : ${result.nonActive}
+⏭️ Skip Discontinued : ${result.skipped}
+📝 Updated : ${result.updated}`
+
+  );
+}
+
     //
     // SALES MANUAL
     //
@@ -400,7 +484,59 @@ await sendMessage(
 ❌ Error : ${result.errors.length}`
       );
     }
+//
+// STATUS
+//
+else if (
 
+  text.startsWith(
+    "/status"
+  )
+
+) {
+
+  const result =
+
+    await processStatusCommand({
+
+      text,
+
+      user:
+        "TELEGRAM"
+
+    });
+
+  if (
+    !result.updated
+  ) {
+
+    await sendMessage(
+
+      chatId,
+
+`ℹ️ Status tidak berubah
+
+SKU : ${result.sku}
+
+Status : ${result.status}`
+
+    );
+
+  } else {
+
+    await sendMessage(
+
+      chatId,
+
+`✅ Status berhasil diubah
+
+SKU : ${result.sku}
+
+Status : ${result.status}`
+
+    );
+  }
+}
    //
 // STOCK
 //
@@ -634,9 +770,14 @@ Contoh:
 Gunakan:
 
 /sales
+/new
+/syncstatus
 /restock
 /set
-/stock`
+/stock
+/exportshopee
+/exporttiktok
+/exportall`
 
       );
     }
