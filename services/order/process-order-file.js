@@ -18,7 +18,7 @@ import {
 }
 from "../stock/process-minus.js";
 
-export async function processUploadedFile({
+export async function processOrderFile({
   filePath,
   user = "SYSTEM"
 }) {
