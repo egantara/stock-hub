@@ -1,7 +1,7 @@
 import {
   getMultipleSheets
 }
-from "./google/google-sheet.js";
+from "./google-sheet.js";
 
 import {
   buildProcessedSet
