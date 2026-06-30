@@ -184,59 +184,67 @@ Marketplace : ${result.marketplace}
   }
 
   //
-  // STATUS
   //
+// STATUS
+//
+if (
+
+  text.startsWith(
+    "/status"
+  )
+
+) {
+
+  const result =
+
+    await processStatusCommand({
+
+      text,
+
+      user:
+        "TELEGRAM"
+
+    });
+
+  let errorText = "";
+
   if (
-
-    text.startsWith(
-      "/status"
-    )
-
+    result.errors.length
   ) {
 
-    const result =
+    errorText =
+      "\n\n" +
 
-      await processStatusCommand({
+      result.errors
 
-        text,
+        .slice(0, 10)
 
-        user:
-          "TELEGRAM"
+        .map(
 
-      });
+          item =>
 
-    if (
+`❌ ${item.sku}
+${item.error}`
 
-      !result.updated
+        )
 
-    ) {
-
-      return sendMessage(
-
-        chatId,
-
-`ℹ️ Status tidak berubah
-
-SKU : ${result.sku}
-
-Status : ${result.status}`
-
-      );
-
-    }
-
-    return sendMessage(
-
-      chatId,
-
-`✅ Status berhasil diubah
-
-SKU : ${result.sku}
-
-Status : ${result.status}`
-
-    );
+        .join("\n\n");
 
   }
+
+  return sendMessage(
+
+    chatId,
+
+`📦 Status Updated
+
+✅ Processed : ${result.processed}
+🔄 Updated : ${result.updated}
+⏭️ Skipped : ${result.skipped}
+❌ Error : ${result.errors.length}${errorText}`
+
+  );
+
+}
 
 }

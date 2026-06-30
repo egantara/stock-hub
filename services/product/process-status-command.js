@@ -4,7 +4,8 @@ import {
 from "../google/store.js";
 
 import {
-  batchUpdate
+  batchUpdate,
+  appendRows
 }
 from "../google/google-sheet.js";
 
@@ -14,9 +15,19 @@ import {
 from "../utils/logs.js";
 
 import {
-  appendRows
+  parseCommandLines
 }
-from "../google/google-sheet.js";
+from "../utils/parse-command-items.js";
+
+const VALID_STATUS = [
+
+  "ACTIVE",
+
+  "NON-ACTIVE",
+
+  "DISCONTINUED"
+
+];
 
 export async function processStatusCommand({
 
@@ -26,155 +37,203 @@ export async function processStatusCommand({
 
 }) {
 
-  const parts =
+  const lines =
 
-    text
+    parseCommandLines({
 
-      .trim()
+      text,
 
-      .split(/\s+/);
+      command:
+        "/status"
 
-  if (
-    parts.length !== 3
-  ) {
-
-    throw new Error(
-
-`Format:
-
-/status SKU ACTIVE
-
-/status SKU NON-ACTIVE
-
-/status SKU DISCONTINUED`
-
-    );
-  }
-
-  const sku =
-
-    parts[1]
-      .trim();
-
-  const status =
-
-    parts[2]
-
-      .trim()
-
-      .toUpperCase();
-
-  if (
-
-    ![
-      "ACTIVE",
-      "NON-ACTIVE",
-      "DISCONTINUED"
-    ].includes(
-      status
-    )
-
-  ) {
-
-    throw new Error(
-      "Status tidak valid."
-    );
-  }
+    });
 
   const store =
     await loadStore();
 
-  const product =
+  const updates = [];
 
-    store.productMap.get(
-      sku
-    );
+  const logRows = [];
 
-  if (
-    !product
+  const errors = [];
+
+  let processed = 0;
+
+  let updated = 0;
+
+  let skipped = 0;
+
+  for (
+    const line
+    of lines
   ) {
 
-    throw new Error(
-      "SKU tidak ditemukan."
-    );
-  }
+    try {
 
-  if (
+      const parts =
+        line.split(/\s+/);
 
-    product.STATUS ===
-    status
+      if (
+        parts.length < 2
+      ) {
 
-  ) {
+        throw new Error(
+          "Format salah."
+        );
 
-    return {
+      }
 
-      updated: false,
+      const sku =
+        parts.shift();
 
-      sku,
+      const status =
 
-      status
+        parts
 
-    };
-  }
+          .join(" ")
 
-  await batchUpdate([
+          .trim()
 
-    {
+          .toUpperCase();
 
-      range:
-        `PRODUCTS!O${product.__rowNumber}`,
+      if (
 
-      values: [[
+        !VALID_STATUS.includes(
+          status
+        )
+
+      ) {
+
+        throw new Error(
+          "Status tidak valid."
+        );
+
+      }
+
+      const product =
+
+        store.productMap.get(
+          sku
+        );
+
+      if (
+        !product
+      ) {
+
+        throw new Error(
+          "SKU tidak ditemukan."
+        );
+
+      }
+
+      processed++;
+
+      if (
+
+        product.STATUS ===
         status
-      ]]
+
+      ) {
+
+        skipped++;
+
+        continue;
+
+      }
+
+      updates.push({
+
+        range:
+          `PRODUCTS!O${product.__rowNumber}`,
+
+        values: [[
+          status
+        ]]
+
+      });
+
+      logRows.push(
+
+        createLogRow({
+
+          command:
+            "STATUS",
+
+          marketplace:
+            product.MARKETPLACE,
+
+          sku,
+
+          qty: 0,
+
+          stockAwal:
+            Number(
+              product.STOCK || 0
+            ),
+
+          stockAkhir:
+            Number(
+              product.STOCK || 0
+            ),
+
+          user
+
+        })
+
+      );
+
+      updated++;
+
+    } catch (error) {
+
+      errors.push({
+
+        sku:
+          line,
+
+        error:
+          error.message
+
+      });
 
     }
 
-  ]);
+  }
 
-  await appendRows(
+  if (
+    updates.length
+  ) {
 
-    "LOG",
+    await batchUpdate(
+      updates
+    );
 
-    [
+  }
 
-      createLogRow({
+  if (
+    logRows.length
+  ) {
 
-        command:
-          "STATUS",
+    await appendRows(
 
-        marketplace:
-          product.MARKETPLACE,
+      "LOG",
 
-        sku,
+      logRows
 
-        qty: 0,
+    );
 
-        stockAwal:
-          Number(
-            product.STOCK || 0
-          ),
-
-        stockAkhir:
-          Number(
-            product.STOCK || 0
-          ),
-
-        user
-
-      })
-
-    ]
-
-  );
+  }
 
   return {
 
-    updated: true,
+    processed,
 
-    sku,
+    updated,
 
-    status
+    skipped,
+
+    errors
 
   };
+
 }
