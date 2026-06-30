@@ -1,7 +1,7 @@
 import {
   dailyBackup
 }
-from "../services-backup/daily-backup.js";
+from "../backup/daily-backup.js";
 
 
 export default async function handler(

@@ -28,7 +28,7 @@ from "../services/telegram/send-document.js";
 import {
   sendMessage
 }
-from "../services//telegram/telegram.js";
+from "../services/telegram/telegram.js";
 
 function safeDelete(
   filePath
