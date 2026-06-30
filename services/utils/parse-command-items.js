@@ -1,3 +1,30 @@
+export function parseCommandLines({
+
+  text,
+
+  command
+
+}) {
+
+  return text
+
+    .slice(
+      command.length
+    )
+
+    .trim()
+
+    .split("\n")
+
+    .map(
+      line =>
+        line.trim()
+    )
+
+    .filter(Boolean);
+
+}
+
 export function parseCommandItems({
 
   text,
@@ -10,58 +37,30 @@ export function parseCommandItems({
 
   const lines =
 
-    text
+    parseCommandLines({
 
-      .split("\n")
+      text,
 
-      .map(
-        line =>
-          line.trim()
-      )
+      command
 
-      .filter(Boolean);
+    });
 
   const items = [];
 
-  //
-  // single line
-  // /sales sku-a 2
-  //
-  if (
-    lines.length === 1
+  for (
+    const line
+    of lines
   ) {
 
     const parts =
-
-      lines[0]
-
-        .replace(
-          command,
-          ""
-        )
-
-        .trim()
-
-        .split(/\s+/);
+      line.split(/\s+/);
 
     if (
       parts.length < 2
     ) {
 
-      throw new Error(
-`Format salah.
+      continue;
 
-Contoh:
-
-${command} sku-a 2
-
-atau
-
-${command}
-
-sku-a 2
-sku-b 1`
-      );
     }
 
     const qty =
@@ -70,12 +69,13 @@ sku-b 1`
       );
 
     if (
-      Number.isNaN(qty)
+      Number.isNaN(
+        qty
+      )
     ) {
 
-      throw new Error(
-        "Qty harus berupa angka"
-      );
+      continue;
+
     }
 
     const sku =
@@ -88,51 +88,7 @@ sku-b 1`
       qty
 
     });
-  }
 
-  //
-  // multi line
-  //
-  else {
-
-    for (
-      let i = 1;
-      i < lines.length;
-      i++
-    ) {
-
-      const parts =
-        lines[i]
-          .split(/\s+/);
-
-      if (
-        parts.length < 2
-      ) {
-        continue;
-      }
-
-      const qty =
-        Number(
-          parts.pop()
-        );
-
-      if (
-        Number.isNaN(qty)
-      ) {
-        continue;
-      }
-
-      const sku =
-        parts.join(" ");
-
-      items.push({
-
-        sku,
-
-        qty
-
-      });
-    }
   }
 
   if (
@@ -142,11 +98,9 @@ sku-b 1`
     throw new Error(
       "Tidak ada item yang diproses"
     );
+
   }
 
-  //
-  // cek duplicate SKU
-  //
   if (
     !allowDuplicate
   ) {
@@ -163,16 +117,19 @@ sku-b 1`
     ) {
 
       const sku =
-        String(
-          item.sku
-        )
-        .trim()
-        .toLowerCase();
+
+        item.sku
+
+          .trim()
+
+          .toLowerCase();
 
       if (
+
         skuSet.has(
           sku
         )
+
       ) {
 
         duplicates.add(
@@ -184,11 +141,15 @@ sku-b 1`
         skuSet.add(
           sku
         );
+
       }
+
     }
 
     if (
+
       duplicates.size
+
     ) {
 
       throw new Error(
@@ -200,8 +161,11 @@ ${[
 
 Gabungkan qty terlebih dahulu.`
       );
+
     }
+
   }
 
   return items;
+
 }
