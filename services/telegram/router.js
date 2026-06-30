@@ -1,4 +1,9 @@
 import {
+  sendMessage
+}
+from "./telegram.js";
+
+import {
   handleStart
 }
 from "./handlers/start.js";
@@ -44,6 +49,33 @@ export async function router({
 }) {
 
   //
+  // VALIDASI MULTIPLE COMMAND
+  //
+  const commands =
+
+    text.match(
+      /^\/\w+/gm
+    ) || [];
+
+  if (
+    commands.length > 1
+  ) {
+
+    await sendMessage(
+
+      chatId,
+
+`⚠️ Satu pesan hanya boleh berisi satu command.
+
+Silakan kirim command satu per satu.`
+
+    );
+
+    return;
+
+  }
+
+  //
   // START
   //
   if (
@@ -55,6 +87,7 @@ export async function router({
       chatId
 
     });
+
   }
 
   //
@@ -62,20 +95,19 @@ export async function router({
   //
   if (
 
-    text.startsWith(
-      "/new"
-    )
-
-    ||
-
-    text.startsWith(
-      "/syncstatus"
-    )
-
-    ||
-
-    text.startsWith(
+    [
+      "/new",
+      "/syncstatus",
       "/status"
+
+    ].some(
+
+      command =>
+
+        text.startsWith(
+          command
+        )
+
     )
 
   ) {
@@ -89,6 +121,7 @@ export async function router({
       document
 
     });
+
   }
 
   //
@@ -96,14 +129,18 @@ export async function router({
   //
   if (
 
-    text.startsWith(
-      "/sales"
-    )
-
-    ||
-
-    text.startsWith(
+    [
+      "/sales",
       "/restock"
+
+    ].some(
+
+      command =>
+
+        text.startsWith(
+          command
+        )
+
     )
 
   ) {
@@ -117,6 +154,7 @@ export async function router({
       document
 
     });
+
   }
 
   //
@@ -124,14 +162,18 @@ export async function router({
   //
   if (
 
-    text.startsWith(
-      "/stock"
-    )
-
-    ||
-
-    text.startsWith(
+    [
+      "/stock",
       "/set"
+
+    ].some(
+
+      command =>
+
+        text.startsWith(
+          command
+        )
+
     )
 
   ) {
@@ -140,9 +182,12 @@ export async function router({
 
       chatId,
 
-      text
+      text,
+
+      document
 
     });
+
   }
 
   //
@@ -150,18 +195,14 @@ export async function router({
   //
   if (
 
-    text ===
-      "/exportshopee"
-
-    ||
-
-    text ===
-      "/exporttiktok"
-
-    ||
-
-    text ===
+    [
+      "/exportshopee",
+      "/exporttiktok",
       "/exportall"
+
+    ].includes(
+      text
+    )
 
   ) {
 
@@ -172,23 +213,23 @@ export async function router({
       text
 
     });
+
   }
 
   //
   // BACKUP
   //
-
   if (
-  text === "/backup"
-) {
+    text === "/backup"
+  ) {
 
-  return handleBackup({
+    return handleBackup({
 
-    chatId
+      chatId
 
-  });
+    });
 
-}
+  }
 
   //
   // UNKNOWN
