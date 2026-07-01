@@ -6,7 +6,7 @@ from "../../google/store.js";
 import {
   findProduct
 }
-from "../services.js";
+from "../service.js";
 
 import {
   batchUpdate,
