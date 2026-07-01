@@ -1,39 +1,39 @@
 import {
   loadStore
 }
-from "../google/store.js";
-
-import {
-  minusStock,
-  createStockUpdates
-}
-from "./stock.js";
+from "../../google/store.js";
 
 import {
   batchUpdate,
   appendRows
 }
-from "../google/google-sheet.js";
+from "../../google/google-sheet.js";
+
+import {
+  minusStock,
+  createStockUpdates
+}
+from "../service.js";
 
 import {
   parseCommandItems
 }
-from "../utils/parse-command-items.js";
+from "../../utils/parse-command-items.js";
 
 import {
   createLogRow
 }
-from "../utils/logs.js";
+from "../../utils/logs.js";
 
 import {
   createProcessedOrderRow
 }
-from "./processed-orders.js";
+from "../processed-orders.js";
 
 import {
   createManualOrderId
 }
-from "../utils/datetime.js";
+from "../../utils/datetime.js";
 
 export async function processSalesCommand({
 
@@ -47,7 +47,6 @@ export async function processSalesCommand({
     await loadStore();
 
   const items =
-
     parseCommandItems({
 
       text,
@@ -75,8 +74,11 @@ export async function processSalesCommand({
     try {
 
       const {
+
         stockAwal,
+
         stockAkhir
+
       } = minusStock({
 
         store,
@@ -150,7 +152,9 @@ export async function processSalesCommand({
           error.message
 
       });
+
     }
+
   }
 
   await Promise.all([
@@ -164,13 +168,19 @@ export async function processSalesCommand({
     ),
 
     appendRows(
+
       "LOG",
+
       logRows
+
     ),
 
     appendRows(
+
       "PROCESSED_ORDERS",
+
       processedRows
+
     )
 
   ]);
@@ -184,4 +194,5 @@ export async function processSalesCommand({
     errors
 
   };
+
 }

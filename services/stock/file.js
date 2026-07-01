@@ -16,12 +16,35 @@ import {
   applyRestock,
   createStockUpdates
 }
-from "./stock.js";
+from "./service.js";
 
 import {
   createLogRow
 }
 from "../utils/logs.js";
+
+function readRows(
+  filePath
+) {
+
+  const workbook =
+    xlsx.readFile(
+      filePath
+    );
+
+  const sheet =
+    workbook.Sheets[
+      workbook.SheetNames[0]
+    ];
+
+  return xlsx.utils.sheet_to_json(
+    sheet,
+    {
+      defval: ""
+    }
+  );
+
+}
 
 function validateDuplicateSku(
   rows
@@ -60,6 +83,7 @@ function validateDuplicateSku(
       );
 
       continue;
+
     }
 
     skuSet.add(
@@ -130,6 +154,48 @@ function parseRow(
 
 }
 
+function getModeConfig(
+  mode
+) {
+
+  switch (
+    mode
+  ) {
+
+    case "SET":
+
+      return {
+
+        command:
+          "SET STOCK",
+
+        apply:
+          applySetStock
+
+      };
+
+    case "RESTOCK":
+
+      return {
+
+        command:
+          "RESTOCK",
+
+        apply:
+          applyRestock
+
+      };
+
+    default:
+
+      throw new Error(
+        `Mode tidak valid: ${mode}`
+      );
+
+  }
+
+}
+
 export async function processStockFile({
 
   filePath,
@@ -140,46 +206,27 @@ export async function processStockFile({
 
 }) {
 
-  const workbook =
-    xlsx.readFile(
-      filePath
-    );
-
-  const sheet =
-    workbook.Sheets[
-      workbook.SheetNames[0]
-    ];
-
   const rows =
-    xlsx.utils.sheet_to_json(
-      sheet,
-      {
-        defval: ""
-      }
+    readRows(
+      filePath
     );
 
   validateDuplicateSku(
     rows
   );
 
+  const {
+
+    command,
+
+    apply
+
+  } = getModeConfig(
+    mode
+  );
+
   const store =
     await loadStore();
-
-  const applyStock =
-
-    mode === "SET"
-
-      ? applySetStock
-
-      : applyRestock;
-
-  const command =
-
-    mode === "SET"
-
-      ? "SET STOCK"
-
-      : "RESTOCK";
 
   let processed = 0;
 
@@ -210,7 +257,7 @@ export async function processStockFile({
 
         result
 
-      ] = applyStock({
+      ] = apply({
 
         store,
 

@@ -11,22 +11,22 @@ from "../download-telegram-file.js";
 import {
   processStockFile
 }
-from "../../stock/process-stock-file.js";
+from "../../stock/file.js";
 
 import {
   processSetCommand
 }
-from "../../stock/process-set-command.js";
+from "../../stock/command/set.js";
 
 import {
   processRestockCommand
 }
-from "../../stock/process-restock-command.js";
+from "../../stock/command/restock.js";
 
 import {
   processStockCommand
 }
-from "../../stock/process-stock-command.js";
+from "../../stock/command/stock.js";
 
 function buildErrorText(
   errors
@@ -37,9 +37,11 @@ function buildErrorText(
   ) {
 
     return "";
+
   }
 
   return (
+
     "\n\n" +
 
     errors
@@ -47,14 +49,82 @@ function buildErrorText(
       .slice(0, 10)
 
       .map(
+
         item =>
+
 `❌ ${item.sku}
 ${item.error}`
+
       )
 
       .join("\n\n")
 
   );
+
+}
+
+function buildResultMessage({
+
+  title,
+
+  result,
+
+  showQty = true
+
+}) {
+
+  return `${title}
+
+✅ Processed : ${result.processed}${
+showQty
+? `
+
+📦 Total Qty : ${result.totalQty}`
+: ""
+}
+
+❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`;
+
+}
+
+function buildStockMessage(
+  items
+) {
+
+  let message =
+    "📦 Stock Information\n\n";
+
+  for (
+    const item
+    of items
+  ) {
+
+    if (
+      !item.found
+    ) {
+
+      message +=
+
+`❌ ${item.sku}
+Not Found
+
+`;
+
+      continue;
+
+    }
+
+    message +=
+
+`SKU : ${item.sku}
+Stock : ${item.stock}
+Last Update : ${item.lastUpdate || "-"} WIB
+
+`;
+
+  }
+
+  return message.trim();
 
 }
 
@@ -69,32 +139,23 @@ export async function handleStock({
 }) {
 
   //
-  // SET / RESTOCK + FILE
+  // SET / RESTOCK FILE
   //
   if (
 
-    document
-
-    &&
+    document &&
 
     (
 
-      text.startsWith(
-        "/set"
-      )
+      text.startsWith("/set") ||
 
-      ||
-
-      text.startsWith(
-        "/restock"
-      )
+      text.startsWith("/restock")
 
     )
 
   ) {
 
     const isSet =
-
       text.startsWith(
         "/set"
       );
@@ -136,15 +197,19 @@ export async function handleStock({
 
       chatId,
 
-`${isSet
+      buildResultMessage({
 
-  ? "✏️ Stock Updated"
+        title:
 
-  : "📦 Restock Recorded"}
+          isSet
 
-✅ Processed : ${result.processed}
-📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
+            ? "✏️ Stock Updated"
+
+            : "📦 Restock Recorded",
+
+        result
+
+      })
 
     );
 
@@ -154,11 +219,7 @@ export async function handleStock({
   // SET
   //
   if (
-
-    text.startsWith(
-      "/set"
-    )
-
+    text.startsWith("/set")
   ) {
 
     const result =
@@ -176,10 +237,17 @@ export async function handleStock({
 
       chatId,
 
-`✏️ Stock Updated
+      buildResultMessage({
 
-✅ Processed : ${result.processed}
-❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
+        title:
+          "✏️ Stock Updated",
+
+        result,
+
+        showQty:
+          false
+
+      })
 
     );
 
@@ -189,11 +257,7 @@ export async function handleStock({
   // RESTOCK
   //
   if (
-
-    text.startsWith(
-      "/restock"
-    )
-
+    text.startsWith("/restock")
   ) {
 
     const result =
@@ -211,11 +275,14 @@ export async function handleStock({
 
       chatId,
 
-`📦 Restock Recorded
+      buildResultMessage({
 
-✅ Processed : ${result.processed}
-📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
+        title:
+          "📦 Restock Recorded",
+
+        result
+
+      })
 
     );
 
@@ -225,11 +292,7 @@ export async function handleStock({
   // STOCK
   //
   if (
-
-    text.startsWith(
-      "/stock"
-    )
-
+    text.startsWith("/stock")
   ) {
 
     const result =
@@ -240,42 +303,13 @@ export async function handleStock({
 
       });
 
-    let message =
-
-      "📦 Stock Information\n\n";
-
-    for (
-      const item
-      of result
-    ) {
-
-      if (
-        !item.found
-      ) {
-
-        message +=
-`❌ ${item.sku}
-Not Found
-
-`;
-
-        continue;
-      }
-
-      message +=
-`SKU : ${item.sku}
-Stock : ${item.stock}
-Last Update : ${item.lastUpdate || "-"} WIB
-
-`;
-
-    }
-
     return sendMessage(
 
       chatId,
 
-      message.trim()
+      buildStockMessage(
+        result
+      )
 
     );
 

@@ -16,7 +16,7 @@ from "../../order/process-order-file.js";
 import {
   processSalesCommand
 }
-from "../../stock/process-sales-command.js";  
+from "../../stock/command/sales.js";  
 
 export async function handleOrder({
 

@@ -12,95 +12,28 @@ export function getStockBySku({
 }) {
 
   return (
+
     store.stockMap.get(
-      String(sku).trim()
-    ) || null
+
+      String(
+        sku
+      ).trim()
+
+    ) ||
+
+    null
+
   );
+
 }
 
-export function setStock({
+function applyStock({
 
   store,
 
-  sku,
+  items,
 
-  qty
-
-}) {
-
-  const row =
-    getStockBySku({
-
-      store,
-
-      sku
-
-    });
-
-  if (!row) {
-
-    throw new Error(
-      `SKU tidak ditemukan: ${sku}`
-    );
-  }
-
-  row.STOCK =
-    Number(qty);
-
-  row.__dirty =
-    true;
-
-  return qty;
-}
-
-export function plusStock({
-
-  store,
-
-  sku,
-
-  qty
-
-}) {
-
-  const row =
-    getStockBySku({
-
-      store,
-
-      sku
-
-    });
-
-  if (!row) {
-
-    throw new Error(
-      `SKU tidak ditemukan: ${sku}`
-    );
-  }
-
-  const stockAwal =
-    Number(
-      row.STOCK || 0
-    );
-
-  const stockAkhir =
-    stockAwal + qty;
-
-  row.STOCK =
-    stockAkhir;
-
-  row.__dirty =
-    true;
-
-  return stockAkhir;
-}
-
-export function applySetStock({
-
-  store,
-
-  items
+  mode
 
 }) {
 
@@ -134,10 +67,18 @@ export function applySetStock({
         row.STOCK || 0
       );
 
-    const stockAkhir =
+    const qty =
       Number(
         item.qty
       );
+
+    const stockAkhir =
+
+      mode === "SET"
+
+        ? qty
+
+        : stockAwal + qty;
 
     row.STOCK =
       stockAkhir;
@@ -162,72 +103,33 @@ export function applySetStock({
 
 }
 
-export function applyRestock({
+export function applySetStock(
+  args
+) {
 
-  store,
+  return applyStock({
 
-  items
+    ...args,
 
-}) {
+    mode:
+      "SET"
 
-  const results = [];
+  });
 
-  for (
-    const item
-    of items
-  ) {
+}
 
-    const row =
-      getStockBySku({
+export function applyRestock(
+  args
+) {
 
-        store,
+  return applyStock({
 
-        sku:
-          item.sku
+    ...args,
 
-      });
+    mode:
+      "RESTOCK"
 
-    if (!row) {
-
-      throw new Error(
-        `SKU tidak ditemukan: ${item.sku}`
-      );
-
-    }
-
-    const stockAwal =
-      Number(
-        row.STOCK || 0
-      );
-
-    const stockAkhir =
-
-      stockAwal +
-
-      Number(
-        item.qty
-      );
-
-    row.STOCK =
-      stockAkhir;
-
-    row.__dirty =
-      true;
-
-    results.push({
-
-      sku:
-        item.sku,
-
-      stockAwal,
-
-      stockAkhir
-
-    });
-
-  }
-
-  return results;
+  });
 
 }
 
@@ -255,6 +157,7 @@ export function minusStock({
     throw new Error(
       `SKU tidak ditemukan: ${sku}`
     );
+
   }
 
   const stockAwal =
@@ -269,6 +172,7 @@ export function minusStock({
     throw new Error(
       `Stock tidak cukup (${stockAwal})`
     );
+
   }
 
   const stockAkhir =
@@ -287,6 +191,7 @@ export function minusStock({
     stockAkhir
 
   };
+
 }
 
 export function createStockUpdates(
@@ -303,7 +208,9 @@ export function createStockUpdates(
     if (
       !row.__dirty
     ) {
+
       continue;
+
     }
 
     updates.push({
@@ -311,8 +218,9 @@ export function createStockUpdates(
       range:
         `STOCK!B${row.__rowNumber}`,
 
-      values:
-        [[row.STOCK]]
+      values: [[
+        row.STOCK
+      ]]
 
     });
 
@@ -321,13 +229,14 @@ export function createStockUpdates(
       range:
         `STOCK!C${row.__rowNumber}`,
 
-      values:
-        [[
-          nowWib()
-        ]]
+      values: [[
+        nowWib()
+      ]]
 
     });
+
   }
 
   return updates;
+
 }
