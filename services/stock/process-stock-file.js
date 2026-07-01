@@ -23,6 +23,113 @@ import {
 }
 from "../utils/logs.js";
 
+function validateDuplicateSku(
+  rows
+) {
+
+  const skuSet =
+    new Set();
+
+  const duplicates =
+    new Set();
+
+  for (
+    const row
+    of rows
+  ) {
+
+    const sku =
+      String(
+        row.SKU || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    if (!sku) {
+      continue;
+    }
+
+    if (
+      skuSet.has(
+        sku
+      )
+    ) {
+
+      duplicates.add(
+        row.SKU
+      );
+
+      continue;
+    }
+
+    skuSet.add(
+      sku
+    );
+
+  }
+
+  if (
+    duplicates.size
+  ) {
+
+    throw new Error(
+`SKU duplikat ditemukan:
+
+${[
+  ...duplicates
+].join("\n")}
+
+Gabungkan qty terlebih dahulu.`
+    );
+
+  }
+
+}
+
+function parseRow(
+  row
+) {
+
+  const sku =
+    String(
+      row.SKU || ""
+    ).trim();
+
+  if (!sku) {
+
+    throw new Error(
+      "SKU kosong"
+    );
+
+  }
+
+  const qty =
+    Number(
+      row.QTY
+    );
+
+  if (
+    Number.isNaN(
+      qty
+    )
+  ) {
+
+    throw new Error(
+      "QTY tidak valid"
+    );
+
+  }
+
+  return {
+
+    sku,
+
+    qty
+
+  };
+
+}
+
 export async function processStockFile({
 
   filePath,
@@ -51,8 +158,28 @@ export async function processStockFile({
       }
     );
 
+  validateDuplicateSku(
+    rows
+  );
+
   const store =
     await loadStore();
+
+  const applyStock =
+
+    mode === "SET"
+
+      ? applySetStock
+
+      : applyRestock;
+
+  const command =
+
+    mode === "SET"
+
+      ? "SET STOCK"
+
+      : "RESTOCK";
 
   let processed = 0;
 
@@ -69,74 +196,37 @@ export async function processStockFile({
 
     try {
 
-      const sku =
-        String(
-          row.SKU || ""
-        ).trim();
+      const {
 
-      const qty =
-        Number(
-          row.QTY
-        );
+        sku,
 
-      if (
-        !sku
-      ) {
+        qty
 
-        throw new Error(
-          "SKU kosong"
-        );
-
-      }
-
-      if (
-        Number.isNaN(
-          qty
-        )
-      ) {
-
-        throw new Error(
-          "QTY tidak valid"
-        );
-
-      }
+      } = parseRow(
+        row
+      );
 
       const [
+
         result
-      ] =
 
-        mode ===
-        "SET"
+      ] = applyStock({
 
-          ?
+        store,
 
-        applySetStock({
+        items: [
 
-          store,
+          {
 
-          items: [
-            {
-              sku,
-              qty
-            }
-          ]
+            sku,
 
-        })
+            qty
 
-          :
+          }
 
-        applyRestock({
+        ]
 
-          store,
-
-          items: [
-            {
-              sku,
-              qty
-            }
-          ]
-
-        });
+      });
 
       processed++;
 
@@ -147,18 +237,7 @@ export async function processStockFile({
 
         createLogRow({
 
-          command:
-
-            mode ===
-            "SET"
-
-              ?
-
-            "SET STOCK"
-
-              :
-
-            "RESTOCK",
+          command,
 
           marketplace:
             "MANUAL",
