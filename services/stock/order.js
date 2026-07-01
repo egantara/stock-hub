@@ -6,12 +6,12 @@ from "../marketplace/detect-marketplace.js";
 import {
   parseShopeeOrder
 }
-from "./parsers/shopee-order.js";
+from "../order/parsers/shopee-order.js";
 
 import {
   parseTiktokOrder
 }
-from "./parsers/tiktok-order.js";
+from "../order/parsers/tiktok-order.js";
 
 import {
   processOrder
