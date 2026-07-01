@@ -1,51 +1,63 @@
 import {
-  sendMessage
+  appendRow
 }
-from "../telegram.js";
+from "../google/google-sheet.js";
 
-export async function handleStart({
+import {
+  nowWib
+}
+from "./datetime.js";
 
-  chatId
+export function createLogRow({
+
+  command,
+
+  marketplace,
+
+  sku,
+
+  qty,
+
+  stockAwal,
+
+  stockAkhir,
+
+  user
 
 }) {
 
-  return sendMessage(
+  return [
 
-    chatId,
+    nowWib(),
 
-`🚀 Stock Hub
+    marketplace,
+    
+    command,
 
-📦 Order
-/sales         Record sales (Manual & File)
+    sku,
 
-📁 Product
-/new           Import products (File)
-/syncstatus    Sync product status (File)
-/status        Update status (Manual)
+    qty,
 
-📊 Stock
-/stock         Check stock (Manual)
-/set           Set stock (Manual & File)
-/restock       Add stock (Manual & File)
+    stockAwal,
 
-🛒 Marketplace
-/exportshopee  Export Shopee
-/exporttiktok  Export TikTok
-/exportall     Export all
+    stockAkhir,
 
-⚙️ System
-/ping          Check bot status
-/backup        Backup data
+    user
 
-💡 Untuk upload file, kirim file dengan caption command.
+  ];
+}
 
-Contoh:
+export async function addLog(
+  params
+) {
 
-📄 sales.xlsx
+  await appendRow(
 
-Caption:
-/sales`
+    "LOG",
+
+    createLogRow(
+      params
+    )
 
   );
-
-}
+} 

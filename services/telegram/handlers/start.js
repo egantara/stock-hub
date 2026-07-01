@@ -16,32 +16,34 @@ export async function handleStart({
 `🚀 Stock Hub
 
 📦 Order
-/sales (Manual & File)
+/sales         Record sales (Manual & File)
 
 📁 Product
-/new (File)
-/syncstatus (File)
-/status (Manual)
+/new           Import products (File)
+/syncstatus    Sync product status (File)
+/status        Update status (Manual)
 
 📊 Stock
-/stock (Manual)
-/set (Manual & File)
-/restock (Manual & File)
+/stock         Check stock (Manual)
+/set           Set stock (Manual & File)
+/restock       Add stock (Manual & File)
 
 🛒 Marketplace
-/exportshopee
-/exporttiktok
-/exportall
+/exportshopee  Export to format Shopee
+/exporttiktok  Export to format TikTok
+/exportall     Export to format Shopee & Tiktok
 
 ⚙️ System
-/ping
-/backup
+/ping          Check bot status
+/backup        Backup data
 
-💡 Untuk upload file, upload file dengan caption command.
+💡 Untuk upload file, kirim file dengan caption command.
 
 Contoh:
 
-📁
+📄 sales.xlsx
+
+Caption:
 /sales`
 
   );
