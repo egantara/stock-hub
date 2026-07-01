@@ -4,6 +4,11 @@ import {
 from "./handlers/start.js";
 
 import {
+  handlePing
+}
+from "./handlers/ping.js";
+
+import {
   handleOrder
 }
 from "./handlers/order.js";
@@ -179,7 +184,22 @@ if (
   }
 
   //
-  // EXPORT
+// PING
+//
+if (
+  text === "/ping"
+) {
+
+  return handlePing({
+
+    chatId
+
+  });
+
+}
+
+  //
+  // BACKUP
   //
   
 if (
