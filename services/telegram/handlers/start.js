@@ -9,24 +9,40 @@ export async function handleStart({
 
 }) {
 
-  await sendMessage(
+  return sendMessage(
 
     chatId,
 
 `🚀 Stock Hub
 
-Commands:
+📦 Order
+/sales (Manual & File)
 
-/sales
-/new
-/syncstatus
-/status
-/restock
-/set
-/stock
+📁 Product
+/new (File)
+/syncstatus (File)
+/status (Manual)
+
+📊 Stock
+/stock (Manual)
+/set (Manual & File)
+/restock (Manual & File)
+
+🛒 Marketplace
 /exportshopee
 /exporttiktok
-/exportall`
+/exportall
+
+⚙️ System
+/ping
+/backup
+
+💡 Untuk upload file, upload file dengan caption command.
+
+Contoh:
+
+📁
+/sales`
 
   );
 

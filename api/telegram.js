@@ -13,12 +13,32 @@ export default async function handler(
   res
 ) {
 
+  let chatId;
+
   try {
 
-    const message =
-      req.body?.message;
+    if (
+      req.method !== "POST"
+    ) {
 
-    const chatId =
+      return res.status(405).json({
+
+        ok: false,
+
+        error:
+          "Method Not Allowed"
+
+      });
+
+    }
+
+    const {
+
+      message
+
+    } = req.body || {};
+
+    chatId =
       message?.chat?.id;
 
     const text =
@@ -37,15 +57,16 @@ export default async function handler(
       "NEW UPDATE"
     );
 
-    console.log(
-      "TEXT:",
-      text
-    );
+    console.log({
 
-    console.log(
-      "FILE:",
-      document?.file_name
-    );
+      chatId,
+
+      text,
+
+      file:
+        document?.file_name || "-"
+
+    });
 
     if (
       !chatId
@@ -56,6 +77,7 @@ export default async function handler(
         ok: true
 
       });
+
     }
 
     await router({
@@ -81,14 +103,11 @@ export default async function handler(
       error
     );
 
-    try {
+    if (
+      chatId
+    ) {
 
-      const chatId =
-        req.body?.message?.chat?.id;
-
-      if (
-        chatId
-      ) {
+      try {
 
         await sendMessage(
 
@@ -97,9 +116,10 @@ export default async function handler(
           `❌ Error\n${error.message}`
 
         );
-      }
 
-    } catch {}
+      } catch {}
+
+    }
 
     return res.status(200).json({
 
