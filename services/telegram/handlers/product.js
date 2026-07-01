@@ -6,7 +6,7 @@ from "../telegram.js";
 import {
   downloadTelegramFile
 }
-from "../download-telegram-file.js";
+from "../download-file.js";
 
 import {
   processNewFile

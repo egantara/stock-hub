@@ -4,6 +4,11 @@ import {
 from "./handlers/start.js";
 
 import {
+  handlePing
+}
+from "./handlers/ping.js";
+
+import {
   handleOrder
 }
 from "./handlers/order.js";
@@ -33,6 +38,36 @@ import {
 }
 from "./handlers/unknown.js";
 
+const routes = {
+
+  "/start": handleStart,
+
+  "/ping": handlePing,
+
+  "/sales": handleOrder,
+
+  "/new": handleProduct,
+
+  "/syncstatus": handleProduct,
+
+  "/status": handleProduct,
+
+  "/stock": handleStock,
+
+  "/set": handleStock,
+
+  "/restock": handleStock,
+
+  "/exportshopee": handleExport,
+
+  "/exporttiktok": handleExport,
+
+  "/exportall": handleExport,
+
+  "/backup": handleBackup
+
+};
+
 export async function router({
 
   chatId,
@@ -43,37 +78,25 @@ export async function router({
 
 }) {
 
-  //
-  // START
-  //
-  if (
-    text === "/start"
-  ) {
+  const command =
 
-    return handleStart({
+    text
 
-      chatId
+      .trim()
 
-    });
+      .split(/\s+/)[0]
 
-  }
+      .toLowerCase();
 
-  //
-  // ORDER
-  //
-  if (
+  const handler =
 
-    text.startsWith(
-      "/sales"
-    )
+    routes[command];
 
-  ) {
+  if (!handler) {
 
-    return handleOrder({
+    return handleUnknown({
 
       chatId,
-
-      text,
 
       document
 
@@ -81,112 +104,11 @@ export async function router({
 
   }
 
-  //
-  // PRODUCT
-  //
-  if (
-
-    text.startsWith("/new")
-
-    ||
-
-    text.startsWith("/syncstatus")
-
-    ||
-
-    text.startsWith("/status")
-
-  ) {
-
-    return handleProduct({
-
-      chatId,
-
-      text,
-
-      document
-
-    });
-
-  }
-
-  //
-  // STOCK
-  //
-  if (
-
-    text.startsWith("/stock")
-
-    ||
-
-    text.startsWith("/set")
-
-    ||
-
-    text.startsWith("/restock")
-
-  ) {
-
-    return handleStock({
-
-      chatId,
-
-      text,
-
-      document
-
-    });
-
-  }
-
-  //
-  // EXPORT
-  //
-  if (
-
-    text === "/exportshopee"
-
-    ||
-
-    text === "/exporttiktok"
-
-    ||
-
-    text === "/exportall"
-
-  ) {
-
-    return handleExport({
-
-      chatId,
-
-      text
-
-    });
-
-  }
-
-  //
-  // BACKUP
-  //
-  if (
-    text === "/backup"
-  ) {
-
-    return handleBackup({
-
-      chatId
-
-    });
-
-  }
-
-  //
-  // UNKNOWN
-  //
-  return handleUnknown({
+  return handler({
 
     chatId,
+
+    text,
 
     document
 
