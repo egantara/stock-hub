@@ -1,23 +1,23 @@
 import {
   loadStore
 }
-from "../google/store.js";
+from "../../google/store.js";
 
 import {
   batchUpdate,
   appendRows
 }
-from "../google/google-sheet.js";
+from "../../google/google-sheet.js";
 
 import {
   createLogRow
 }
-from "../utils/logs.js";
+from "../../utils/logs.js";
 
 import {
   parseCommandLines
 }
-from "../utils/parse-command-items.js";
+from "../../utils/parse-command-items.js";
 
 const VALID_STATUS = [
 
