@@ -16,12 +16,7 @@ from "../../order/process-order-file.js";
 import {
   processSalesCommand
 }
-from "../../stock/process-sales-command.js";
-
-import {
-  processRestockCommand
-}
-from "../../stock/process-restock-command.js";
+from "../../stock/process-sales-command.js";  
 
 export async function handleOrder({
 
@@ -172,40 +167,5 @@ ${item.error}`
 
   }
 
-  //
-  // RESTOCK
-  //
-  if (
-
-    text.startsWith(
-      "/restock"
-    )
-
-  ) {
-
-    const result =
-
-      await processRestockCommand({
-
-        text,
-
-        user:
-          "TELEGRAM"
-
-      });
-
-    return sendMessage(
-
-      chatId,
-
-`📦 Restock Recorded
-
-✅ Processed : ${result.processed}
-📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}`
-
-    );
-
-  }
-
+  
 }

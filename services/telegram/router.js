@@ -1,9 +1,4 @@
 import {
-  sendMessage
-}
-from "./telegram.js";
-
-import {
   handleStart
 }
 from "./handlers/start.js";
@@ -49,33 +44,6 @@ export async function router({
 }) {
 
   //
-  // VALIDASI MULTIPLE COMMAND
-  //
-  const commands =
-
-    text.match(
-      /^\/\w+/gm
-    ) || [];
-
-  if (
-    commands.length > 1
-  ) {
-
-    await sendMessage(
-
-      chatId,
-
-`⚠️ Satu pesan hanya boleh berisi satu command.
-
-Silakan kirim command satu per satu.`
-
-    );
-
-    return;
-
-  }
-
-  //
   // START
   //
   if (
@@ -91,56 +59,12 @@ Silakan kirim command satu per satu.`
   }
 
   //
-  // PRODUCT
-  //
-  if (
-
-    [
-      "/new",
-      "/syncstatus",
-      "/status"
-
-    ].some(
-
-      command =>
-
-        text.startsWith(
-          command
-        )
-
-    )
-
-  ) {
-
-    return handleProduct({
-
-      chatId,
-
-      text,
-
-      document
-
-    });
-
-  }
-
-  //
   // ORDER
   //
   if (
 
-    [
-      "/sales",
-      "/restock"
-
-    ].some(
-
-      command =>
-
-        text.startsWith(
-          command
-        )
-
+    text.startsWith(
+      "/sales"
     )
 
   ) {
@@ -158,23 +82,48 @@ Silakan kirim command satu per satu.`
   }
 
   //
+  // PRODUCT
+  //
+  if (
+
+    text.startsWith("/new")
+
+    ||
+
+    text.startsWith("/syncstatus")
+
+    ||
+
+    text.startsWith("/status")
+
+  ) {
+
+    return handleProduct({
+
+      chatId,
+
+      text,
+
+      document
+
+    });
+
+  }
+
+  //
   // STOCK
   //
   if (
 
-    [
-      "/stock",
-      "/set"
+    text.startsWith("/stock")
 
-    ].some(
+    ||
 
-      command =>
+    text.startsWith("/set")
 
-        text.startsWith(
-          command
-        )
+    ||
 
-    )
+    text.startsWith("/restock")
 
   ) {
 
@@ -195,14 +144,15 @@ Silakan kirim command satu per satu.`
   //
   if (
 
-    [
-      "/exportshopee",
-      "/exporttiktok",
-      "/exportall"
+    text === "/exportshopee"
 
-    ].includes(
-      text
-    )
+    ||
+
+    text === "/exporttiktok"
+
+    ||
+
+    text === "/exportall"
 
   ) {
 
@@ -237,8 +187,6 @@ Silakan kirim command satu per satu.`
   return handleUnknown({
 
     chatId,
-
-    text,
 
     document
 
