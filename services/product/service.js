@@ -518,3 +518,273 @@ if (
 
   };
 }
+import {
+  loadStore
+}
+from "../google/store.js";
+
+import {
+  appendRows,
+  batchUpdate
+}
+from "../google/google-sheet.js";
+
+import {
+  createLogRow
+}
+from "../utils/logs.js";
+
+import {
+  nowWib
+}
+from "../utils/datetime.js";
+
+export function findProduct({
+
+  store,
+
+  sku
+
+}) {
+
+  return (
+
+    store.productMap.get(
+
+      String(
+        sku
+      ).trim()
+
+    )
+
+    ||
+
+    null
+
+  );
+
+}
+
+export function findStock({
+
+  store,
+
+  sku
+
+}) {
+
+  return (
+
+    store.stockMap.get(
+
+      String(
+        sku
+      ).trim()
+
+    )
+
+    ||
+
+    null
+
+  );
+
+}
+
+function mergeMarketplace(
+
+  current,
+
+  incoming
+
+) {
+
+  const values =
+
+    String(
+      current || ""
+    )
+
+      .split(",")
+
+      .map(
+
+        item =>
+          item.trim()
+
+      )
+
+      .filter(Boolean);
+
+  if (
+
+    !values.includes(
+
+      incoming
+
+    )
+
+  ) {
+
+    values.push(
+
+      incoming
+
+    );
+
+  }
+
+  return values.join(",");
+
+}
+
+function createProductRow({
+
+  no,
+
+  product,
+
+  marketplace,
+
+  now
+
+}) {
+
+  return [
+
+    no,
+
+    product.nama || "",
+
+    product.shopeeProductId || "",
+
+    product.tiktokProductId || "",
+
+    product.sku || "",
+
+    product.variasi || "",
+
+    product.hargaShopee || "",
+
+    product.hargaTiktok || "",
+
+    product.shopeeVariationId || "",
+
+    product.tiktokVariationId || "",
+
+    null,
+
+    now,
+
+    null,
+
+    marketplace,
+
+    "ACTIVE"
+
+  ];
+
+}
+
+function createStockRow({
+
+  product,
+
+  now
+
+}) {
+
+  return [
+
+    product.sku,
+
+    Number(
+      product.stock || 0
+    ),
+
+    now
+
+  ];
+
+}
+
+function addProductUpdate({
+
+  updates,
+
+  row,
+
+  column,
+
+  value
+
+}) {
+
+  updates.push({
+
+    range:
+
+      `PRODUCTS!${column}${row.__rowNumber}`,
+
+    values: [[
+
+      value
+
+    ]]
+
+  });
+
+}
+
+function addLog({
+
+  logs,
+
+  command,
+
+  marketplace,
+
+  product,
+
+  existing,
+
+  user
+
+}) {
+
+  logs.push(
+
+    createLogRow({
+
+      command,
+
+      marketplace,
+
+      sku:
+        product.sku,
+
+      qty:
+
+        Number(
+          product.stock || 0
+        ),
+
+      stockAwal:
+
+        Number(
+          existing?.STOCK || 0
+        ),
+
+      stockAkhir:
+
+        Number(
+          existing?.STOCK || product.stock || 0
+        ),
+
+      user
+
+    })
+
+  );
+
+}
