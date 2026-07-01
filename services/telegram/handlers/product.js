@@ -19,6 +19,21 @@ import {
 }
 from "../../product/command/status.js";
 
+function uploadRequired(
+  command
+) {
+
+  return `❌ Command ini harus menggunakan upload file.
+
+Contoh:
+
+📄 products.xlsx
+
+Caption:
+${command}`;
+
+}
+
 function buildErrorText(
   errors
 ) {
@@ -82,6 +97,24 @@ async function processFile({
 
 }
 
+async function sendResult({
+
+  chatId,
+
+  text
+
+}) {
+
+  return sendMessage(
+
+    chatId,
+
+    text
+
+  );
+
+}
+
 export async function handleProduct({
 
   chatId,
@@ -113,30 +146,27 @@ export async function handleProduct({
 
       if (!document) {
 
-        return sendMessage(
+        return sendResult({
 
           chatId,
 
-`❌ Command ini harus menggunakan upload file.
+          text:
+            uploadRequired(
+              "/new"
+            )
 
-Contoh:
-
-📄 products.xlsx
-
-Caption:
-/new`
-
-        );
+        });
 
       }
 
-      await sendMessage(
+      await sendResult({
 
         chatId,
 
-        "⏳ Memproses file..."
+        text:
+          "⏳ Memproses file..."
 
-      );
+      });
 
       const result =
 
@@ -152,10 +182,11 @@ Caption:
 
         });
 
-      return sendMessage(
+      return sendResult({
 
         chatId,
 
+        text:
 `📦 Product Import
 
 📄 Marketplace : ${result.marketplace}
@@ -167,7 +198,7 @@ Caption:
 ⏭️ Duplicate : ${result.duplicateProducts}
 ❌ Error : ${result.errors.length}`
 
-      );
+      });
 
     }
 
@@ -178,30 +209,27 @@ Caption:
 
       if (!document) {
 
-        return sendMessage(
+        return sendResult({
 
           chatId,
 
-`❌ Command ini harus menggunakan upload file.
+          text:
+            uploadRequired(
+              "/syncstatus"
+            )
 
-Contoh:
-
-📄 products.xlsx
-
-Caption:
-/syncstatus`
-
-        );
+        });
 
       }
 
-      await sendMessage(
+      await sendResult({
 
         chatId,
 
-        "⏳ Sinkronisasi status produk..."
+        text:
+          "⏳ Sinkronisasi status produk..."
 
-      );
+      });
 
       const result =
 
@@ -217,10 +245,11 @@ Caption:
 
         });
 
-      return sendMessage(
+      return sendResult({
 
         chatId,
 
+        text:
 `📦 Status Product Updated
 
 📄 Marketplace : ${result.marketplace}
@@ -230,7 +259,7 @@ Caption:
 ⏭️ Skip : ${result.skipped}
 📝 Updated : ${result.updated}`
 
-      );
+      });
 
     }
 
@@ -241,17 +270,18 @@ Caption:
 
       if (document) {
 
-        return sendMessage(
+        return sendResult({
 
           chatId,
 
+          text:
 `❌ /status tidak mendukung upload file.
 
 Gunakan:
 
 /syncstatus`
 
-        );
+        });
 
       }
 
@@ -266,10 +296,11 @@ Gunakan:
 
         });
 
-      return sendMessage(
+      return sendResult({
 
         chatId,
 
+        text:
 `📦 Status Updated
 
 ✅ Processed : ${result.processed}
@@ -277,19 +308,20 @@ Gunakan:
 ⏭️ Skipped : ${result.skipped}
 ❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
 
-      );
+      });
 
     }
 
     default:
 
-      return sendMessage(
+      return sendResult({
 
         chatId,
 
-        "❌ Command tidak dikenali."
+        text:
+          "❌ Command tidak dikenali."
 
-      );
+      });
 
   }
 

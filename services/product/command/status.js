@@ -4,6 +4,11 @@ import {
 from "../../google/store.js";
 
 import {
+  findProduct
+}
+from "../services.js";
+
+import {
   batchUpdate,
   appendRows
 }
@@ -47,6 +52,28 @@ export async function processStatusCommand({
         "/status"
 
     });
+
+    if (
+  !lines.length
+) {
+
+  throw new Error(
+
+`Format salah.
+
+Contoh:
+
+/status SKU-A ACTIVE
+
+atau
+
+/status
+SKU-A ACTIVE
+SKU-B NON-ACTIVE`
+
+  );
+
+}
 
   const store =
     await loadStore();
@@ -112,9 +139,13 @@ export async function processStatusCommand({
 
       const product =
 
-        store.productMap.get(
-          sku
-        );
+  findProduct({
+
+    store,
+
+    sku
+
+  });
 
       if (
         !product
