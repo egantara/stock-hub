@@ -13,7 +13,7 @@ import {
   applyRestock,
   createStockUpdates
 }
-from "../service.js";
+from "../services.js";
 
 import {
   parseCommandItems

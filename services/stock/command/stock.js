@@ -6,7 +6,7 @@ from "../../google/store.js";
 import {
   getStockBySku
 }
-from "../service.js";
+from "../services.js";
 
 function parseSkuList(
   text

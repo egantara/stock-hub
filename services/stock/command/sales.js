@@ -13,7 +13,7 @@ import {
   minusStock,
   createStockUpdates
 }
-from "../service.js";
+from "../services.js";
 
 import {
   parseCommandItems
