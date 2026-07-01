@@ -1,104 +1,253 @@
 import {
-  detectMarketplace
+  loadStore
 }
-from "../marketplace/detect-marketplace.js";
+from "../google/store.js";
 
 import {
-  parseShopeeOrder
+  batchUpdate,
+  appendRows
 }
-from "../order/parsers/shopee-order.js";
+from "../google/google-sheet.js";
 
 import {
-  parseTiktokOrder
+  getStockBySku,
+  minusStock,
+  createStockUpdates
 }
-from "../order/parsers/tiktok-order.js";
+from "./service.js";
 
 import {
-  processOrder
+  isProcessed,
+  addProcessedToSet,
+  createProcessedRow
 }
-from "../stock/order.js";
+from "./processed-orders.js";
 
-export async function processOrderFile({
+import {
+  createLogRow
+}
+from "../utils/logs.js";
 
-  filePath,
+export async function processOrder({
+
+  orders,
+
+  marketplace,
 
   user = "SYSTEM"
 
 }) {
 
-  console.log(
-    "PROCESS FILE:",
-    filePath
-  );
+  const store =
+    await loadStore();
 
-  const marketplace =
-    await detectMarketplace(
-      filePath
-    );
+  let processed = 0;
 
-  console.log(
-    "MARKETPLACE:",
-    marketplace
-  );
+  let duplicateOrders = 0;
 
-  if (!marketplace) {
+  let totalQty = 0;
 
-    throw new Error(
-      "Marketplace tidak dikenali"
-    );
+  const errors = [];
 
-  }
+  const processedRows = [];
 
-  let orders = [];
+  const logRows = [];
 
-  switch (
-    marketplace
+  for (
+    const order
+    of orders
   ) {
 
-    case "SHOPEE":
+    try {
 
-      orders =
-        await parseShopeeOrder(
-          filePath
-        );
+      const exists =
+        isProcessed({
 
-      break;
+          processedSet:
+            store.processedSet,
 
-    case "TIKTOK":
+          orderId:
+            order.orderId,
 
-      orders =
-        await parseTiktokOrder(
-          filePath
-        );
+          sku:
+            order.sku
 
-      break;
+        });
 
-    default:
+      if (
+        exists
+      ) {
 
-      throw new Error(
-        "Marketplace tidak dikenali"
+        duplicateOrders++;
+
+        continue;
+
+      }
+
+      const stock =
+        getStockBySku({
+
+          store,
+
+          sku:
+            order.sku
+
+        });
+
+      if (
+        !stock
+      ) {
+
+        errors.push({
+
+          orderId:
+            order.orderId,
+
+          sku:
+            order.sku,
+
+          error:
+            "SKU tidak ditemukan"
+
+        });
+
+        continue;
+
+      }
+
+      const {
+
+        stockAwal,
+
+        stockAkhir
+
+      } = minusStock({
+
+        store,
+
+        sku:
+          order.sku,
+
+        qty:
+          order.qty
+
+      });
+
+      addProcessedToSet({
+
+        processedSet:
+          store.processedSet,
+
+        orderId:
+          order.orderId,
+
+        sku:
+          order.sku
+
+      });
+
+      processedRows.push(
+
+        createProcessedRow({
+
+          orderId:
+            order.orderId,
+
+          sku:
+            order.sku,
+
+          marketplace
+
+        })
+
       );
+
+      logRows.push(
+
+        createLogRow({
+
+          command:
+            "SALES",
+
+          marketplace,
+
+          sku:
+            order.sku,
+
+          qty:
+            order.qty,
+
+          stockAwal,
+
+          stockAkhir,
+
+          user
+
+        })
+
+      );
+
+      processed++;
+
+      totalQty +=
+        order.qty;
+
+    } catch (error) {
+
+      errors.push({
+
+        orderId:
+          order.orderId,
+
+        sku:
+          order.sku,
+
+        error:
+          error.message
+
+      });
+
+    }
 
   }
 
-  console.log(
-    `${marketplace} ORDERS:`,
-    orders.length
-  );
+  await Promise.all([
+
+    batchUpdate(
+
+      createStockUpdates(
+        store
+      )
+
+    ),
+
+    appendRows(
+
+      "PROCESSED_ORDERS",
+
+      processedRows
+
+    ),
+
+    appendRows(
+
+      "LOG",
+
+      logRows
+
+    )
+
+  ]);
 
   return {
 
-    marketplace,
+    processed,
 
-    ...(await processOrder({
+    duplicateOrders,
 
-      orders,
+    totalQty,
 
-      marketplace,
-
-      user
-
-    }))
+    errors
 
   };
 
