@@ -16,7 +16,12 @@ from "../order/parsers/tiktok-product.js";
 import {
   processProductImport
 }
-from "./process-product-import.js";
+from "./service.js";
+
+import {
+  syncProductStatus
+}
+from "./sync.js";
 
 export async function processNewFile({
 
@@ -110,4 +115,61 @@ export async function processNewFile({
     ...result
 
   };
+}
+
+export async function processStatusFile({
+
+  filePath,
+
+  user = "SYSTEM"
+
+}) {
+
+  const marketplace =
+    await detectMarketplace(
+      filePath
+    );
+
+  if (
+    !marketplace
+  ) {
+
+    throw new Error(
+      "Marketplace tidak dikenali"
+    );
+  }
+
+  let products = [];
+
+  if (
+    marketplace ===
+    "SHOPEE"
+  ) {
+
+    products =
+      await parseShopeeProduct(
+        filePath
+      );
+  }
+
+  if (
+    marketplace ===
+    "TIKTOK"
+  ) {
+
+    products =
+      await parseTiktokProduct(
+        filePath
+      );
+  }
+
+  return await syncProductStatus({
+
+    products,
+
+    marketplace,
+
+    user
+
+  });
 }

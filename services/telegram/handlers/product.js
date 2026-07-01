@@ -11,17 +11,17 @@ from "../download-file.js";
 import {
   processNewFile
 }
-from "../../product/process-new-file.js";
+from "../../product/file.js";
 
 import {
   processStatusFile
 }
-from "../../product/process-status-file.js";
+from "../../product/file.js";
 
 import {
   processStatusCommand
 }
-from "../../product/process-status-command.js";
+from "../../product/command/status.js";
 
 export async function handleProduct({
 
