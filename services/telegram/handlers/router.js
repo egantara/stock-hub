@@ -58,32 +58,27 @@ export async function router({
   }
 
   //
-  // ORDER
-  //
-  if (
+// ORDER
+//
+if (
 
-    text.startsWith(
-      "/sales"
-    )
+  text.startsWith(
+    "/sales"
+  )
 
-    ||
+) {
 
-    text.startsWith(
-      "/restock"
-    )
+  return handleOrder({
 
-  ) {
+    chatId,
 
-    return handleOrder({
+    text,
 
-      chatId,
+    document
 
-      text,
+  });
 
-      document
-
-    });
-  }
+}
 
   //
   // PRODUCT
@@ -120,32 +115,39 @@ export async function router({
   }
 
   //
-  // STOCK
-  //
-  if (
+// STOCK
+//
+if (
 
-    text.startsWith(
-      "/set"
-    )
+  text.startsWith(
+    "/set"
+  )
 
-    ||
+  ||
 
-    text.startsWith(
-      "/stock"
-    )
+  text.startsWith(
+    "/restock"
+  )
 
-  ) {
+  ||
 
-    return handleStock({
+  text.startsWith(
+    "/stock"
+  )
 
-  chatId,
+) {
 
-  text,
+  return handleStock({
 
-  document
+    chatId,
 
-});
-  }
+    text,
+
+    document
+
+  });
+
+}
 
   //
   // EXPORT
