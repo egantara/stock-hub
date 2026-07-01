@@ -9,11 +9,11 @@ export async function handlePing({
 
 }) {
 
-  const start =
-    Date.now();
+  const uptime =
 
-  const latency =
-    Date.now() - start;
+    Math.floor(
+      process.uptime()
+    );
 
   return sendMessage(
 
@@ -21,9 +21,9 @@ export async function handlePing({
 
 `🏓 Pong
 
-Status   : Online
-Version  : 1.0.0
-Response : ${latency} ms`
+🟢 Status   : Online
+📦 Version  : v2
+⏱️ Uptime   : ${uptime}s`
 
   );
 
