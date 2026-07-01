@@ -1,158 +1,149 @@
-import {
-  loadStore
-}
-from "../google/store.js";
+  import {
+    loadStore
+  }
+  from "../google/store.js";
 
 import {
-  setStock,
+  applySetStock,
   createStockUpdates
 }
 from "./stock.js";
 
-import {
-  batchUpdate,
-  appendRows
-}
-from "../google/google-sheet.js";
+  import {
+    batchUpdate,
+    appendRows
+  }
+  from "../google/google-sheet.js";
 
-import {
-  parseCommandItems
-}
-from "../utils/parse-command-items.js";
+  import {
+    parseCommandItems
+  }
+  from "../utils/parse-command-items.js";
 
-import {
-  createLogRow
-}
-from "../utils/logs.js";
+  import {
+    createLogRow
+  }
+  from "../utils/logs.js";
 
-export async function processSetCommand({
-
-  text,
-
-  user = "TELEGRAM"
-
-}) {
-
-  const store =
-    await loadStore();
-
- const items =
-  parseCommandItems({
+  export async function processSetCommand({
 
     text,
 
+    user = "TELEGRAM"
+
+  }) {
+
+    const store =
+      await loadStore();
+
+  const items =
+    parseCommandItems({
+
+      text,
+
+      command:
+        "/set",
+
+      allowDuplicate:
+        false
+
+    });
+
+    let processed = 0;
+
+    const errors = [];
+
+    const logRows = [];
+
+    for (
+      const item
+      of items
+    ) {
+
+      try {
+
+        const [
+
+  result
+
+] = applySetStock({
+
+  store,
+
+  items: [
+
+    item
+
+  ]
+
+});
+
+processed++;
+
+logRows.push(
+
+  createLogRow({
+
     command:
-      "/set",
+      "SET STOCK",
 
-    allowDuplicate:
-      false
+    marketplace:
+      "MANUAL",
 
-  });
+    sku:
+      result.sku,
 
-  let processed = 0;
+    qty:
+      item.qty,
 
-  const errors = [];
+    stockAwal:
+      result.stockAwal,
 
-  const logRows = [];
+    stockAkhir:
+      result.stockAkhir,
 
-  for (
-    const item
-    of items
-  ) {
+    user
 
-    try {
+  })
 
-      const row =
-        store.stockMap.get(
-          String(
-            item.sku
-          ).trim()
-        );
+);
 
-      const stockAwal =
-        Number(
-          row?.STOCK || 0
-        );
+      } catch (error) {
 
-      setStock({
-
-        store,
-
-        sku:
-          item.sku,
-
-        qty:
-          item.qty
-
-      });
-
-      const stockAkhir =
-        item.qty;
-
-      processed++;
-
-      logRows.push(
-
-        createLogRow({
-
-          command:
-            "SET STOCK",
-
-          marketplace:
-            "MANUAL",
+        errors.push({
 
           sku:
             item.sku,
 
-          qty:
-            item.qty,
+            error:
+              error.message
 
-          stockAwal,
-
-          stockAkhir,
-
-          user
-
-        })
-
-      );
-
-    } catch (error) {
-
-      errors.push({
-
-        sku:
-          item.sku,
-
-          error:
-            error.message
-
-      });
+        });
+      }
     }
-  }
 
-  await Promise.all([
+    await Promise.all([
 
-    batchUpdate(
+      batchUpdate(
 
-      createStockUpdates(
-        store
+        createStockUpdates(
+          store
+        )
+
+      ),
+
+      appendRows(
+        "LOG",
+        logRows
       )
 
-    ),
+    ]);
 
-    appendRows(
-      "LOG",
-      logRows
-    )
+    return {
 
-  ]);
+      processed,
 
-  return {
+      errors
 
-    processed,
-
-    errors
-
-  };
-}
+    };
+  }

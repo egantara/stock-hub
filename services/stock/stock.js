@@ -96,6 +96,141 @@ export function plusStock({
   return stockAkhir;
 }
 
+export function applySetStock({
+
+  store,
+
+  items
+
+}) {
+
+  const results = [];
+
+  for (
+    const item
+    of items
+  ) {
+
+    const row =
+      getStockBySku({
+
+        store,
+
+        sku:
+          item.sku
+
+      });
+
+    if (!row) {
+
+      throw new Error(
+        `SKU tidak ditemukan: ${item.sku}`
+      );
+
+    }
+
+    const stockAwal =
+      Number(
+        row.STOCK || 0
+      );
+
+    const stockAkhir =
+      Number(
+        item.qty
+      );
+
+    row.STOCK =
+      stockAkhir;
+
+    row.__dirty =
+      true;
+
+    results.push({
+
+      sku:
+        item.sku,
+
+      stockAwal,
+
+      stockAkhir
+
+    });
+
+  }
+
+  return results;
+
+}
+
+export function applyRestock({
+
+  store,
+
+  items
+
+}) {
+
+  const results = [];
+
+  for (
+    const item
+    of items
+  ) {
+
+    const row =
+      getStockBySku({
+
+        store,
+
+        sku:
+          item.sku
+
+      });
+
+    if (!row) {
+
+      throw new Error(
+        `SKU tidak ditemukan: ${item.sku}`
+      );
+
+    }
+
+    const stockAwal =
+      Number(
+        row.STOCK || 0
+      );
+
+    const stockAkhir =
+
+      stockAwal +
+
+      Number(
+        item.qty
+      );
+
+    row.STOCK =
+      stockAkhir;
+
+    row.__dirty =
+      true;
+
+    results.push({
+
+      sku:
+        item.sku,
+
+      stockAwal,
+
+      stockAkhir
+
+    });
+
+  }
+
+  return results;
+
+}
+
 export function minusStock({
 
   store,

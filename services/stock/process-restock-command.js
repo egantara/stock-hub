@@ -4,7 +4,7 @@ import {
 from "../google/store.js";
 
 import {
-  plusStock,
+  applyRestock,
   createStockUpdates
 }
 from "./stock.js";
@@ -64,61 +64,54 @@ export async function processRestockCommand({
 
     try {
 
-      const row =
-        store.stockMap.get(
-          String(
-            item.sku
-          ).trim()
-        );
+      const [
 
-      const stockAwal =
-        Number(
-          row?.STOCK || 0
-        );
+  result
 
-      const stockAkhir =
-        plusStock({
+] = applyRestock({
 
-          store,
+  store,
 
-          sku:
-            item.sku,
+  items: [
 
-          qty:
-            item.qty
+    item
 
-        });
+  ]
 
-      processed++;
+});
 
-      totalQty +=
-        item.qty;
+processed++;
 
-      logRows.push(
+totalQty +=
+  item.qty;
 
-        createLogRow({
+logRows.push(
 
-          command:
-            "RESTOCK",
+  createLogRow({
 
-          marketplace:
-            "MANUAL",
+    command:
+      "RESTOCK",
 
-          sku:
-            item.sku,
+    marketplace:
+      "MANUAL",
 
-          qty:
-            item.qty,
+    sku:
+      result.sku,
 
-          stockAwal,
+    qty:
+      item.qty,
 
-          stockAkhir,
+    stockAwal:
+      result.stockAwal,
 
-          user
+    stockAkhir:
+      result.stockAkhir,
 
-        })
+    user
 
-      );
+  })
+
+);
 
     } catch (error) {
 

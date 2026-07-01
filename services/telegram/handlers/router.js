@@ -138,11 +138,13 @@ export async function router({
 
     return handleStock({
 
-      chatId,
+  chatId,
 
-      text
+  text,
 
-    });
+  document
+
+});
   }
 
   //
