@@ -68,28 +68,49 @@ const routes = {
 
 };
 
+function getCommand(
+  text
+) {
+
+  return String(
+    text || ""
+  )
+
+    .trim()
+
+    .split(/\s+/)[0]
+
+    .toLowerCase();
+
+}
+
 export async function router({
 
   chatId,
 
-  text,
+  text = "",
 
   document
 
 }) {
 
   const command =
+    getCommand(
+      text
+    );
 
-    text
+  console.log({
 
-      .trim()
+    command,
 
-      .split(/\s+/)[0]
+    file:
+      document?.file_name ||
 
-      .toLowerCase();
+      null
+
+  });
 
   const handler =
-
     routes[command];
 
   if (!handler) {
@@ -97,6 +118,8 @@ export async function router({
     return handleUnknown({
 
       chatId,
+
+      text,
 
       document
 

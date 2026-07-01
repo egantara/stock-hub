@@ -9,11 +9,7 @@ import {
 from "../download-file.js";
 
 import {
-  processNewFile
-}
-from "../../product/file.js";
-
-import {
+  processNewFile,
   processStatusFile
 }
 from "../../product/file.js";
@@ -22,6 +18,69 @@ import {
   processStatusCommand
 }
 from "../../product/command/status.js";
+
+function buildErrorText(
+  errors
+) {
+
+  if (
+    !errors.length
+  ) {
+
+    return "";
+
+  }
+
+  return (
+
+    "\n\n" +
+
+    errors
+
+      .slice(0, 10)
+
+      .map(
+
+        item =>
+
+`❌ ${item.sku}
+${item.error}`
+
+      )
+
+      .join("\n\n")
+
+  );
+
+}
+
+async function processFile({
+
+  document,
+
+  processor,
+
+  user
+
+}) {
+
+  const filePath =
+
+    await downloadTelegramFile(
+
+      document.file_id
+
+    );
+
+  return processor({
+
+    filePath,
+
+    user
+
+  });
+
+}
 
 export async function handleProduct({
 
@@ -33,66 +92,69 @@ export async function handleProduct({
 
 }) {
 
-  //
-  // NEW + FILE
-  //
-  if (
+  const command =
 
-    text.startsWith(
-      "/new"
-    )
+    text
 
-    &&
+      .trim()
 
-    document
+      .split(/\s+/)[0]
 
+      .toLowerCase();
+
+  switch (
+    command
   ) {
 
-    console.log(
-      "START PROCESS"
-    );
+    //
+    // NEW
+    //
+    case "/new": {
 
-    await sendMessage(
+      if (!document) {
 
-      chatId,
+        return sendMessage(
 
-      "⏳ Memproses file..."
+          chatId,
 
-    );
+`❌ Command ini harus menggunakan upload file.
 
-    const localPath =
+Contoh:
 
-      await downloadTelegramFile(
+📄 products.xlsx
 
-        document.file_id
+Caption:
+/new`
+
+        );
+
+      }
+
+      await sendMessage(
+
+        chatId,
+
+        "⏳ Memproses file..."
 
       );
 
-    console.log(
-      "DOWNLOADED:",
-      localPath
-    );
+      const result =
 
-    const result =
+        await processFile({
 
-      await processNewFile({
+          document,
 
-        filePath:
-          localPath,
+          processor:
+            processNewFile,
 
-        user:
-          "TELEGRAM"
+          user:
+            "TELEGRAM"
 
-      });
+        });
 
-    console.log(
-      "RESULT:",
-      result
-    );
+      return sendMessage(
 
-    return sendMessage(
-
-      chatId,
+        chatId,
 
 `📦 Product Import
 
@@ -105,146 +167,130 @@ export async function handleProduct({
 ⏭️ Duplicate : ${result.duplicateProducts}
 ❌ Error : ${result.errors.length}`
 
-    );
+      );
 
-  }
+    }
 
-  //
-  // SYNC STATUS + FILE
-  //
-  if (
+    //
+    // SYNC STATUS
+    //
+    case "/syncstatus": {
 
-    text.startsWith(
-      "/syncstatus"
-    )
+      if (!document) {
 
-    &&
+        return sendMessage(
 
-    document
+          chatId,
 
-  ) {
+`❌ Command ini harus menggunakan upload file.
 
-    console.log(
-      "START SYNC STATUS"
-    );
+Contoh:
 
-    await sendMessage(
+📄 products.xlsx
 
-      chatId,
+Caption:
+/syncstatus`
 
-      "⏳ Sinkronisasi status produk..."
+        );
 
-    );
+      }
 
-    const localPath =
+      await sendMessage(
 
-      await downloadTelegramFile(
+        chatId,
 
-        document.file_id
+        "⏳ Sinkronisasi status produk..."
 
       );
 
-    console.log(
-      "DOWNLOADED:",
-      localPath
-    );
+      const result =
 
-    const result =
+        await processFile({
 
-      await processStatusFile({
+          document,
 
-        filePath:
-          localPath,
+          processor:
+            processStatusFile,
 
-        user:
-          "TELEGRAM"
+          user:
+            "TELEGRAM"
 
-      });
+        });
 
-    console.log(
-      "RESULT:",
-      result
-    );
+      return sendMessage(
 
-    return sendMessage(
-
-      chatId,
+        chatId,
 
 `📦 Status Product Updated
 
-Marketplace : ${result.marketplace}
+📄 Marketplace : ${result.marketplace}
 
 ✅ Active : ${result.active}
 ⏸️ Non Active : ${result.nonActive}
-⏭️ Skip Discontinued : ${result.skipped}
+⏭️ Skip : ${result.skipped}
 📝 Updated : ${result.updated}`
 
-    );
+      );
 
-  }
+    }
 
-  //
-  //
-// STATUS
-//
-if (
+    //
+    // STATUS
+    //
+    case "/status": {
 
-  text.startsWith(
-    "/status"
-  )
+      if (document) {
 
-) {
+        return sendMessage(
 
-  const result =
+          chatId,
 
-    await processStatusCommand({
+`❌ /status tidak mendukung upload file.
 
-      text,
+Gunakan:
 
-      user:
-        "TELEGRAM"
+/syncstatus`
 
-    });
+        );
 
-  let errorText = "";
+      }
 
-  if (
-    result.errors.length
-  ) {
+      const result =
 
-    errorText =
-      "\n\n" +
+        await processStatusCommand({
 
-      result.errors
+          text,
 
-        .slice(0, 10)
+          user:
+            "TELEGRAM"
 
-        .map(
+        });
 
-          item =>
+      return sendMessage(
 
-`❌ ${item.sku}
-${item.error}`
-
-        )
-
-        .join("\n\n");
-
-  }
-
-  return sendMessage(
-
-    chatId,
+        chatId,
 
 `📦 Status Updated
 
 ✅ Processed : ${result.processed}
 🔄 Updated : ${result.updated}
 ⏭️ Skipped : ${result.skipped}
-❌ Error : ${result.errors.length}${errorText}`
+❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
 
-  );
+      );
 
-}
+    }
+
+    default:
+
+      return sendMessage(
+
+        chatId,
+
+        "❌ Command tidak dikenali."
+
+      );
+
+  }
 
 }
