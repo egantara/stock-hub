@@ -76,7 +76,7 @@ export async function processOrderFile({
     default:
 
       throw new Error(
-        `Marketplace belum didukung: ${marketplace}`
+        "Marketplace tidak dikenali"
       );
 
   }
@@ -86,9 +86,11 @@ export async function processOrderFile({
     orders.length
   );
 
-  const result =
+  return {
 
-    await processOrder({
+    marketplace,
+
+    ...(await processOrder({
 
       orders,
 
@@ -96,13 +98,7 @@ export async function processOrderFile({
 
       user
 
-    });
-
-  return {
-
-    marketplace,
-
-    ...result
+    }))
 
   };
 
