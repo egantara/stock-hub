@@ -48,8 +48,6 @@ const routes = {
 
   "/new": handleProduct,
 
-  "/syncstatus": handleProduct,
-
   "/status": handleProduct,
 
   "/stock": handleStock,

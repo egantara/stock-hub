@@ -198,58 +198,48 @@ export async function handleProduct({
 ⏭️ Duplicate : ${result.duplicateProducts}
 ❌ Error : ${result.errors.length}`
 
-      });
+      );
 
     }
 
     //
-    // SYNC STATUS
+    // STATUS
     //
-    case "/syncstatus": {
+    case "/status": {
 
-      if (!document) {
+      //
+      // FILE
+      //
+      if (document) {
+
+        await sendResult({
+
+          chatId,
+
+          text:
+            "⏳ Sinkronisasi status produk..."
+
+        });
+
+        const result =
+
+          await processFile({
+
+            document,
+
+            processor:
+              processStatusFile,
+
+            user:
+              "TELEGRAM"
+
+          });
 
         return sendResult({
 
           chatId,
 
           text:
-            uploadRequired(
-              "/syncstatus"
-            )
-
-        });
-
-      }
-
-      await sendResult({
-
-        chatId,
-
-        text:
-          "⏳ Sinkronisasi status produk..."
-
-      });
-
-      const result =
-
-        await processFile({
-
-          document,
-
-          processor:
-            processStatusFile,
-
-          user:
-            "TELEGRAM"
-
-        });
-
-      return sendResult({
-
-        chatId,
-
-        text:
 `📦 Status Product Updated
 
 📄 Marketplace : ${result.marketplace}
@@ -259,32 +249,13 @@ export async function handleProduct({
 ⏭️ Skip : ${result.skipped}
 📝 Updated : ${result.updated}`
 
-      });
-
-    }
-
-    //
-    // STATUS
-    //
-    case "/status": {
-
-      if (document) {
-
-        return sendResult({
-
-          chatId,
-
-          text:
-`❌ /status tidak mendukung upload file.
-
-Gunakan:
-
-/syncstatus`
-
         });
 
       }
 
+      //
+      // MANUAL
+      //
       const result =
 
         await processStatusCommand({

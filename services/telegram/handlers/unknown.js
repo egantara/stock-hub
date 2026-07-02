@@ -25,7 +25,7 @@ Contoh:
 
 /sales
 /new
-/syncstatus`
+/status`
 
     );
   }
@@ -43,8 +43,7 @@ Gunakan:
 
 📁 Product
 /new           Import products (File)
-/syncstatus    Sync product status (File)
-/status        Update status (Manual)
+/status        Update status (Manual & File)
 
 📊 Stock
 /stock         Check stock (Manual)
