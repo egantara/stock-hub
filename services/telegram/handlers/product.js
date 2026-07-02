@@ -198,7 +198,7 @@ export async function handleProduct({
 ⏭️ Duplicate : ${result.duplicateProducts}
 ❌ Error : ${result.errors.length}`
 
-      );
+    });
 
     }
 
