@@ -1,6 +1,27 @@
 import fs from "fs";
-import FormData from "form-data";
+
 import axios from "axios";
+
+import FormData from "form-data";
+
+const BOT_TOKEN =
+
+  process.env
+    .TELEGRAM_BOT_TOKEN;
+
+if (
+  !BOT_TOKEN
+) {
+
+  throw new Error(
+    "TELEGRAM_BOT_TOKEN is missing"
+  );
+
+}
+
+const API_URL =
+
+  `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`;
 
 export async function sendDocument({
 
@@ -13,16 +34,23 @@ export async function sendDocument({
 }) {
 
   const form =
+
     new FormData();
 
   form.append(
+
     "chat_id",
+
     String(chatId)
+
   );
 
   form.append(
+
     "caption",
+
     caption
+
   );
 
   form.append(
@@ -35,41 +63,32 @@ export async function sendDocument({
 
   );
 
-  const token =
+  const {
 
-    process.env
-      .TELEGRAM_BOT_TOKEN;
+    data
 
-  if (!token) {
+  } = await axios.post(
 
-    throw new Error(
-      "TELEGRAM_BOT_TOKEN is missing"
-    );
-  }
+    API_URL,
 
-  const response =
-    await axios.post(
+    form,
 
-      `https://api.telegram.org/bot${token}/sendDocument`,
+    {
 
-      form,
+      headers:
 
-      {
+        form.getHeaders(),
 
-        headers:
-          form.getHeaders(),
+      maxBodyLength:
+        Infinity,
 
-        maxBodyLength:
-          Infinity,
+      maxContentLength:
+        Infinity
 
-        maxContentLength:
-          Infinity
+    }
 
-      }
-
-    );
-
-  return (
-    response.data
   );
+
+  return data;
+
 }

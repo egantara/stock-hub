@@ -4,6 +4,11 @@ import {
 from "../telegram.js";
 
 import {
+  sendDocument
+}
+from "../send-document.js";
+
+import {
   downloadTelegramFile
 }
 from "../download-file.js";
@@ -33,6 +38,9 @@ import {
   processStockCommand
 }
 from "../../stock/command/stock.js";
+
+const TEMPLATE_PATH =
+  "templates/stock-template.xlsx";
 
 async function processFile({
 
@@ -111,8 +119,11 @@ export async function handleStock({
         document,
 
         mode:
+
           isSet
+
             ? "SET"
+
             : "RESTOCK"
 
       });
@@ -140,7 +151,40 @@ export async function handleStock({
   }
 
   //
-  // SET
+  // SET TEMPLATE
+  //
+  if (
+    text === "/set"
+  ) {
+
+    await sendMessage(
+
+      chatId,
+
+`✏️ Set Stock
+
+Silakan isi template berikut.
+
+QTY = Stock Akhir`
+
+    );
+
+    return sendDocument({
+
+      chatId,
+
+      filePath:
+        TEMPLATE_PATH,
+
+      caption:
+        "📄 Stock Template"
+
+    });
+
+  }
+
+  //
+  // SET MANUAL
   //
   if (
     text.startsWith("/set")
@@ -175,7 +219,40 @@ export async function handleStock({
   }
 
   //
-  // RESTOCK
+  // RESTOCK TEMPLATE
+  //
+  if (
+    text === "/restock"
+  ) {
+
+    await sendMessage(
+
+      chatId,
+
+`📦 Restock
+
+Silakan isi template berikut.
+
+QTY = Jumlah Penambahan`
+
+    );
+
+    return sendDocument({
+
+      chatId,
+
+      filePath:
+        TEMPLATE_PATH,
+
+      caption:
+        "📄 Stock Template"
+
+    });
+
+  }
+
+  //
+  // RESTOCK MANUAL
   //
   if (
     text.startsWith("/restock")

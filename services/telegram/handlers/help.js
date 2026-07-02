@@ -20,7 +20,7 @@ export async function handleHelp({
 📦 STOCK
 
 /stock
-Cek stock SKU
+Cek stock
 
 /set
 Set stock (Manual / Upload File)
@@ -36,23 +36,23 @@ Kurangi stock (Manual / Upload File)
 📋 PRODUCT
 
 /new
-Import produk baru (Upload File)
+Import produk (Upload File)
 
 /status
-Update status produk (Manual / Upload File)
+Update status (Manual / Upload File)
 
 ━━━━━━━━━━━━━━
 
 📤 EXPORT
 
 /exportshopee
-Export to format Shopee
+Export Shopee
 
 /exporttiktok
-Export to format TikTok
+Export TikTok
 
 /exportall
-Export to format Shopee & TikTok`
+Export Shopee & TikTok`
 
   );
 
