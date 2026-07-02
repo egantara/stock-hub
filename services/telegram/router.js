@@ -4,6 +4,11 @@ import {
 from "./handlers/start.js";
 
 import {
+  handleHelp
+}
+from "./handlers/help.js";
+
+import {
   handlePing
 }
 from "./handlers/ping.js";
@@ -41,6 +46,8 @@ from "./handlers/unknown.js";
 const routes = {
 
   "/start": handleStart,
+
+  "/help": handleHelp,
 
   "/ping": handlePing,
 

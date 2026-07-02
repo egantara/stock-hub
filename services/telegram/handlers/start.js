@@ -13,37 +13,16 @@ export async function handleStart({
 
     chatId,
 
-`🚀 Stock Hub
+`👋 Selamat datang di Stock Hub.
 
-📦 Order
-/sales         Record sales (Manual & File)
+Bot ini membantu mengelola:
 
-📁 Product
-/new           Import products (File)
-/status        Update status (Manual & File)
+📦 Stock
+📋 Product
+🛒 Order
+📤 Marketplace Export
 
-📊 Stock
-/stock         Check stock (Manual)
-/set           Set stock (Manual & File)
-/restock       Add stock (Manual & File)
-
-🛒 Marketplace
-/exportshopee  Export to format Shopee
-/exporttiktok  Export to format TikTok
-/exportall     Export to format Shopee & Tiktok
-
-⚙️ System
-/ping          Check bot status
-/backup        Backup data
-
-💡 Untuk upload file, kirim file dengan caption command.
-
-Contoh:
-
-📄 sales.xlsx
-
-Caption:
-/sales`
+Ketik /help untuk melihat daftar command.`
 
   );
 
