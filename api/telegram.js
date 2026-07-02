@@ -6,7 +6,7 @@ from "../services/telegram/router.js";
 import {
   runTask
 }
-from "../services/log/queue.js";
+from "../services/utils/queue.js";
 
 import {
   sendMessage
