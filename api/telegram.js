@@ -4,6 +4,11 @@ import {
 from "../services/telegram/router.js";
 
 import {
+  enqueue
+}
+from "../services/utils/queue.js";
+
+import {
   sendMessage
 }
 from "../services/telegram/telegram.js";
@@ -80,7 +85,11 @@ export default async function handler(
 
     }
 
-    await router({
+    await enqueue(
+
+  () =>
+
+    router({
 
       chatId,
 
@@ -88,7 +97,9 @@ export default async function handler(
 
       document
 
-    });
+    })
+
+);
 
     return res.status(200).json({
 
