@@ -13,12 +13,12 @@ from "../send-document.js";
 import {
   exportShopee
 }
-from "../../marketplace/export-shopee.js";
+from "../../marketplace/shopee.js";
 
 import {
   exportTikTok
 }
-from "../../marketplace/export-tiktok.js";
+from "../../marketplace/tiktok.js";
 
 function safeDelete(
   filePath
