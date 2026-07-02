@@ -4,9 +4,9 @@ import {
 from "../services/telegram/router.js";
 
 import {
-  enqueue
+  runTask
 }
-from "../services/utils/queue.js";
+from "../services/log/queue.js";
 
 import {
   sendMessage
@@ -85,7 +85,7 @@ export default async function handler(
 
     }
 
-    await enqueue(
+    await runTask(
 
   () =>
 
