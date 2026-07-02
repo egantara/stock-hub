@@ -5,12 +5,12 @@ import ExcelJS from "exceljs";
 import {
   nowWib
 }
-from "../utils/datetime.js";
+from "../../utils/datetime.js";
 
 import {
   loadStore
 }
-from "../google/store.js";
+from "../../google/store.js";
 
 export async function exportShopee() {
 

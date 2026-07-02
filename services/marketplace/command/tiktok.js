@@ -5,12 +5,12 @@ import XLSX from "xlsx";
 import {
   nowWib
 }
-from "../utils/datetime.js";
+from "../../utils/datetime.js";
 
 import {
   loadStore
 }
-from "../google/store.js";
+from "../../google/store.js";
 
 export async function exportTikTok() {
 
