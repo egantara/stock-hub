@@ -1,9 +1,18 @@
 let queue =
   Promise.resolve();
 
-export function enqueue(
+let pending =
+  0;
+
+export async function runTask(
   task
 ) {
+
+  pending++;
+
+  console.log(
+    `[QUEUE] Pending: ${pending}`
+  );
 
   const next =
 
@@ -13,8 +22,26 @@ export function enqueue(
 
   queue =
 
-    next.catch(() => {});
+    next
+
+      .catch(() => {})
+
+      .finally(() => {
+
+        pending--;
+
+        console.log(
+          `[QUEUE] Pending: ${pending}`
+        );
+
+      });
 
   return next;
+
+}
+
+export function getPendingTask() {
+
+  return pending;
 
 }
