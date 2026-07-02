@@ -12,7 +12,9 @@ export async function handlePing({
   const uptime =
 
     Math.floor(
+
       process.uptime()
+
     );
 
   return sendMessage(
@@ -21,9 +23,9 @@ export async function handlePing({
 
 `🏓 Pong
 
-🟢 Status   : Online
-📦 Version  : v2
-⏱️ Uptime   : ${uptime}s`
+🟢 Status : Online
+📦 Version : v2
+⏱️ Uptime : ${uptime}s`
 
   );
 

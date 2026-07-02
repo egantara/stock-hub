@@ -9,6 +9,11 @@ import {
 from "../download-file.js";
 
 import {
+  buildSummary
+}
+from "../../utils/message.js";
+
+import {
   processOrderFile
 }
 from "../../order/process-order-file.js";
@@ -16,7 +21,33 @@ from "../../order/process-order-file.js";
 import {
   processSalesCommand
 }
-from "../../stock/command/sales.js";  
+from "../../stock/command/sales.js";
+
+async function processFile({
+
+  document,
+
+  user
+
+}) {
+
+  const filePath =
+
+    await downloadTelegramFile(
+
+      document.file_id
+
+    );
+
+  return processOrderFile({
+
+    filePath,
+
+    user
+
+  });
+
+}
 
 export async function handleOrder({
 
@@ -43,10 +74,6 @@ export async function handleOrder({
 
   ) {
 
-    console.log(
-      "START PROCESS"
-    );
-
     await sendMessage(
 
       chatId,
@@ -55,48 +82,39 @@ export async function handleOrder({
 
     );
 
-    const localPath =
-
-      await downloadTelegramFile(
-
-        document.file_id
-
-      );
-
-    console.log(
-      "DOWNLOADED:",
-      localPath
-    );
-
     const result =
 
-      await processOrderFile({
+      await processFile({
 
-        filePath:
-          localPath,
+        document,
 
         user:
           "TELEGRAM"
 
       });
 
-    console.log(
-      "RESULT:",
-      result
-    );
-
     return sendMessage(
 
       chatId,
 
-`🛒 Sales Imported
+      buildSummary({
 
-📄 Marketplace : ${result.marketplace}
+        title:
+          "🛒 Sales",
 
-✅ Processed : ${result.processed}
-⏭️ Duplicate : ${result.duplicateOrders}
-📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}`
+        processed:
+          result.processed,
+
+        duplicateProducts:
+          result.duplicateOrders,
+
+        totalQty:
+          result.totalQty,
+
+        errors:
+          result.errors
+
+      })
 
     );
 
@@ -124,48 +142,28 @@ export async function handleOrder({
 
       });
 
-    let errorText = "";
-
-    if (
-
-      result.errors.length
-
-    ) {
-
-      errorText =
-
-        "\n\n" +
-
-        result.errors
-
-          .slice(0, 10)
-
-          .map(
-
-            item =>
-
-`❌ ${item.sku}
-${item.error}`
-
-          )
-
-          .join("\n\n");
-
-    }
-
     return sendMessage(
 
       chatId,
 
-`🛒 Sales Recorded
+      buildSummary({
 
-✅ Processed : ${result.processed}
-📦 Total Qty : ${result.totalQty}
-❌ Error : ${result.errors.length}${errorText}`
+        title:
+          "🛒 Sales",
+
+        processed:
+          result.processed,
+
+        totalQty:
+          result.totalQty,
+
+        errors:
+          result.errors
+
+      })
 
     );
 
   }
 
-  
 }

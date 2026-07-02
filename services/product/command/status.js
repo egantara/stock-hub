@@ -69,7 +69,13 @@ atau
 
 /status
 SKU-A ACTIVE
-SKU-B NON-ACTIVE`
+SKU-B NON-ACTIVE
+
+atau
+
+📄 products.xlsx
+Caption:
+/status`
 
   );
 

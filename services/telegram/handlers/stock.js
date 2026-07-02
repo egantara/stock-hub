@@ -9,6 +9,12 @@ import {
 from "../download-file.js";
 
 import {
+  buildSummary,
+  buildStock
+}
+from "../../utils/message.js";
+
+import {
   processStockFile
 }
 from "../../stock/file.js";
@@ -28,103 +34,32 @@ import {
 }
 from "../../stock/command/stock.js";
 
-function buildErrorText(
-  errors
-) {
+async function processFile({
 
-  if (
-    !errors.length
-  ) {
+  document,
 
-    return "";
-
-  }
-
-  return (
-
-    "\n\n" +
-
-    errors
-
-      .slice(0, 10)
-
-      .map(
-
-        item =>
-
-`❌ ${item.sku}
-${item.error}`
-
-      )
-
-      .join("\n\n")
-
-  );
-
-}
-
-function buildResultMessage({
-
-  title,
-
-  result,
-
-  showQty = true
+  mode
 
 }) {
 
-  return `${title}
+  const filePath =
 
-✅ Processed : ${result.processed}${
-showQty
-? `
+    await downloadTelegramFile(
 
-📦 Total Qty : ${result.totalQty}`
-: ""
-}
+      document.file_id
 
-❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`;
+    );
 
-}
+  return processStockFile({
 
-function buildStockMessage(
-  items
-) {
+    filePath,
 
-  let message =
-    "📦 Stock Information\n\n";
+    mode,
 
-  for (
-    const item
-    of items
-  ) {
+    user:
+      "TELEGRAM"
 
-    if (
-      !item.found
-    ) {
-
-      message +=
-
-`❌ ${item.sku}
-Not Found
-
-`;
-
-      continue;
-
-    }
-
-    message +=
-
-`SKU : ${item.sku}
-Stock : ${item.stock}
-Last Update : ${item.lastUpdate || "-"} WIB
-
-`;
-
-  }
-
-  return message.trim();
+  });
 
 }
 
@@ -139,7 +74,7 @@ export async function handleStock({
 }) {
 
   //
-  // SET / RESTOCK FILE
+  // SET / RESTOCK (FILE)
   //
   if (
 
@@ -147,7 +82,9 @@ export async function handleStock({
 
     (
 
-      text.startsWith("/set") ||
+      text.startsWith("/set")
+
+      ||
 
       text.startsWith("/restock")
 
@@ -156,9 +93,8 @@ export async function handleStock({
   ) {
 
     const isSet =
-      text.startsWith(
-        "/set"
-      );
+
+      text.startsWith("/set");
 
     await sendMessage(
 
@@ -168,28 +104,16 @@ export async function handleStock({
 
     );
 
-    const localPath =
-
-      await downloadTelegramFile(
-
-        document.file_id
-
-      );
-
     const result =
 
-      await processStockFile({
+      await processFile({
 
-        filePath:
-          localPath,
+        document,
 
         mode:
           isSet
             ? "SET"
-            : "RESTOCK",
-
-        user:
-          "TELEGRAM"
+            : "RESTOCK"
 
       });
 
@@ -197,17 +121,17 @@ export async function handleStock({
 
       chatId,
 
-      buildResultMessage({
+      buildSummary({
 
         title:
 
           isSet
 
-            ? "✏️ Stock Updated"
+            ? "✏️ Set Stock"
 
-            : "📦 Restock Recorded",
+            : "📦 Restock",
 
-        result
+        ...result
 
       })
 
@@ -237,15 +161,12 @@ export async function handleStock({
 
       chatId,
 
-      buildResultMessage({
+      buildSummary({
 
         title:
-          "✏️ Stock Updated",
+          "✏️ Set Stock",
 
-        result,
-
-        showQty:
-          false
+        ...result
 
       })
 
@@ -275,12 +196,12 @@ export async function handleStock({
 
       chatId,
 
-      buildResultMessage({
+      buildSummary({
 
         title:
-          "📦 Restock Recorded",
+          "📦 Restock",
 
-        result
+        ...result
 
       })
 
@@ -307,8 +228,10 @@ export async function handleStock({
 
       chatId,
 
-      buildStockMessage(
+      buildStock(
+
         result
+
       )
 
     );

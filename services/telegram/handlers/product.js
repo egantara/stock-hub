@@ -9,6 +9,12 @@ import {
 from "../download-file.js";
 
 import {
+  buildSummary,
+  buildUploadRequired
+}
+from "../../utils/message.js";
+
+import {
   processNewFile,
   processStatusFile
 }
@@ -18,56 +24,6 @@ import {
   processStatusCommand
 }
 from "../../product/command/status.js";
-
-function uploadRequired(
-  command
-) {
-
-  return `❌ Command ini harus menggunakan upload file.
-
-Contoh:
-
-📄 products.xlsx
-
-Caption:
-${command}`;
-
-}
-
-function buildErrorText(
-  errors
-) {
-
-  if (
-    !errors.length
-  ) {
-
-    return "";
-
-  }
-
-  return (
-
-    "\n\n" +
-
-    errors
-
-      .slice(0, 10)
-
-      .map(
-
-        item =>
-
-`❌ ${item.sku}
-${item.error}`
-
-      )
-
-      .join("\n\n")
-
-  );
-
-}
 
 async function processFile({
 
@@ -151,7 +107,7 @@ export async function handleProduct({
           chatId,
 
           text:
-            uploadRequired(
+            buildUploadRequired(
               "/new"
             )
 
@@ -187,18 +143,30 @@ export async function handleProduct({
         chatId,
 
         text:
-`📦 Product Import
 
-📄 Marketplace : ${result.marketplace}
+          buildSummary({
 
-📄 Found : ${result.found}
+            title:
+              "📦 Product Import",
 
-✅ New : ${result.newProducts}
-🔄 Updated : ${result.updatedProducts}
-⏭️ Duplicate : ${result.duplicateProducts}
-❌ Error : ${result.errors.length}`
+            found:
+              result.found,
 
-    });
+            newProducts:
+              result.newProducts,
+
+            updated:
+              result.updatedProducts,
+
+            duplicateProducts:
+              result.duplicateProducts,
+
+            errors:
+              result.errors
+
+          })
+
+      });
 
     }
 
@@ -240,14 +208,28 @@ export async function handleProduct({
           chatId,
 
           text:
-`📦 Status Product Updated
 
-📄 Marketplace : ${result.marketplace}
+            buildSummary({
 
-✅ Active : ${result.active}
-⏸️ Non Active : ${result.nonActive}
-⏭️ Skip : ${result.skipped}
-📝 Updated : ${result.updated}`
+  title:
+    "📦 Product Status",
+
+  active:
+    result.active,
+
+  nonActive:
+    result.nonActive,
+
+  updated:
+    result.updated,
+
+  skipped:
+    result.skipped,
+
+  errors:
+    result.errors || []
+
+})
 
         });
 
@@ -272,12 +254,25 @@ export async function handleProduct({
         chatId,
 
         text:
-`📦 Status Updated
 
-✅ Processed : ${result.processed}
-🔄 Updated : ${result.updated}
-⏭️ Skipped : ${result.skipped}
-❌ Error : ${result.errors.length}${buildErrorText(result.errors)}`
+          buildSummary({
+
+            title:
+              "📦 Product Status",
+
+            processed:
+              result.processed,
+
+            updated:
+              result.updated,
+
+            skipped:
+              result.skipped,
+
+            errors:
+              result.errors
+
+          })
 
       });
 

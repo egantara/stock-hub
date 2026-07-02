@@ -48,7 +48,6 @@ Contoh:
 atau
 
 /stock
-
 SKU-A
 SKU-B`
       );

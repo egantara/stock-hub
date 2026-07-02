@@ -41,7 +41,9 @@ function safeDelete(
       "DELETE FAILED:",
       filePath
     );
+
   }
+
 }
 
 export async function handleExport({
@@ -56,10 +58,7 @@ export async function handleExport({
   // EXPORT SHOPEE
   //
   if (
-
-    text ===
-    "/exportshopee"
-
+    text === "/exportshopee"
   ) {
 
     await sendMessage(
@@ -90,16 +89,14 @@ export async function handleExport({
     );
 
     return;
+
   }
 
   //
   // EXPORT TIKTOK
   //
   if (
-
-    text ===
-    "/exporttiktok"
-
+    text === "/exporttiktok"
   ) {
 
     await sendMessage(
@@ -130,16 +127,14 @@ export async function handleExport({
     );
 
     return;
+
   }
 
   //
   // EXPORT ALL
   //
   if (
-
-    text ===
-    "/exportall"
-
+    text === "/exportall"
   ) {
 
     await sendMessage(
@@ -150,6 +145,9 @@ export async function handleExport({
 
     );
 
+    //
+    // SHOPEE
+    //
     const shopeeFile =
 
       await exportShopee();
@@ -170,6 +168,9 @@ export async function handleExport({
       shopeeFile
     );
 
+    //
+    // TIKTOK
+    //
     const tiktokFile =
 
       await exportTikTok();
@@ -198,7 +199,6 @@ export async function handleExport({
 
     );
 
-    return;
   }
 
 }
