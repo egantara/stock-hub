@@ -1,3 +1,5 @@
+import path from "path";
+
 import {
   sendMessage
 }
@@ -40,7 +42,16 @@ import {
 from "../../stock/command/stock.js";
 
 const TEMPLATE_PATH =
-  "templates/stock-template.xlsx";
+
+  path.join(
+
+    process.cwd(),
+
+    "templates",
+
+    "stock-template.xlsx"
+
+  );
 
 async function processFile({
 
