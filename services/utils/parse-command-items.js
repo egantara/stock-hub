@@ -96,7 +96,7 @@ export function parseCommandItems({
   ) {
 
     throw new Error(
-      "Tidak ada item yang diproses"
+      "Command salah atau tidak ada item yang dapat diproses"
     );
 
   }
