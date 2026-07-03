@@ -55,9 +55,13 @@ const TEMPLATE_PATH =
 
 async function processFile({
 
+  google,
+
   document,
 
-  mode
+  mode,
+
+  user
 
 }) {
 
@@ -71,12 +75,13 @@ async function processFile({
 
   return processStockFile({
 
+    google,
+
     filePath,
 
     mode,
 
-    user:
-      "TELEGRAM"
+    user
 
   });
 
@@ -88,9 +93,19 @@ export async function handleStock({
 
   text,
 
-  document
+  document,
+
+  google,
+
+  context
 
 }) {
+
+  const user =
+
+    context?.user ||
+
+    "TELEGRAM";
 
   //
   // SET / RESTOCK (FILE)
@@ -127,6 +142,8 @@ export async function handleStock({
 
       await processFile({
 
+        google,
+
         document,
 
         mode:
@@ -135,7 +152,9 @@ export async function handleStock({
 
             ? "SET"
 
-            : "RESTOCK"
+            : "RESTOCK",
+
+        user
 
       });
 
@@ -172,10 +191,11 @@ export async function handleStock({
 
       await processSetCommand({
 
+        google,
+
         text,
 
-        user:
-          "TELEGRAM"
+        user
 
       });
 
@@ -197,15 +217,15 @@ export async function handleStock({
   }
 
   //
-// TEMPLATE
-//
-if (
-  text === "/template"
-) {
+  // TEMPLATE
+  //
+  if (
+    text === "/template"
+  ) {
 
-  await sendMessage(
+    await sendMessage(
 
-    chatId,
+      chatId,
 
 `📄 Stock Template
 
@@ -217,21 +237,21 @@ QTY = Stock Akhir
 • /restock
 QTY = Jumlah Penambahan`
 
-  );
+    );
 
-  return sendDocument({
+    return sendDocument({
 
-    chatId,
+      chatId,
 
-    filePath:
-      TEMPLATE_PATH,
+      filePath:
+        TEMPLATE_PATH,
 
-    caption:
-      "📄 Stock Template"
+      caption:
+        "📄 Stock Template"
 
-  });
+    });
 
-}
+  }
 
   //
   // RESTOCK MANUAL
@@ -244,10 +264,11 @@ QTY = Jumlah Penambahan`
 
       await processRestockCommand({
 
+        google,
+
         text,
 
-        user:
-          "TELEGRAM"
+        user
 
       });
 
@@ -278,6 +299,8 @@ QTY = Jumlah Penambahan`
     const result =
 
       await processStockCommand({
+
+        google,
 
         text
 

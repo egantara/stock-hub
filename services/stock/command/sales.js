@@ -37,6 +37,8 @@ from "../../utils/datetime.js";
 
 export async function processSalesCommand({
 
+  google,
+
   text,
 
   user = "TELEGRAM"
@@ -44,9 +46,15 @@ export async function processSalesCommand({
 }) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   const items =
+
     parseCommandItems({
 
       text,
@@ -159,29 +167,40 @@ export async function processSalesCommand({
 
   await Promise.all([
 
-    batchUpdate(
+    batchUpdate({
 
-      createStockUpdates(
-        store
-      )
+      google,
 
-    ),
+      updates:
+        createStockUpdates(
+          store
+        )
 
-    appendRows(
+    }),
 
-      "LOG",
+    appendRows({
 
-      logRows
+      google,
 
-    ),
+      sheetName:
+        "LOG",
 
-    appendRows(
+      rows:
+        logRows
 
-      "PROCESSED_ORDERS",
+    }),
 
-      processedRows
+    appendRows({
 
-    )
+      google,
+
+      sheetName:
+        "PROCESSED_ORDERS",
+
+      rows:
+        processedRows
+
+    })
 
   ]);
 

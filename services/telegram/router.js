@@ -97,11 +97,14 @@ export async function router({
 
   text = "",
 
-  document
+  document,
+
+  context
 
 }) {
 
   const command =
+
     getCommand(
       text
     );
@@ -109,6 +112,11 @@ export async function router({
   console.log({
 
     command,
+
+    client:
+      context?.clientId ||
+
+      null,
 
     file:
       document?.file_name ||
@@ -118,6 +126,7 @@ export async function router({
   });
 
   const handler =
+
     routes[command];
 
   if (!handler) {
@@ -128,7 +137,9 @@ export async function router({
 
       text,
 
-      document
+      document,
+
+      context
 
     });
 
@@ -140,7 +151,9 @@ export async function router({
 
     text,
 
-    document
+    document,
+
+    context
 
   });
 

@@ -5,16 +5,26 @@ import {
 }
 from "../services/google/google-sheet.js";
 
-export async function cleanupProcessed() {
+export async function cleanupProcessed({
+
+  google
+
+}) {
 
   console.log(
     "CLEANUP PROCESSED START"
   );
 
   const rows =
-    await getRawRows(
-      "PROCESSED_ORDERS"
-    );
+
+    await getRawRows({
+
+      google,
+
+      sheetName:
+        "PROCESSED_ORDERS"
+
+    });
 
   if (
     rows.length <= 1
@@ -25,14 +35,16 @@ export async function cleanupProcessed() {
     );
 
     return {
-      total: 0,
-      kept: 0,
-      deleted: 0
-    };
-  }
 
-  const header =
-    rows[0];
+      total: 0,
+
+      kept: 0,
+
+      deleted: 0
+
+    };
+
+  }
 
   const data =
     rows.slice(1);
@@ -41,11 +53,15 @@ export async function cleanupProcessed() {
     new Date();
 
   cutoff.setDate(
+
     cutoff.getDate() - 14
+
   );
 
   const filtered =
+
     data.filter(
+
       row => {
 
         const timestamp =
@@ -54,27 +70,40 @@ export async function cleanupProcessed() {
         if (
           !timestamp
         ) {
+
           return false;
+
         }
 
         const date =
           new Date(
+
             String(timestamp)
+
               .replace(
                 " WIB",
                 ""
               )
+
               .replace(
                 " ",
                 "T"
               )
+
           );
 
         return (
-          !isNaN(date) &&
+
+          !isNaN(date)
+
+          &&
+
           date >= cutoff
+
         );
+
       }
+
     );
 
   console.log(
@@ -94,27 +123,36 @@ export async function cleanupProcessed() {
   );
 
   //
-  // hapus semua data
-  // sisakan header
+  // Hapus seluruh data
   //
-  await clearSheet(
-    "PROCESSED_ORDERS"
-  );
+  await clearSheet({
+
+    google,
+
+    sheetName:
+      "PROCESSED_ORDERS"
+
+  });
 
   //
-  // tulis ulang
+  // Tulis ulang
   //
   if (
     filtered.length
   ) {
 
-    await appendRows(
+    await appendRows({
 
-      "PROCESSED_ORDERS",
+      google,
 
-      filtered
+      sheetName:
+        "PROCESSED_ORDERS",
 
-    );
+      rows:
+        filtered
+
+    });
+
   }
 
   console.log(
@@ -134,4 +172,5 @@ export async function cleanupProcessed() {
       filtered.length
 
   };
+
 }

@@ -25,6 +25,8 @@ from "../../stock/command/sales.js";
 
 async function processFile({
 
+  google,
+
   document,
 
   user
@@ -41,6 +43,8 @@ async function processFile({
 
   return processOrderFile({
 
+    google,
+
     filePath,
 
     user
@@ -55,9 +59,19 @@ export async function handleOrder({
 
   text,
 
-  document
+  document,
+
+  google,
+
+  context
 
 }) {
+
+  const user =
+
+    context?.user ||
+
+    "TELEGRAM";
 
   //
   // SALES + FILE
@@ -86,10 +100,11 @@ export async function handleOrder({
 
       await processFile({
 
+        google,
+
         document,
 
-        user:
-          "TELEGRAM"
+        user
 
       });
 
@@ -135,10 +150,11 @@ export async function handleOrder({
 
       await processSalesCommand({
 
+        google,
+
         text,
 
-        user:
-          "TELEGRAM"
+        user
 
       });
 

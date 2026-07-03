@@ -50,7 +50,9 @@ export async function handleExport({
 
   chatId,
 
-  text
+  text,
+
+  google
 
 }) {
 
@@ -71,7 +73,11 @@ export async function handleExport({
 
     const filePath =
 
-      await exportShopee();
+      await exportShopee({
+
+        google
+
+      });
 
     await sendDocument({
 
@@ -109,7 +115,11 @@ export async function handleExport({
 
     const filePath =
 
-      await exportTikTok();
+      await exportTikTok({
+
+        google
+
+      });
 
     await sendDocument({
 
@@ -150,7 +160,11 @@ export async function handleExport({
     //
     const shopeeFile =
 
-      await exportShopee();
+      await exportShopee({
+
+        google
+
+      });
 
     await sendDocument({
 
@@ -173,7 +187,11 @@ export async function handleExport({
     //
     const tiktokFile =
 
-      await exportTikTok();
+      await exportTikTok({
+
+        google
+
+      });
 
     await sendDocument({
 

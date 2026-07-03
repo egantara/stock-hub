@@ -27,6 +27,8 @@ from "../../utils/logs.js";
 
 export async function processRestockCommand({
 
+  google,
+
   text,
 
   user = "TELEGRAM"
@@ -34,9 +36,15 @@ export async function processRestockCommand({
 }) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   const items =
+
     parseCommandItems({
 
       text,
@@ -131,21 +139,28 @@ export async function processRestockCommand({
 
   await Promise.all([
 
-    batchUpdate(
+    batchUpdate({
 
-      createStockUpdates(
-        store
-      )
+      google,
 
-    ),
+      updates:
+        createStockUpdates(
+          store
+        )
 
-    appendRows(
+    }),
 
-      "LOG",
+    appendRows({
 
-      logRows
+      google,
 
-    )
+      sheetName:
+        "LOG",
+
+      rows:
+        logRows
+
+    })
 
   ]);
 

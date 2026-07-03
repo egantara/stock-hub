@@ -31,7 +31,7 @@ export function createLogRow({
     nowWib(),
 
     marketplace,
-    
+
     command,
 
     sku,
@@ -45,19 +45,30 @@ export function createLogRow({
     user
 
   ];
+
 }
 
-export async function addLog(
-  params
-) {
+export async function addLog({
 
-  await appendRow(
+  google,
 
-    "LOG",
+  ...params
 
-    createLogRow(
-      params
-    )
+}) {
 
-  );
-} 
+  await appendRow({
+
+    google,
+
+    sheetName:
+      "LOG",
+
+    values:
+
+      createLogRow(
+        params
+      )
+
+  });
+
+}

@@ -12,10 +12,19 @@ import {
 }
 from "../../google/store.js";
 
-export async function exportShopee() {
+export async function exportShopee({
+
+  google
+
+}) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   console.log(
     "CWD:",
@@ -50,6 +59,7 @@ export async function exportShopee() {
     throw new Error(
       `Template tidak ditemukan: ${templatePath}`
     );
+
   }
 
   const workbook =
@@ -75,20 +85,20 @@ export async function exportShopee() {
   ) {
 
     //
-    // Hanya produk Shopee
+    // Hanya produk Shopee ACTIVE
     //
     if (
 
-  !product.SHOPEE_PRODUCT_ID ||
+      !product.SHOPEE_PRODUCT_ID ||
 
-  product.STATUS !==
-    "ACTIVE"
+      product.STATUS !==
+        "ACTIVE"
 
-) {
+    ) {
 
-  continue;
+      continue;
 
-}
+    }
 
     const stock =
       store.stockMap.get(
@@ -137,7 +147,6 @@ export async function exportShopee() {
 
     //
     // E = SKU Induk
-    // skip
     //
     sheet.getCell(
       `E${rowNumber}`
@@ -164,7 +173,7 @@ export async function exportShopee() {
       );
 
     //
-    // I = Stok
+    // I = Stock
     //
     sheet.getCell(
       `I${rowNumber}`
@@ -181,6 +190,7 @@ export async function exportShopee() {
     ).value = 1;
 
     rowNumber++;
+
   }
 
   console.log(
@@ -213,4 +223,5 @@ export async function exportShopee() {
   );
 
   return outputFile;
+
 }

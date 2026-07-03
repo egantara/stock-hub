@@ -10,12 +10,22 @@ import {
 }
 from "../services/utils/datetime.js";
 
-export async function exportProcessed() {
+export async function exportProcessed({
+
+  google
+
+}) {
 
   const rows =
-    await getRows(
-      "PROCESSED_ORDERS"
-    );
+
+    await getRows({
+
+      google,
+
+      sheetName:
+        "PROCESSED_ORDERS"
+
+    });
 
   const workbook =
     new ExcelJS.Workbook();
@@ -65,8 +75,13 @@ export async function exportProcessed() {
   sheet.views = [
 
     {
-      state: "frozen",
-      ySplit: 1
+
+      state:
+        "frozen",
+
+      ySplit:
+        1
+
     }
 
   ];
@@ -76,9 +91,11 @@ export async function exportProcessed() {
   //
   sheet.autoFilter = {
 
-    from: "A1",
+    from:
+      "A1",
 
-    to: "E1"
+    to:
+      "E1"
 
   };
 
@@ -142,4 +159,5 @@ export async function exportProcessed() {
       rows.length
 
   };
+
 }

@@ -45,18 +45,22 @@ function safeDelete(
       filePath
     );
 
-  } catch (error) {
+  } catch {
 
     console.log(
       "DELETE FAILED:",
       filePath
     );
+
   }
+
 }
 
 export async function dailyBackup({
 
-  chatId
+  chatId,
+
+  google
 
 }) {
 
@@ -74,62 +78,70 @@ export async function dailyBackup({
     //
     const processedBackup =
 
-  await exportProcessed();
+      await exportProcessed({
 
-try {
+        google
 
-  await sendDocument({
+      });
 
-    chatId,
+    try {
 
-    filePath:
-      processedBackup.filePath,
+      await sendDocument({
 
-    caption:
+        chatId,
+
+        filePath:
+          processedBackup.filePath,
+
+        caption:
 `📦 Backup PROCESSED_ORDERS
 
 Rows : ${processedBackup.totalRows}`
 
-  });
+      });
 
-} finally {
+    } finally {
 
-  safeDelete(
-    processedBackup.filePath
-  );
+      safeDelete(
+        processedBackup.filePath
+      );
 
-}
+    }
 
     //
     // EXPORT LOG
     //
     const logBackup =
 
-  await exportLog();
+      await exportLog({
 
-try {
+        google
 
-  await sendDocument({
+      });
 
-    chatId,
+    try {
 
-    filePath:
-      logBackup.filePath,
+      await sendDocument({
 
-    caption:
+        chatId,
+
+        filePath:
+          logBackup.filePath,
+
+        caption:
 `📦 Backup LOG
 
 Rows : ${logBackup.totalRows}`
 
-  });
+      });
 
-} finally {
+    } finally {
 
-  safeDelete(
-    logBackup.filePath
-  );
+      safeDelete(
+        logBackup.filePath
+      );
 
-}
+    }
 
     //
     // BACKUP BERHASIL
@@ -140,13 +152,20 @@ Rows : ${logBackup.totalRows}`
     //
     // CLEANUP LOG
     //
-    await cleanupLog();
+    await cleanupLog({
+
+      google
+
+    });
 
     //
     // CLEANUP PROCESSED_ORDERS
-    // Simpan 14 hari terakhir
     //
-    await cleanupProcessed();
+    await cleanupProcessed({
+
+      google
+
+    });
 
     //
     // SUMMARY
@@ -186,6 +205,9 @@ Rows : ${logBackup.totalRows}`
       console.log(
         "BACKUP FAILED - CLEANUP SKIPPED"
       );
+
     }
+
   }
+
 }

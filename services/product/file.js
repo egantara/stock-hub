@@ -1,7 +1,7 @@
 import {
   detectMarketplace
 }
-from "../marketplace/detect.js"
+from "../marketplace/detect.js";
 
 import {
   parseShopeeProduct
@@ -24,6 +24,8 @@ import {
 from "./sync.js";
 
 export async function processNewFile({
+
+  google,
 
   filePath,
 
@@ -53,6 +55,7 @@ export async function processNewFile({
     throw new Error(
       "Marketplace tidak dikenali"
     );
+
   }
 
   let products = [];
@@ -71,6 +74,7 @@ export async function processNewFile({
       "SHOPEE PRODUCTS:",
       products.length
     );
+
   }
 
   if (
@@ -87,6 +91,7 @@ export async function processNewFile({
       "TIKTOK PRODUCTS:",
       products.length
     );
+
   }
 
   console.log(
@@ -94,7 +99,10 @@ export async function processNewFile({
   );
 
   const result =
+
     await processProductImport({
+
+      google,
 
       products,
 
@@ -115,9 +123,12 @@ export async function processNewFile({
     ...result
 
   };
+
 }
 
 export async function processStatusFile({
+
+  google,
 
   filePath,
 
@@ -137,6 +148,7 @@ export async function processStatusFile({
     throw new Error(
       "Marketplace tidak dikenali"
     );
+
   }
 
   let products = [];
@@ -150,6 +162,7 @@ export async function processStatusFile({
       await parseShopeeProduct(
         filePath
       );
+
   }
 
   if (
@@ -161,9 +174,12 @@ export async function processStatusFile({
       await parseTiktokProduct(
         filePath
       );
+
   }
 
   return await syncProductStatus({
+
+    google,
 
     products,
 
@@ -172,4 +188,5 @@ export async function processStatusFile({
     user
 
   });
+
 }

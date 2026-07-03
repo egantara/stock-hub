@@ -52,7 +52,11 @@ function createMap({
 
 }
 
-export async function loadStore() {
+export async function loadStore({
+
+  google
+
+}) {
 
   const [
 
@@ -62,15 +66,21 @@ export async function loadStore() {
 
     processedRows
 
-  ] = await getMultipleSheets([
+  ] = await getMultipleSheets({
 
-    "STOCK!A:ZZ",
+    google,
 
-    "PRODUCTS!A:ZZ",
+    ranges: [
 
-    "PROCESSED_ORDERS!A:ZZ"
+      "STOCK!A:ZZ",
 
-  ]);
+      "PRODUCTS!A:ZZ",
+
+      "PROCESSED_ORDERS!A:ZZ"
+
+    ]
+
+  });
 
   console.table({
 

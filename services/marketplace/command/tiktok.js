@@ -12,10 +12,19 @@ import {
 }
 from "../../google/store.js";
 
-export async function exportTikTok() {
+export async function exportTikTok({
+
+  google
+
+}) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   const templatePath =
     path.join(
@@ -45,6 +54,7 @@ export async function exportTikTok() {
     throw new Error(
       `Template tidak ditemukan: ${templatePath}`
     );
+
   }
 
   const workbook =
@@ -72,18 +82,18 @@ export async function exportTikTok() {
     //
     // Hanya produk TikTok
     //
+    if (
 
-    if(
-    !product.TIKTOK_PRODUCT_ID ||
+      !product.TIKTOK_PRODUCT_ID ||
 
       product.STATUS !==
-    "ACTIVE"
+        "ACTIVE"
 
-) {
+    ) {
 
-  continue;
+      continue;
 
-}
+    }
 
     const stock =
       store.stockMap.get(
@@ -209,6 +219,7 @@ export async function exportTikTok() {
     };
 
     rowNumber++;
+
   }
 
   console.log(
@@ -267,6 +278,7 @@ export async function exportTikTok() {
       }
 
     );
+
   }
 
   const outputFile =
@@ -288,4 +300,5 @@ export async function exportTikTok() {
   );
 
   return outputFile;
+
 }

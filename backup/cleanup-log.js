@@ -3,19 +3,29 @@ import {
 }
 from "../services/google/google-sheet.js";
 
-export async function cleanupLog() {
+export async function cleanupLog({
+
+  google
+
+}) {
 
   console.log(
     "CLEANUP LOG START"
   );
 
-  await clearSheet(
-    "LOG"
-  );
+  await clearSheet({
+
+    google,
+
+    sheetName:
+      "LOG"
+
+  });
 
   console.log(
     "CLEANUP LOG FINISH"
   );
 
   return true;
+
 }

@@ -27,6 +27,8 @@ from "../../product/command/status.js";
 
 async function processFile({
 
+  google,
+
   document,
 
   processor,
@@ -44,6 +46,8 @@ async function processFile({
     );
 
   return processor({
+
+    google,
 
     filePath,
 
@@ -77,9 +81,19 @@ export async function handleProduct({
 
   text,
 
-  document
+  document,
+
+  google,
+
+  context
 
 }) {
+
+  const user =
+
+    context?.user ||
+
+    "TELEGRAM";
 
   const command =
 
@@ -128,13 +142,14 @@ export async function handleProduct({
 
         await processFile({
 
+          google,
+
           document,
 
           processor:
             processNewFile,
 
-          user:
-            "TELEGRAM"
+          user
 
         });
 
@@ -193,13 +208,14 @@ export async function handleProduct({
 
           await processFile({
 
+            google,
+
             document,
 
             processor:
               processStatusFile,
 
-            user:
-              "TELEGRAM"
+            user
 
           });
 
@@ -211,25 +227,25 @@ export async function handleProduct({
 
             buildSummary({
 
-  title:
-    "📦 Product Status",
+              title:
+                "📦 Product Status",
 
-  active:
-    result.active,
+              active:
+                result.active,
 
-  nonActive:
-    result.nonActive,
+              nonActive:
+                result.nonActive,
 
-  updated:
-    result.updated,
+              updated:
+                result.updated,
 
-  skipped:
-    result.skipped,
+              skipped:
+                result.skipped,
 
-  errors:
-    result.errors || []
+              errors:
+                result.errors || []
 
-})
+            })
 
         });
 
@@ -242,10 +258,11 @@ export async function handleProduct({
 
         await processStatusCommand({
 
+          google,
+
           text,
 
-          user:
-            "TELEGRAM"
+          user
 
         });
 

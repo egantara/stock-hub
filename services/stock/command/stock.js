@@ -64,12 +64,19 @@ SKU-B`
 
 export async function processStockCommand({
 
+  google,
+
   text
 
 }) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   const skus =
     parseSkuList(

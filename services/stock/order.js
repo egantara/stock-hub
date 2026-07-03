@@ -30,6 +30,8 @@ from "../utils/logs.js";
 
 export async function processOrder({
 
+  google,
+
   orders,
 
   marketplace,
@@ -39,7 +41,12 @@ export async function processOrder({
 }) {
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   let processed = 0;
 
@@ -213,29 +220,40 @@ export async function processOrder({
 
   await Promise.all([
 
-    batchUpdate(
+    batchUpdate({
 
-      createStockUpdates(
-        store
-      )
+      google,
 
-    ),
+      updates:
+        createStockUpdates(
+          store
+        )
 
-    appendRows(
+    }),
 
-      "PROCESSED_ORDERS",
+    appendRows({
 
-      processedRows
+      google,
 
-    ),
+      sheetName:
+        "PROCESSED_ORDERS",
 
-    appendRows(
+      rows:
+        processedRows
 
-      "LOG",
+    }),
 
-      logRows
+    appendRows({
 
-    )
+      google,
+
+      sheetName:
+        "LOG",
+
+      rows:
+        logRows
+
+    })
 
   ]);
 

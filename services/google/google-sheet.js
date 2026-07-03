@@ -1,111 +1,3 @@
-import fs from "fs";
-import { google } from "googleapis";
-
-let credentials = null;
-
-try {
-
-  credentials =
-    JSON.parse(
-      fs.readFileSync(
-        "./credentials/service-account.json",
-        "utf8"
-      )
-    );
-
-  console.log(
-    "Using local service-account.json"
-  );
-
-} catch {
-
-  credentials = {
-
-    type:
-      "service_account",
-
-    project_id:
-      process.env
-        .GOOGLE_PROJECT_ID,
-
-    client_email:
-      process.env
-        .GOOGLE_CLIENT_EMAIL,
-
-    private_key:
-      process.env
-        .GOOGLE_PRIVATE_KEY
-        ?.replace(
-          /\\n/g,
-          "\n"
-        )
-
-  };
-
-  console.log(
-    "Using Vercel Environment Variables"
-  );
-}
-
-if (
-  !credentials?.project_id
-) {
-
-  throw new Error(
-    "GOOGLE_PROJECT_ID is missing"
-  );
-}
-
-if (
-  !credentials?.client_email
-) {
-
-  throw new Error(
-    "GOOGLE_CLIENT_EMAIL is missing"
-  );
-}
-
-if (
-  !credentials?.private_key
-) {
-
-  throw new Error(
-    "GOOGLE_PRIVATE_KEY is missing"
-  );
-}
-
-const spreadsheetId =
-
-  process.env
-    .GOOGLE_SHEET_ID ||
-
-  "1a0nB5BGO5uJv6tn9Vd_UNg8K-PEo5dMX1dtc0ty0tAM";
-
-const auth =
-  new google.auth.GoogleAuth({
-
-    credentials,
-
-    scopes: [
-      "https://www.googleapis.com/auth/spreadsheets"
-    ]
-
-  });
-
-const sheets =
-  google.sheets({
-
-    version: "v4",
-
-    auth
-
-  });
-
-export async function getSheets() {
-
-  return sheets;
-}
-
 function parseRows(
   rows
 ) {
@@ -113,7 +5,9 @@ function parseRows(
   if (
     !rows?.length
   ) {
+
     return [];
+
   }
 
   const headers =
@@ -149,19 +43,26 @@ function parseRows(
       return obj;
 
     });
+
 }
 
-export async function getRows(
+export async function getRows({
+
+  google,
+
   sheetName
-) {
+
+}) {
 
   const result =
-    await sheets
+
+    await google.sheets
       .spreadsheets
       .values
       .get({
 
-        spreadsheetId,
+        spreadsheetId:
+          google.spreadsheetId,
 
         range:
           `${sheetName}!A:ZZ`
@@ -169,22 +70,30 @@ export async function getRows(
       });
 
   return parseRows(
+
     result.data.values || []
+
   );
+
 }
 
-export async function getMultipleSheets(
+export async function getMultipleSheets({
+
+  google,
+
   ranges
-) {
+
+}) {
 
   const result =
 
-    await sheets
+    await google.sheets
       .spreadsheets
       .values
       .batchGet({
 
-        spreadsheetId,
+        spreadsheetId:
+          google.spreadsheetId,
 
         ranges
 
@@ -192,31 +101,39 @@ export async function getMultipleSheets(
 
   return (
 
-    result.data
-      .valueRanges || []
+    result.data.valueRanges || []
 
   ).map(
 
     item =>
 
       parseRows(
+
         item.values || []
+
       )
 
   );
+
 }
 
-export async function getRawRows(
+export async function getRawRows({
+
+  google,
+
   sheetName
-) {
+
+}) {
 
   const result =
-    await sheets
+
+    await google.sheets
       .spreadsheets
       .values
       .get({
 
-        spreadsheetId,
+        spreadsheetId:
+          google.spreadsheetId,
 
         range:
           `${sheetName}!A:ZZ`
@@ -224,21 +141,30 @@ export async function getRawRows(
       });
 
   return (
+
     result.data.values || []
+
   );
+
 }
 
-export async function appendRow(
-  sheetName,
-  values
-) {
+export async function appendRow({
 
-  await sheets
+  google,
+
+  sheetName,
+
+  values
+
+}) {
+
+  await google.sheets
     .spreadsheets
     .values
     .append({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       range:
         sheetName,
@@ -254,25 +180,34 @@ export async function appendRow(
       }
 
     });
+
 }
 
-export async function appendRows(
+export async function appendRows({
+
+  google,
+
   sheetName,
+
   rows
-) {
+
+}) {
 
   if (
     !rows.length
   ) {
+
     return;
+
   }
 
-  await sheets
+  await google.sheets
     .spreadsheets
     .values
     .append({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       range:
         sheetName,
@@ -288,19 +223,26 @@ export async function appendRows(
       }
 
     });
+
 }
 
-export async function updateRange(
-  range,
-  values
-) {
+export async function updateRange({
 
-  await sheets
+  google,
+
+  range,
+
+  values
+
+}) {
+
+  await google.sheets
     .spreadsheets
     .values
     .update({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       range,
 
@@ -314,24 +256,32 @@ export async function updateRange(
       }
 
     });
+
 }
 
-export async function batchUpdate(
+export async function batchUpdate({
+
+  google,
+
   updates
-) {
+
+}) {
 
   if (
     !updates.length
   ) {
+
     return;
+
   }
 
-  await sheets
+  await google.sheets
     .spreadsheets
     .values
     .batchUpdate({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       requestBody: {
 
@@ -344,36 +294,50 @@ export async function batchUpdate(
       }
 
     });
+
 }
 
-export async function clearSheet(
-  sheetName
-) {
+export async function clearSheet({
 
-  await sheets
+  google,
+
+  sheetName
+
+}) {
+
+  await google.sheets
     .spreadsheets
     .values
     .clear({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       range:
         `${sheetName}!A2:ZZ`
 
     });
+
 }
 
-export async function deleteRows(
-  sheetId,
-  startIndex,
-  endIndex
-) {
+export async function deleteRows({
 
-  await sheets
+  google,
+
+  sheetId,
+
+  startIndex,
+
+  endIndex
+
+}) {
+
+  await google.sheets
     .spreadsheets
     .batchUpdate({
 
-      spreadsheetId,
+      spreadsheetId:
+        google.spreadsheetId,
 
       requestBody: {
 
@@ -405,19 +369,26 @@ export async function deleteRows(
       }
 
     });
+
 }
 
-export async function getSpreadsheet() {
+export async function getSpreadsheet({
+
+  google
+
+}) {
 
   const result =
 
-    await sheets
+    await google.sheets
       .spreadsheets
       .get({
 
-        spreadsheetId
+        spreadsheetId:
+          google.spreadsheetId
 
       });
 
   return result.data;
+
 }

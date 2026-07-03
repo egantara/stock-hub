@@ -36,6 +36,8 @@ const VALID_STATUS = [
 
 export async function processStatusCommand({
 
+  google,
+
   text,
 
   user = "SYSTEM"
@@ -53,11 +55,11 @@ export async function processStatusCommand({
 
     });
 
-    if (
-  !lines.length
-) {
+  if (
+    !lines.length
+  ) {
 
-  throw new Error(
+    throw new Error(
 
 `Format salah.
 
@@ -77,12 +79,17 @@ atau
 Caption:
 /status`
 
-  );
+    );
 
-}
+  }
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   const updates = [];
 
@@ -145,13 +152,13 @@ Caption:
 
       const product =
 
-  findProduct({
+        findProduct({
 
-    store,
+          store,
 
-    sku
+          sku
 
-  });
+        });
 
       if (
         !product
@@ -241,9 +248,13 @@ Caption:
     updates.length
   ) {
 
-    await batchUpdate(
+    await batchUpdate({
+
+      google,
+
       updates
-    );
+
+    });
 
   }
 
@@ -251,13 +262,17 @@ Caption:
     logRows.length
   ) {
 
-    await appendRows(
+    await appendRows({
 
-      "LOG",
+      google,
 
-      logRows
+      sheetName:
+        "LOG",
 
-    );
+      rows:
+        logRows
+
+    });
 
   }
 

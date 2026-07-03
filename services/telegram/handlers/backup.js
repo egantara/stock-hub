@@ -5,13 +5,17 @@ from "../../../backup/daily-backup.js";
 
 export async function handleBackup({
 
-  chatId
+  chatId,
+
+  google
 
 }) {
 
   return dailyBackup({
 
-    chatId
+    chatId,
+
+    google
 
   });
 

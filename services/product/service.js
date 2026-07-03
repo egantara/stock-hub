@@ -270,6 +270,8 @@ function addLog({
 }
 export async function processProductImport({
 
+  google,
+
   products,
 
   marketplace,
@@ -279,7 +281,12 @@ export async function processProductImport({
 }) {
 
   const store =
-    await loadStore();
+
+  await loadStore({
+
+    google
+
+  });
 
   const found =
     products.length;
@@ -728,37 +735,52 @@ export async function processProductImport({
 
   await Promise.all([
 
-    appendRows(
+  appendRows({
 
+    google,
+
+    sheetName:
       "PRODUCTS",
 
+    rows:
       productRows
 
-    ),
+  }),
 
-    appendRows(
+  appendRows({
 
+    google,
+
+    sheetName:
       "STOCK",
 
+    rows:
       stockRows
 
-    ),
+  }),
 
-    appendRows(
+  appendRows({
 
+    google,
+
+    sheetName:
       "LOG",
 
+    rows:
       logRows
 
-    ),
+  }),
 
-    batchUpdate(
+  batchUpdate({
 
+    google,
+
+    updates:
       productUpdates
 
-    )
+  })
 
-  ]);
+]);
 
   return {
 

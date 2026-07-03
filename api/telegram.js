@@ -13,6 +13,11 @@ import {
 }
 from "../services/telegram/telegram.js";
 
+import {
+  checkLicense
+}
+from "../services/license/index.js";
+
 export default async function handler(
   req,
   res
@@ -48,11 +53,13 @@ export default async function handler(
 
     const text =
       (
+
         message?.text ||
 
         message?.caption ||
 
         ""
+
       ).trim();
 
     const document =
@@ -85,21 +92,97 @@ export default async function handler(
 
     }
 
+    //
+    // LICENSE
+    //
+    const license =
+
+      await checkLicense({
+
+        chatId
+
+      });
+
+    if (
+      !license.ok
+    ) {
+
+      let message =
+
+        "❌ License tidak valid.";
+
+      switch (
+        license.reason
+      ) {
+
+        case "CHAT_NOT_REGISTERED":
+
+          message =
+`❌ Telegram belum terdaftar.
+
+Hubungi administrator.`;
+
+          break;
+
+        case "CHAT_DISABLED":
+
+          message =
+`❌ Telegram dinonaktifkan.`;
+
+          break;
+
+        case "LICENSE_DISABLED":
+
+          message =
+`❌ License dinonaktifkan.`;
+
+          break;
+
+        case "LICENSE_EXPIRED":
+
+          message =
+`❌ License telah berakhir.
+
+Silakan hubungi administrator.`;
+
+          break;
+
+      }
+
+      await sendMessage(
+
+        chatId,
+
+        message
+
+      );
+
+      return res.status(200).json({
+
+        ok: false
+
+      });
+
+    }
+
     await runTask(
 
-  () =>
+      () =>
 
-    router({
+        router({
 
-      chatId,
+          chatId,
 
-      text,
+          text,
 
-      document
+          document,
 
-    })
+          context:
+            license.context
 
-);
+        })
+
+    );
 
     return res.status(200).json({
 

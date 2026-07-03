@@ -10,6 +10,8 @@ from "../google/google-sheet.js";
 
 export async function syncProductStatus({
 
+  google,
+
   products,
 
   marketplace
@@ -17,7 +19,12 @@ export async function syncProductStatus({
 }) {
 
   const store =
-    await loadStore();
+
+  await loadStore({
+
+    google
+
+  });
 
   const importedSkuSet =
     new Set();
@@ -145,9 +152,13 @@ export async function syncProductStatus({
     }
   }
 
-  await batchUpdate(
+    await batchUpdate({
+
+    google,
+
     updates
-  );
+
+  });
 
   return {
 
@@ -163,4 +174,5 @@ export async function syncProductStatus({
       updates.length
 
   };
+
 }

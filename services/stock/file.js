@@ -198,6 +198,8 @@ function getModeConfig(
 
 export async function processStockFile({
 
+  google,
+
   filePath,
 
   mode,
@@ -226,7 +228,12 @@ export async function processStockFile({
   );
 
   const store =
-    await loadStore();
+
+    await loadStore({
+
+      google
+
+    });
 
   let processed = 0;
 
@@ -323,21 +330,29 @@ export async function processStockFile({
 
   await Promise.all([
 
-    batchUpdate(
+    batchUpdate({
 
-      createStockUpdates(
-        store
-      )
+      google,
 
-    ),
+      updates:
 
-    appendRows(
+        createStockUpdates(
+          store
+        )
 
-      "LOG",
+    }),
 
-      logRows
+    appendRows({
 
-    )
+      google,
+
+      sheetName:
+        "LOG",
+
+      rows:
+        logRows
+
+    })
 
   ]);
 

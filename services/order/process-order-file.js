@@ -20,6 +20,8 @@ from "../stock/order.js";
 
 export async function processOrderFile({
 
+  google,
+
   filePath,
 
   user = "SYSTEM"
@@ -89,6 +91,8 @@ export async function processOrderFile({
   const result =
 
     await processOrder({
+
+      google,
 
       orders,
 
