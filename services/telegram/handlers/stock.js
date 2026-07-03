@@ -162,39 +162,6 @@ export async function handleStock({
   }
 
   //
-  // SET TEMPLATE
-  //
-  if (
-    text === "/set"
-  ) {
-
-    await sendMessage(
-
-      chatId,
-
-`✏️ Set Stock
-
-Silakan isi template berikut.
-
-QTY = Stock Akhir`
-
-    );
-
-    return sendDocument({
-
-      chatId,
-
-      filePath:
-        TEMPLATE_PATH,
-
-      caption:
-        "📄 Stock Template"
-
-    });
-
-  }
-
-  //
   // SET MANUAL
   //
   if (
@@ -230,37 +197,41 @@ QTY = Stock Akhir`
   }
 
   //
-  // RESTOCK TEMPLATE
-  //
-  if (
-    text === "/restock"
-  ) {
+// TEMPLATE
+//
+if (
+  text === "/template"
+) {
 
-    await sendMessage(
+  await sendMessage(
 
-      chatId,
+    chatId,
 
-`📦 Restock
+`📄 Stock Template
 
-Silakan isi template berikut.
+Template ini dapat digunakan untuk:
 
+• /set
+QTY = Stock Akhir
+
+• /restock
 QTY = Jumlah Penambahan`
 
-    );
+  );
 
-    return sendDocument({
+  return sendDocument({
 
-      chatId,
+    chatId,
 
-      filePath:
-        TEMPLATE_PATH,
+    filePath:
+      TEMPLATE_PATH,
 
-      caption:
-        "📄 Stock Template"
+    caption:
+      "📄 Stock Template"
 
-    });
+  });
 
-  }
+}
 
   //
   // RESTOCK MANUAL

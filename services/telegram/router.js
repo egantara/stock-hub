@@ -49,6 +49,8 @@ const routes = {
 
   "/help": handleHelp,
 
+  "/template": handleStock,
+
   "/ping": handlePing,
 
   "/sales": handleOrder,

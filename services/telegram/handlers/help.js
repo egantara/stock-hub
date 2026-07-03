@@ -31,6 +31,9 @@ Tambah stock (Manual / Upload File)
 /sales
 Kurangi stock (Manual / Upload File)
 
+/template
+Download template stock
+
 ━━━━━━━━━━━━━━
 
 📋 PRODUCT
