@@ -49,7 +49,7 @@ const TEMPLATE_PATH =
 
     "templates",
 
-    "stock-template.xlsx"
+    "template-stock.xlsx"
 
   );
 
