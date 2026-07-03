@@ -14,9 +14,14 @@ import {
 from "../services/telegram/telegram.js";
 
 import {
-  checkLicense
+  authorize
 }
-from "../services/license/index.js";
+from "../services/license/middleware.js";
+
+import {
+  LicenseError
+}
+from "../services/license/errors.js";
 
 export default async function handler(
   req,
@@ -51,16 +56,15 @@ export default async function handler(
     chatId =
       message?.chat?.id;
 
-    const text =
-      (
+    const text = (
 
-        message?.text ||
+      message?.text ||
 
-        message?.caption ||
+      message?.caption ||
 
-        ""
+      ""
 
-      ).trim();
+    ).trim();
 
     const document =
       message?.document;
@@ -93,77 +97,19 @@ export default async function handler(
     }
 
     //
-    // LICENSE
+    // AUTHORIZE
     //
-    const license =
+    const {
 
-      await checkLicense({
+      google,
 
-        chatId
+      context
 
-      });
+    } = await authorize({
 
-    if (
-      !license.ok
-    ) {
+      chatId
 
-      let message =
-
-        "❌ License tidak valid.";
-
-      switch (
-        license.reason
-      ) {
-
-        case "CHAT_NOT_REGISTERED":
-
-          message =
-`❌ Telegram belum terdaftar.
-
-Hubungi administrator.`;
-
-          break;
-
-        case "CHAT_DISABLED":
-
-          message =
-`❌ Telegram dinonaktifkan.`;
-
-          break;
-
-        case "LICENSE_DISABLED":
-
-          message =
-`❌ License dinonaktifkan.`;
-
-          break;
-
-        case "LICENSE_EXPIRED":
-
-          message =
-`❌ License telah berakhir.
-
-Silakan hubungi administrator.`;
-
-          break;
-
-      }
-
-      await sendMessage(
-
-        chatId,
-
-        message
-
-      );
-
-      return res.status(200).json({
-
-        ok: false
-
-      });
-
-    }
+    });
 
     await runTask(
 
@@ -177,8 +123,9 @@ Silakan hubungi administrator.`;
 
           document,
 
-          context:
-            license.context
+          google,
+
+          context
 
         })
 
@@ -207,7 +154,11 @@ Silakan hubungi administrator.`;
 
           chatId,
 
-          `❌ Error\n${error.message}`
+          error instanceof LicenseError
+
+            ? error.message
+
+            : '❌ Error\n${error.message}'
 
         );
 

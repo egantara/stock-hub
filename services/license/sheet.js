@@ -11,13 +11,21 @@ export async function loadLicenseStore() {
 
     chatRows
 
-  ] = await getMultipleSheets([
+  ] = await getMultipleSheets({
 
-    "CLIENTS!A:ZZ",
+    google,
 
-    "CHAT_ACCESS!A:ZZ"
+    ranges: [
 
-  ]);
+      "STOCK!A:ZZ",
+
+      "PRODUCTS!A:ZZ",
+
+      "PROCESSED_ORDERS!A:ZZ"
+
+    ]
+
+  });
 
   return {
 

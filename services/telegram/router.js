@@ -80,7 +80,9 @@ function getCommand(
 ) {
 
   return String(
+
     text || ""
+
   )
 
     .trim()
@@ -99,6 +101,8 @@ export async function router({
 
   document,
 
+  google,
+
   context
 
 }) {
@@ -114,11 +118,13 @@ export async function router({
     command,
 
     client:
+
       context?.clientId ||
 
       null,
 
     file:
+
       document?.file_name ||
 
       null
@@ -139,6 +145,8 @@ export async function router({
 
       document,
 
+      google,
+
       context
 
     });
@@ -152,6 +160,8 @@ export async function router({
     text,
 
     document,
+
+    google,
 
     context
 
