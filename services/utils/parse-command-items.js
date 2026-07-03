@@ -6,22 +6,54 @@ export function parseCommandLines({
 
 }) {
 
-  return text
+  const lines =
 
-    .slice(
-      command.length
-    )
+    text
 
-    .trim()
+      .slice(
+        command.length
+      )
 
-    .split("\n")
+      .trim()
 
-    .map(
-      line =>
-        line.trim()
-    )
+      .split("\n");
 
-    .filter(Boolean);
+  const result = [];
+
+  for (
+    const line
+    of lines
+  ) {
+
+    const value =
+      line.trim();
+
+    if (
+      !value
+    ) {
+
+      continue;
+
+    }
+
+    //
+    // Stop jika sudah masuk command berikutnya
+    //
+    if (
+      value.startsWith("/")
+    ) {
+
+      break;
+
+    }
+
+    result.push(
+      value
+    );
+
+  }
+
+  return result;
 
 }
 
