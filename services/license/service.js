@@ -161,7 +161,12 @@ export async function checkLicense({
     };
 
   }
-
+console.log({
+  sheetId: context.google.sheetId,
+  projectId: context.google.projectId,
+  clientEmail: context.google.clientEmail,
+  hasPrivateKey: !!context.google.privateKey
+});
   const google =
 
     createGoogleSheets(
