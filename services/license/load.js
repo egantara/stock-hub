@@ -131,7 +131,9 @@ function requireConfigurationField({
 
   value,
 
-  code
+  field,
+
+  context
 
 }) {
 
@@ -147,11 +149,23 @@ function requireConfigurationField({
 
   }
 
-  throw new ConfigurationError(
+  const error =
 
-    code
+    new ConfigurationError({
 
-  );
+      message:
+
+        `Kolom ${field} pada LICENSE belum dikonfigurasi.`,
+
+      field
+
+    });
+
+  error.context =
+
+    context;
+
+  throw error;
 
 }
 
@@ -308,6 +322,27 @@ export async function loadLicense({
 
   }
 
+  const context = {
+
+    clientId:
+      license.CLIENT_ID,
+
+    clientName:
+      license.CLIENT_NAME,
+
+    userName:
+      access.USER_NAME,
+
+    developer: {
+
+      developerChatId:
+        license.DEVELOPER_CHAT_ID
+
+    }
+
+  };
+
+
   //
   // CHAT_ACCESS
   //
@@ -331,8 +366,10 @@ export async function loadLicense({
     value:
       license.GOOGLE_SHEET_ID,
 
-    code:
-      "GOOGLE_SHEET_NOT_CONFIGURED"
+    field:
+      "GOOGLE_SHEET_ID",
+
+    context
 
   });
 
@@ -341,8 +378,10 @@ export async function loadLicense({
     value:
       license.GOOGLE_PROJECT_ID,
 
-    code:
-      "GOOGLE_PROJECT_NOT_CONFIGURED"
+    field:
+      "GOOGLE_PROJECT_ID",
+
+    context
 
   });
 
@@ -351,8 +390,10 @@ export async function loadLicense({
     value:
       license.GOOGLE_CLIENT_EMAIL,
 
-    code:
-      "GOOGLE_CLIENT_EMAIL_NOT_CONFIGURED"
+    field:
+      "GOOGLE_CLIENT_EMAIL",
+
+    context
 
   });
 
@@ -361,8 +402,10 @@ export async function loadLicense({
     value:
       license.GOOGLE_PRIVATE_KEY,
 
-    code:
-      "GOOGLE_PRIVATE_KEY_NOT_CONFIGURED"
+    field:
+      "GOOGLE_PRIVATE_KEY",
+
+    context
 
   });
 
@@ -375,8 +418,10 @@ export async function loadLicense({
     value:
       license.TELEGRAM_BOT_TOKEN,
 
-    code:
-      "BOT_TOKEN_NOT_CONFIGURED"
+    field:
+      "TELEGRAM_BOT_TOKEN",
+
+    context
 
   });
 
