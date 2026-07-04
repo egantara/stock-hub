@@ -326,66 +326,73 @@ export async function loadLicense({
 
   return {
 
-    clientId:
-      license.CLIENT_ID,
+  clientId:
+    license.CLIENT_ID,
 
-    clientName:
-      license.CLIENT_NAME,
+  clientName:
+    license.CLIENT_NAME,
 
-    userName:
-      access.USER_NAME,
+  userName:
+    access.USER_NAME,
 
-    role:
-      access.ROLE,
+  role:
+    access.ROLE,
 
-    chatStatus:
-      access.STATUS,
+  chatStatus:
+    access.STATUS,
 
-    plan:
-      license.PLAN,
+  plan:
+    license.PLAN,
 
-    status:
-      license.STATUS,
+  status:
+    license.STATUS,
 
-    startDate:
-      license.START_DATE,
+  startDate:
+    license.START_DATE,
 
-    endDate:
-      license.END_DATE,
+  endDate:
+    license.END_DATE,
 
-    notes:
-      license.NOTES,
+  notes:
+    license.NOTES,
 
-    google: {
+  developer: {
 
-      sheetId:
-        license.GOOGLE_SHEET_ID,
+    chatId:
+      license.DEVELOPER_CHAT_ID
 
-      projectId:
-        license.GOOGLE_PROJECT_ID,
+  },
 
-      clientEmail:
-        license.GOOGLE_CLIENT_EMAIL,
+  google: {
 
-      privateKey:
-        license.GOOGLE_PRIVATE_KEY
-          .replace(/\\n/g, "\n")
+    sheetId:
+      license.GOOGLE_SHEET_ID,
 
-    },
+    projectId:
+      license.GOOGLE_PROJECT_ID,
 
-    telegram: {
+    clientEmail:
+      license.GOOGLE_CLIENT_EMAIL,
 
-      botName:
-        license.BOT_NAME,
+    privateKey:
+      license.GOOGLE_PRIVATE_KEY
+        .replace(/\\n/g, "\n")
 
-      botToken:
-        license.TELEGRAM_BOT_TOKEN,
+  },
 
-      webhook:
-        license.WEBHOOK
+  telegram: {
 
-    }
+    botName:
+      license.BOT_NAME,
 
-  };
+    botToken:
+      license.TELEGRAM_BOT_TOKEN,
+
+    webhook:
+      license.WEBHOOK
+
+  }
+
+};
 
 }

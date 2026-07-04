@@ -1,4 +1,10 @@
 import {
+  ValidationError,
+  BusinessError
+}
+from "../../errors/index.js";
+
+import {
   loadStore
 }
 from "../../google/store.js";
@@ -56,10 +62,12 @@ export async function processStatusCommand({
     });
 
   if (
+
     !lines.length
+
   ) {
 
-    throw new Error(
+    throw new ValidationError(
 
 `Format salah.
 
@@ -104,48 +112,58 @@ Caption:
   let skipped = 0;
 
   for (
+
     const line
+
     of lines
+
   ) {
 
     try {
 
       const parts =
+
         line.split(/\s+/);
 
       if (
+
         parts.length < 2
+
       ) {
 
-        throw new Error(
-          "Format salah."
+        throw new ValidationError(
+
+          "Format harus: SKU STATUS."
+
         );
 
       }
 
       const sku =
+
         parts.shift();
 
       const status =
 
         parts
-
           .join(" ")
-
           .trim()
-
           .toUpperCase();
 
       if (
 
         !VALID_STATUS.includes(
+
           status
+
         )
 
       ) {
 
-        throw new Error(
-          "Status tidak valid."
+        throw new ValidationError(
+
+          `Status "${status}" tidak valid.`
+
         );
 
       }
@@ -161,11 +179,15 @@ Caption:
         });
 
       if (
+
         !product
+
       ) {
 
-        throw new Error(
+        throw new BusinessError(
+
           "SKU tidak ditemukan."
+
         );
 
       }
@@ -174,8 +196,7 @@ Caption:
 
       if (
 
-        product.STATUS ===
-        status
+        product.STATUS === status
 
       ) {
 
@@ -191,7 +212,9 @@ Caption:
           `PRODUCTS!O${product.__rowNumber}`,
 
         values: [[
+
           status
+
         ]]
 
       });
@@ -245,7 +268,9 @@ Caption:
   }
 
   if (
+
     updates.length
+
   ) {
 
     await batchUpdate({
@@ -259,7 +284,9 @@ Caption:
   }
 
   if (
+
     logRows.length
+
   ) {
 
     await appendRows({

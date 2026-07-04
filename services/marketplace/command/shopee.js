@@ -3,6 +3,11 @@ import path from "path";
 import ExcelJS from "exceljs";
 
 import {
+  ConfigurationError
+}
+from "../errors/index.js";
+
+import {
   nowWib
 }
 from "../../utils/datetime.js";
@@ -26,72 +31,80 @@ export async function exportShopee({
 
     });
 
-  console.log(
-    "CWD:",
-    process.cwd()
-  );
-
   const templatePath =
+
     path.join(
+
       process.cwd(),
+
       "templates",
+
       "template-shopee.xlsx"
+
     );
-
-  console.log(
-    "TEMPLATE:",
-    templatePath
-  );
-
-  console.log(
-    "EXISTS:",
-    fs.existsSync(
-      templatePath
-    )
-  );
 
   if (
+
     !fs.existsSync(
+
       templatePath
+
     )
+
   ) {
 
-    throw new Error(
-      `Template tidak ditemukan: ${templatePath}`
-    );
+    throw new ConfigurationError({
+
+      message:
+
+        "Template Export Shopee belum dikonfigurasi.\n\nSilakan hubungi Administrator.",
+
+      field:
+
+        "templates/template-shopee.xlsx"
+
+    });
 
   }
 
   const workbook =
+
     new ExcelJS.Workbook();
 
   await workbook.xlsx.readFile(
+
     templatePath
+
   );
 
   const sheet =
+
     workbook.worksheets[0];
 
   let rowNumber = 7;
 
   console.log(
+
     "EXPORT PRODUCTS:",
+
     store.productRows.length
+
   );
 
   for (
+
     const product
+
     of store.productRows
+
   ) {
 
-    //
-    // Hanya produk Shopee ACTIVE
-    //
     if (
 
       !product.SHOPEE_PRODUCT_ID ||
 
       product.STATUS !==
+
         "ACTIVE"
 
     ) {
@@ -101,125 +114,177 @@ export async function exportShopee({
     }
 
     const stock =
+
       store.stockMap.get(
+
         product.SKU
+
       );
 
-    //
-    // A = Kode Produk
-    //
     sheet.getCell(
+
       `A${rowNumber}`
+
     ).value =
+
       String(
-        product.SHOPEE_PRODUCT_ID || ""
+
+        product.SHOPEE_PRODUCT_ID ||
+
+        ""
+
       );
 
-    //
-    // B = Nama Produk
-    //
     sheet.getCell(
+
       `B${rowNumber}`
+
     ).value =
+
       String(
-        product.NAMA || ""
+
+        product.NAMA ||
+
+        ""
+
       );
 
-    //
-    // C = Kode Variasi
-    //
     sheet.getCell(
+
       `C${rowNumber}`
+
     ).value =
+
       String(
-        product.SHOPEE_VARIATION_ID || ""
+
+        product.SHOPEE_VARIATION_ID ||
+
+        ""
+
       );
 
-    //
-    // D = Nama Variasi
-    //
     sheet.getCell(
+
       `D${rowNumber}`
+
     ).value =
+
       String(
-        product.VARIASI || ""
+
+        product.VARIASI ||
+
+        ""
+
       );
 
-    //
-    // E = SKU Induk
-    //
     sheet.getCell(
+
       `E${rowNumber}`
-    ).value = "";
 
-    //
-    // F = SKU
-    //
+    ).value =
+
+      "";
+
     sheet.getCell(
+
       `F${rowNumber}`
+
     ).value =
+
       String(
-        product.SKU || ""
+
+        product.SKU ||
+
+        ""
+
       );
 
-    //
-    // G = Harga
-    //
     sheet.getCell(
+
       `G${rowNumber}`
+
     ).value =
+
       Number(
-        product.HARGA_SHOPEE || 0
+
+        product.HARGA_SHOPEE ||
+
+        0
+
       );
 
-    //
-    // I = Stock
-    //
     sheet.getCell(
+
       `I${rowNumber}`
+
     ).value =
+
       Number(
-        stock?.STOCK || 0
+
+        stock?.STOCK ||
+
+        0
+
       );
 
-    //
-    // J = Min Pembelian
-    //
     sheet.getCell(
+
       `J${rowNumber}`
-    ).value = 1;
+
+    ).value =
+
+      1;
 
     rowNumber++;
 
   }
 
   console.log(
+
     "EXPORTED ROWS:",
+
     rowNumber - 7
+
   );
 
   const exportDir =
+
     "/tmp";
 
   const timestamp =
+
     nowWib()
+
       .replace(
+
         /:/g,
+
         "-"
+
       )
+
       .replace(
+
         / /g,
+
         "_"
+
       );
 
   const outputFile =
+
     path.join(
+
       exportDir,
+
       `shopee-${timestamp}.xlsx`
+
     );
 
   await workbook.xlsx.writeFile(
+
     outputFile
+
   );
 
   return outputFile;

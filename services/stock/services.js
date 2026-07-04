@@ -1,4 +1,9 @@
 import {
+  BusinessError
+}
+from "../errors/index.js";
+
+import {
   nowWib
 }
 from "../utils/datetime.js";
@@ -27,6 +32,42 @@ export function getStockBySku({
 
 }
 
+function requireStock({
+
+  store,
+
+  sku
+
+}) {
+
+  const row =
+
+    getStockBySku({
+
+      store,
+
+      sku
+
+    });
+
+  if (
+
+    !row
+
+  ) {
+
+    throw new BusinessError(
+
+      `SKU "${sku}" tidak ditemukan.`
+
+    );
+
+  }
+
+  return row;
+
+}
+
 function applyStock({
 
   store,
@@ -40,12 +81,16 @@ function applyStock({
   const results = [];
 
   for (
+
     const item
+
     of items
+
   ) {
 
     const row =
-      getStockBySku({
+
+      requireStock({
 
         store,
 
@@ -54,22 +99,22 @@ function applyStock({
 
       });
 
-    if (!row) {
-
-      throw new Error(
-        `SKU tidak ditemukan: ${item.sku}`
-      );
-
-    }
-
     const stockAwal =
+
       Number(
-        row.STOCK || 0
+
+        row.STOCK ||
+
+        0
+
       );
 
     const qty =
+
       Number(
+
         item.qty
+
       );
 
     const stockAkhir =
@@ -81,9 +126,11 @@ function applyStock({
         : stockAwal + qty;
 
     row.STOCK =
+
       stockAkhir;
 
     row.__dirty =
+
       true;
 
     results.push({
@@ -144,7 +191,8 @@ export function minusStock({
 }) {
 
   const row =
-    getStockBySku({
+
+    requireStock({
 
       store,
 
@@ -152,36 +200,42 @@ export function minusStock({
 
     });
 
-  if (!row) {
-
-    throw new Error(
-      `SKU tidak ditemukan: ${sku}`
-    );
-
-  }
-
   const stockAwal =
+
     Number(
-      row.STOCK || 0
+
+      row.STOCK ||
+
+      0
+
     );
 
   if (
+
     stockAwal < qty
+
   ) {
 
-    throw new Error(
-      `Stock tidak cukup (${stockAwal})`
+    throw new BusinessError(
+
+      `Stock tidak mencukupi.
+
+Stock saat ini: ${stockAwal}`
+
     );
 
   }
 
   const stockAkhir =
+
     stockAwal - qty;
 
   row.STOCK =
+
     stockAkhir;
 
   row.__dirty =
+
     true;
 
   return {
@@ -201,12 +255,17 @@ export function createStockUpdates(
   const updates = [];
 
   for (
+
     const row
+
     of store.stockRows
+
   ) {
 
     if (
+
       !row.__dirty
+
     ) {
 
       continue;
@@ -219,7 +278,9 @@ export function createStockUpdates(
         `STOCK!B${row.__rowNumber}`,
 
       values: [[
+
         row.STOCK
+
       ]]
 
     });
@@ -230,7 +291,9 @@ export function createStockUpdates(
         `STOCK!C${row.__rowNumber}`,
 
       values: [[
+
         nowWib()
+
       ]]
 
     });

@@ -1,17 +1,17 @@
 import {
+  BusinessError
+}
+from "../errors/index.js";
+
+import {
   detectMarketplace
 }
 from "../marketplace/detect.js";
 
 import {
-  parseShopeeProduct
+  PRODUCT_PARSERS
 }
-from "../order/parsers/shopee-product.js";
-
-import {
-  parseTiktokProduct
-}
-from "../order/parsers/tiktok-product.js";
+from "../order/parsers/index.js";
 
 import {
   processProductImport
@@ -22,6 +22,85 @@ import {
   syncProductStatus
 }
 from "./sync.js";
+
+async function loadProducts(
+  filePath
+) {
+
+  const marketplace =
+
+    await detectMarketplace(
+
+      filePath
+
+    );
+
+  console.log(
+
+    "MARKETPLACE:",
+
+    marketplace
+
+  );
+
+  if (
+
+    !marketplace
+
+  ) {
+
+    throw new BusinessError(
+
+      `Marketplace tidak dikenali.
+
+Pastikan file yang diupload berasal dari marketplace yang didukung.`
+
+    );
+
+  }
+
+const parser =
+  PRODUCT_PARSERS[marketplace];
+
+  if (
+
+    !parser
+
+  ) {
+
+    throw new BusinessError(
+
+      `Marketplace "${marketplace}" belum didukung.`
+
+    );
+
+  }
+
+  const products =
+
+    await parser(
+
+      filePath
+
+    );
+
+  console.log(
+
+    `${marketplace} PRODUCTS:`,
+
+    products.length
+
+  );
+
+  return {
+
+    marketplace,
+
+    products
+
+  };
+
+}
 
 export async function processNewFile({
 
@@ -34,68 +113,29 @@ export async function processNewFile({
 }) {
 
   console.log(
+
     "PROCESS FILE:",
+
     filePath
+
   );
 
-  const marketplace =
-    await detectMarketplace(
-      filePath
-    );
+  const {
 
-  console.log(
-    "MARKETPLACE:",
-    marketplace
+    marketplace,
+
+    products
+
+  } = await loadProducts(
+
+    filePath
+
   );
 
-  if (
-    !marketplace
-  ) {
-
-    throw new Error(
-      "Marketplace tidak dikenali"
-    );
-
-  }
-
-  let products = [];
-
-  if (
-    marketplace ===
-    "SHOPEE"
-  ) {
-
-    products =
-      await parseShopeeProduct(
-        filePath
-      );
-
-    console.log(
-      "SHOPEE PRODUCTS:",
-      products.length
-    );
-
-  }
-
-  if (
-    marketplace ===
-    "TIKTOK"
-  ) {
-
-    products =
-      await parseTiktokProduct(
-        filePath
-      );
-
-    console.log(
-      "TIKTOK PRODUCTS:",
-      products.length
-    );
-
-  }
-
   console.log(
+
     "START PRODUCT IMPORT"
+
   );
 
   const result =
@@ -113,7 +153,9 @@ export async function processNewFile({
     });
 
   console.log(
+
     "FINISH PRODUCT IMPORT"
+
   );
 
   return {
@@ -136,48 +178,19 @@ export async function processStatusFile({
 
 }) {
 
-  const marketplace =
-    await detectMarketplace(
-      filePath
-    );
+  const {
 
-  if (
-    !marketplace
-  ) {
+    marketplace,
 
-    throw new Error(
-      "Marketplace tidak dikenali"
-    );
+    products
 
-  }
+  } = await loadProducts(
 
-  let products = [];
+    filePath
 
-  if (
-    marketplace ===
-    "SHOPEE"
-  ) {
+  );
 
-    products =
-      await parseShopeeProduct(
-        filePath
-      );
-
-  }
-
-  if (
-    marketplace ===
-    "TIKTOK"
-  ) {
-
-    products =
-      await parseTiktokProduct(
-        filePath
-      );
-
-  }
-
-  return await syncProductStatus({
+  return syncProductStatus({
 
     google,
 

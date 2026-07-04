@@ -1,76 +1,294 @@
 import XLSX from "xlsx";
 
-export async function parseShopeeOrder(
+import {
+  BusinessError
+}
+from "../../errors/index.js";
+
+export async function parseShopeeProduct(
   filePath
 ) {
 
   const workbook =
-    XLSX.readFile(filePath);
 
-  const sheetName =
-    workbook.SheetNames[0];
+    XLSX.readFile(
+      filePath
+    );
 
-  const worksheet =
-    workbook.Sheets[sheetName];
+  console.log(
+    "SHEETS:",
+    workbook.SheetNames
+  );
+
+  const sheet =
+
+    workbook.Sheets[
+      workbook.SheetNames[0]
+    ];
+
+  if (
+
+    !sheet
+
+  ) {
+
+    throw new BusinessError(
+
+      `Sheet produk tidak ditemukan.
+
+Pastikan menggunakan template Shopee yang benar.`
+
+    );
+
+  }
 
   const rows =
+
     XLSX.utils.sheet_to_json(
-      worksheet,
+
+      sheet,
+
       {
+
         defval: ""
+
       }
+
     );
 
-  const validStatus = [
-    "Perlu Dikirim",
-    "Sedang Dikirim",
-    "Selesai"
-  ];
+  console.log(
+    "SHOPEE ROWS:",
+    rows.length
+  );
 
-  return rows
+  if (
 
-    .map(row => ({
+    rows.length === 0
 
-      orderId:
+  ) {
+
+    throw new BusinessError(
+
+      `File Shopee tidak memiliki data produk.`
+
+    );
+
+  }
+
+  console.log(
+    "SHOPEE ROW 0:",
+    rows[0]
+  );
+
+  if (
+
+    rows.length > 1
+
+  ) {
+
+    console.log(
+      "SHOPEE ROW 1:",
+      rows[1]
+    );
+
+  }
+
+  if (
+
+    rows.length > 2
+
+  ) {
+
+    console.log(
+      "SHOPEE ROW 2:",
+      rows[2]
+    );
+
+  }
+
+  const products = [];
+
+  for (
+
+    const row
+
+    of rows
+
+  ) {
+
+    const productId =
+
+      String(
+
+        row.et_title_product_id ||
+
+        row["Kode Produk"] ||
+
+        ""
+
+      ).trim();
+
+    //
+    // FORMAT BARU SHOPEE
+    //
+    const skuBaru =
+
+      String(
+
+        row.et_title_variation_sku ||
+
+        row.et_title_parent_sku ||
+
+        ""
+
+      ).trim();
+
+    //
+    // FORMAT LAMA SHOPEE
+    //
+    const skuLama =
+
+      String(
+
+        row["SKU"] ||
+
+        ""
+
+      ).trim();
+
+    const sku =
+
+      skuBaru ||
+
+      skuLama;
+
+    //
+    // Skip metadata
+    //
+    if (
+
+      productId === "sales_info" ||
+
+      productId === "Kode Produk" ||
+
+      sku.startsWith("{") ||
+
+      !/^\d+$/.test(productId)
+
+    ) {
+
+      continue;
+
+    }
+
+    if (
+
+      !sku
+
+    ) {
+
+      continue;
+
+    }
+
+    products.push({
+
+      sku,
+
+      nama:
+
         String(
-          row["No. Pesanan"] || ""
+
+          row.et_title_product_name ||
+
+          row["Nama Produk"] ||
+
+          ""
+
         ).trim(),
 
-      status:
+      variasi:
+
         String(
-          row["Status Pesanan"] || ""
+
+          row.et_title_variation_name ||
+
+          row["Nama Variasi"] ||
+
+          ""
+
         ).trim(),
 
-      sku:
-        String(
-          row["Nomor Referensi SKU"] || ""
-        ).trim(),
+      stock:
 
-      qty:
         Number(
-          row["Jumlah"] || 0
+
+          row.et_title_variation_stock ||
+
+          row["Stok"] ||
+
+          0
+
         ),
 
-      productName:
+      shopeeProductId:
+
+        productId,
+
+      shopeeVariationId:
+
         String(
-          row["Nama Produk"] || ""
+
+          row.et_title_variation_id ||
+
+          row["Kode Variasi"] ||
+
+          ""
+
         ).trim(),
 
-      variant:
-        String(
-          row["Nama Variasi"] || ""
-        ).trim()
+      hargaShopee:
 
-    }))
+        Number(
 
-    .filter(item =>
+          row.et_title_variation_price ||
 
-      item.orderId &&
-      item.sku &&
-      item.qty > 0 &&
+          row["Harga"] ||
 
-      validStatus.includes(
-        item.status
-      )
+          0
+
+        )
+
+    });
+
+  }
+
+  console.log(
+    "SHOPEE PRODUCTS:",
+    products.length
+  );
+
+  if (
+
+    products.length === 0
+
+  ) {
+
+    throw new BusinessError(
+
+      `Tidak ada produk yang dapat diproses.
+
+Pastikan file yang diupload adalah export produk Shopee.`
+
     );
+
+  }
+
+  console.log(
+    "FIRST PRODUCT:",
+    products[0]
+  );
+
+  return products;
+
 }

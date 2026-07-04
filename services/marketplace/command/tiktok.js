@@ -3,6 +3,11 @@ import path from "path";
 import XLSX from "xlsx";
 
 import {
+  ConfigurationError
+}
+from "../errors/index.js";
+
+import {
   nowWib
 }
 from "../../utils/datetime.js";
@@ -27,56 +32,73 @@ export async function exportTikTok({
     });
 
   const templatePath =
+
     path.join(
+
       process.cwd(),
+
       "templates",
+
       "template-tiktok.xlsx"
+
     );
-
-  console.log(
-    "TEMPLATE:",
-    templatePath
-  );
-
-  console.log(
-    "EXISTS:",
-    fs.existsSync(
-      templatePath
-    )
-  );
 
   if (
+
     !fs.existsSync(
+
       templatePath
+
     )
+
   ) {
 
-    throw new Error(
-      `Template tidak ditemukan: ${templatePath}`
-    );
+    throw new ConfigurationError({
+
+      message:
+
+        "Template Export TikTok belum dikonfigurasi.\n\nSilakan hubungi Administrator.",
+
+      field:
+
+        "templates/template-tiktok.xlsx"
+
+    });
 
   }
 
   const workbook =
+
     XLSX.readFile(
+
       templatePath
+
     );
 
   const sheet =
+
     workbook.Sheets[
+
       workbook.SheetNames[0]
+
     ];
 
   let rowNumber = 6;
 
   console.log(
+
     "EXPORT PRODUCTS:",
+
     store.productRows.length
+
   );
 
   for (
+
     const product
+
     of store.productRows
+
   ) {
 
     //
@@ -87,6 +109,7 @@ export async function exportTikTok({
       !product.TIKTOK_PRODUCT_ID ||
 
       product.STATUS !==
+
         "ACTIVE"
 
     ) {
@@ -96,121 +119,112 @@ export async function exportTikTok({
     }
 
     const stock =
+
       store.stockMap.get(
+
         product.SKU
+
       );
 
-    //
-    // A = Product ID
-    //
-    sheet[
-      `A${rowNumber}`
-    ] = {
+    sheet[`A${rowNumber}`] = {
 
       t: "s",
 
       v: String(
-        product.TIKTOK_PRODUCT_ID || ""
+
+        product.TIKTOK_PRODUCT_ID ||
+
+        ""
+
       )
 
     };
 
-    //
-    // C = Product Name
-    //
-    sheet[
-      `C${rowNumber}`
-    ] = {
+    sheet[`C${rowNumber}`] = {
 
       t: "s",
 
       v: String(
-        product.NAMA || ""
+
+        product.NAMA ||
+
+        ""
+
       )
 
     };
 
-    //
-    // D = SKU ID
-    //
-    sheet[
-      `D${rowNumber}`
-    ] = {
+    sheet[`D${rowNumber}`] = {
 
       t: "s",
 
       v: String(
-        product.TIKTOK_VARIATION_ID || ""
+
+        product.TIKTOK_VARIATION_ID ||
+
+        ""
+
       )
 
     };
 
-    //
-    // E = Variation Option
-    //
-    sheet[
-      `E${rowNumber}`
-    ] = {
+    sheet[`E${rowNumber}`] = {
 
       t: "s",
 
       v: String(
-        product.VARIASI || ""
+
+        product.VARIASI ||
+
+        ""
+
       )
 
     };
 
-    //
-    // F = Retail Price
-    //
-    sheet[
-      `F${rowNumber}`
-    ] = {
+    sheet[`F${rowNumber}`] = {
 
       t: "n",
 
       v: Number(
-        product.HARGA_TIKTOK || 0
+
+        product.HARGA_TIKTOK ||
+
+        0
+
       )
 
     };
 
-    //
-    // G = Quantity
-    //
-    sheet[
-      `G${rowNumber}`
-    ] = {
+    sheet[`G${rowNumber}`] = {
 
       t: "n",
 
       v: Number(
-        stock?.STOCK || 0
+
+        stock?.STOCK ||
+
+        0
+
       )
 
     };
 
-    //
-    // H = Seller SKU
-    //
-    sheet[
-      `H${rowNumber}`
-    ] = {
+    sheet[`H${rowNumber}`] = {
 
       t: "s",
 
       v: String(
-        product.SKU || ""
+
+        product.SKU ||
+
+        ""
+
       )
 
     };
 
-    //
-    // I = Minimum sales quantity
-    //
-    sheet[
-      `I${rowNumber}`
-    ] = {
+    sheet[`I${rowNumber}`] = {
 
       t: "n",
 
@@ -223,14 +237,15 @@ export async function exportTikTok({
   }
 
   console.log(
+
     "EXPORTED ROWS:",
+
     rowNumber - 6
+
   );
 
-  //
-  // Update range
-  //
   sheet["!ref"] =
+
     `A1:I${rowNumber - 1}`;
 
   const timestamp =
@@ -238,13 +253,19 @@ export async function exportTikTok({
     nowWib()
 
       .replace(
+
         /:/g,
+
         "-"
+
       )
 
       .replace(
+
         / /g,
+
         "_"
+
       );
 
   const outputDir =
@@ -254,8 +275,11 @@ export async function exportTikTok({
       ? "/tmp"
 
       : path.join(
+
           process.cwd(),
+
           "exports"
+
         );
 
   if (
@@ -263,7 +287,9 @@ export async function exportTikTok({
     !process.env.VERCEL &&
 
     !fs.existsSync(
+
       outputDir
+
     )
 
   ) {
@@ -273,8 +299,9 @@ export async function exportTikTok({
       outputDir,
 
       {
-        recursive:
-          true
+
+        recursive: true
+
       }
 
     );

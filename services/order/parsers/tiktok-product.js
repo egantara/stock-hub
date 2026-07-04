@@ -1,10 +1,16 @@
 import XLSX from "xlsx";
 
+import {
+  BusinessError
+}
+from "../../errors/index.js";
+
 export async function parseTiktokProduct(
   filePath
 ) {
 
   const workbook =
+
     XLSX.readFile(
       filePath
     );
@@ -15,15 +21,25 @@ export async function parseTiktokProduct(
   );
 
   const sheet =
+
     workbook.Sheets[
       "Template"
     ];
 
-  if (!sheet) {
+  if (
 
-    throw new Error(
-      "Sheet Template tidak ditemukan"
+    !sheet
+
+  ) {
+
+    throw new BusinessError(
+
+      `Sheet "Template" tidak ditemukan.
+
+Pastikan menggunakan template TikTok yang benar.`
+
     );
+
   }
 
   console.log(
@@ -31,38 +47,41 @@ export async function parseTiktokProduct(
     sheet["!ref"]
   );
 
-  const lastRow =
-    Math.max(
+  const rows =
 
-      ...Object.keys(
-        sheet
+    Object.keys(sheet)
+
+      .filter(
+
+        key =>
+
+          /^[A-Z]+\d+$/.test(
+            key
+          )
+
       )
 
-        .filter(
+      .map(
 
-          key =>
+        key =>
 
-            /^[A-Z]+\d+$/.test(
-              key
-            )
+          Number(
 
-        )
+            key.match(
+              /\d+/
+            )[0]
 
-        .map(
+          )
 
-          key =>
+      );
 
-            Number(
+  const lastRow =
 
-              key.match(
-                /\d+/
-              )[0]
+    rows.length
 
-            )
+      ? Math.max(...rows)
 
-        )
-
-    );
+      : 0;
 
   console.log(
     "LAST ROW:",
@@ -75,42 +94,53 @@ export async function parseTiktokProduct(
   // Data TikTok mulai row 6
   //
   for (
+
     let row = 6;
+
     row <= lastRow;
+
     row++
+
   ) {
 
     const productId =
+
       String(
         sheet[`A${row}`]?.v || ""
       ).trim();
 
     const nama =
+
       String(
         sheet[`C${row}`]?.v || ""
       ).trim();
 
     const tiktokVariationId =
+
       String(
         sheet[`D${row}`]?.v || ""
       ).trim();
 
     const variasi =
+
       String(
         sheet[`E${row}`]?.v || ""
       ).trim();
 
     const hargaTiktok =
+
       Number(
         sheet[`F${row}`]?.v || 0
       );
 
     const stock =
+
       Number(
         sheet[`G${row}`]?.v || 0
       );
 
     const sku =
+
       String(
         sheet[`H${row}`]?.v || ""
       ).trim();
@@ -119,14 +149,21 @@ export async function parseTiktokProduct(
     // Skip row kosong
     //
     if (
+
       !productId ||
+
       !sku
+
     ) {
+
       continue;
+
     }
 
     if (
+
       products.length < 3
+
     ) {
 
       console.log({
@@ -142,6 +179,7 @@ export async function parseTiktokProduct(
         stock
 
       });
+
     }
 
     products.push({
@@ -162,6 +200,7 @@ export async function parseTiktokProduct(
       hargaTiktok
 
     });
+
   }
 
   console.log(
@@ -170,14 +209,18 @@ export async function parseTiktokProduct(
   );
 
   if (
+
     products.length
+
   ) {
 
     console.log(
       "FIRST PRODUCT:",
       products[0]
     );
+
   }
 
   return products;
+
 }

@@ -4,24 +4,11 @@ import axios from "axios";
 
 import FormData from "form-data";
 
-const BOT_TOKEN =
-
-  process.env
-    .TELEGRAM_BOT_TOKEN;
-
-if (
-  !BOT_TOKEN
-) {
-
-  throw new Error(
-    "TELEGRAM_BOT_TOKEN is missing"
-  );
-
+import {
+  ConfigurationError,
+  SystemError
 }
-
-const API_URL =
-
-  `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`;
+from "../errors/index.js";
 
 export async function sendDocument({
 
@@ -32,6 +19,47 @@ export async function sendDocument({
   caption = ""
 
 }) {
+
+  const botToken =
+
+    process.env
+      .TELEGRAM_BOT_TOKEN;
+
+  if (
+
+    !botToken
+
+  ) {
+
+    throw new ConfigurationError(
+
+      "TELEGRAM_BOT_TOKEN belum dikonfigurasi."
+
+    );
+
+  }
+
+  if (
+
+    !fs.existsSync(
+      filePath
+    )
+
+  ) {
+
+    throw new SystemError(
+
+      `File tidak ditemukan.
+
+${filePath}`
+
+    );
+
+  }
+
+  const apiUrl =
+
+    `https://api.telegram.org/bot${botToken}/sendDocument`;
 
   const form =
 
@@ -58,7 +86,9 @@ export async function sendDocument({
     "document",
 
     fs.createReadStream(
+
       filePath
+
     )
 
   );
@@ -69,7 +99,7 @@ export async function sendDocument({
 
   } = await axios.post(
 
-    API_URL,
+    apiUrl,
 
     form,
 
@@ -88,6 +118,20 @@ export async function sendDocument({
     }
 
   );
+
+  if (
+
+    !data?.ok
+
+  ) {
+
+    throw new SystemError(
+
+      "Gagal mengirim dokumen ke Telegram."
+
+    );
+
+  }
 
   return data;
 

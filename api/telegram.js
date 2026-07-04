@@ -9,19 +9,14 @@ import {
 from "../services/utils/queue.js";
 
 import {
-  sendMessage
-}
-from "../services/telegram/telegram.js";
-
-import {
   authorize
 }
 from "../services/license/middleware.js";
 
 import {
-  LicenseError
+  reportError
 }
-from "../services/license/errors.js";
+from "../services/errors/reporter.js";
 
 export default async function handler(
   req,
@@ -30,10 +25,16 @@ export default async function handler(
 
   let chatId;
 
+  let context;
+
+  let text = "";
+
   try {
 
     if (
+
       req.method !== "POST"
+
     ) {
 
       return res.status(405).json({
@@ -56,7 +57,7 @@ export default async function handler(
     chatId =
       message?.chat?.id;
 
-    const text = (
+    text = (
 
       message?.text ||
 
@@ -85,7 +86,9 @@ export default async function handler(
     });
 
     if (
+
       !chatId
+
     ) {
 
       return res.status(200).json({
@@ -96,20 +99,16 @@ export default async function handler(
 
     }
 
-    //
-    // AUTHORIZE
-    //
-    const {
+    const auth =
 
-      google,
+      await authorize({
 
-      context
+        chatId
 
-    } = await authorize({
+      });
 
-      chatId
-
-    });
+    context =
+      auth.context;
 
     await runTask(
 
@@ -123,7 +122,8 @@ export default async function handler(
 
           document,
 
-          google,
+          google:
+            auth.google,
 
           context
 
@@ -140,31 +140,41 @@ export default async function handler(
   } catch (error) {
 
     console.error(
+
       "TELEGRAM ERROR:",
+
       error
+
     );
 
-    if (
-      chatId
+    try {
+
+      await reportError({
+
+        error,
+
+        chatId,
+
+        context,
+
+        command:
+          text
+
+      });
+
+    } catch (
+
+      reporterError
+
     ) {
 
-      try {
+      console.error(
 
-        await sendMessage(
+        "ERROR REPORTER:",
 
-  chatId,
+        reporterError
 
-  error instanceof LicenseError
-
-    ? error.message
-
-    : `❌ Error
-
-${error.message}`
-
-);
-
-      } catch {}
+      );
 
     }
 

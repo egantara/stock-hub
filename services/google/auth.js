@@ -1,10 +1,36 @@
-import { google } from "googleapis";
+import {
+  google
+}
+from "googleapis";
 
-function requireValue(name, value) {
+import {
+  ConfigurationError
+}
+from "../errors/index.js";
 
-  if (!value) {
+function requireValue(
 
-    throw new Error(`${name} is missing`);
+  field,
+
+  value
+
+) {
+
+  if (
+
+    !value
+
+  ) {
+
+    throw new ConfigurationError({
+
+      message:
+
+        "Konfigurasi Google Sheets belum lengkap.\n\nSilakan hubungi Administrator.",
+
+      field
+
+    });
 
   }
 
@@ -24,59 +50,95 @@ export function createGoogleSheets({
 
 }) {
 
-  sheetId = requireValue(
-    "GOOGLE_SHEET_ID",
-    sheetId
-  );
+  sheetId =
 
-  projectId = requireValue(
-    "GOOGLE_PROJECT_ID",
-    projectId
-  );
+    requireValue(
 
-  clientEmail = requireValue(
-    "GOOGLE_CLIENT_EMAIL",
-    clientEmail
-  );
+      "GOOGLE_SHEET_ID",
 
-  privateKey = requireValue(
-    "GOOGLE_PRIVATE_KEY",
-    privateKey
-  ).replace(/\\n/g, "\n");
+      sheetId
 
-  const auth = new google.auth.GoogleAuth({
+    );
 
-    credentials: {
+  projectId =
 
-      type: "service_account",
+    requireValue(
 
-      project_id: projectId,
+      "GOOGLE_PROJECT_ID",
 
-      client_email: clientEmail,
+      projectId
 
-      private_key: privateKey
+    );
 
-    },
+  clientEmail =
 
-    scopes: [
+    requireValue(
 
-      "https://www.googleapis.com/auth/spreadsheets"
+      "GOOGLE_CLIENT_EMAIL",
 
-    ]
+      clientEmail
 
-  });
+    );
+
+  privateKey =
+
+    requireValue(
+
+      "GOOGLE_PRIVATE_KEY",
+
+      privateKey
+
+    ).replace(
+
+      /\\n/g,
+
+      "\n"
+
+    );
+
+  const auth =
+
+    new google.auth.GoogleAuth({
+
+      credentials: {
+
+        type:
+          "service_account",
+
+        project_id:
+          projectId,
+
+        client_email:
+          clientEmail,
+
+        private_key:
+          privateKey
+
+      },
+
+      scopes: [
+
+        "https://www.googleapis.com/auth/spreadsheets"
+
+      ]
+
+    });
 
   return {
 
-    sheets: google.sheets({
+    sheets:
 
-      version: "v4",
+      google.sheets({
 
-      auth
+        version: "v4",
 
-    }),
+        auth
 
-    spreadsheetId: sheetId
+      }),
+
+    spreadsheetId:
+
+      sheetId
 
   };
 

@@ -1,17 +1,17 @@
 import {
+  BusinessError
+}
+from "../errors/index.js";
+
+import {
   detectMarketplace
 }
 from "../marketplace/detect.js";
 
 import {
-  parseShopeeOrder
+  PARSERS
 }
-from "./parsers/shopee-order.js";
-
-import {
-  parseTiktokOrder
-}
-from "./parsers/tiktok-order.js";
+from "./parsers/index.js";
 
 import {
   processOrder
@@ -29,63 +29,76 @@ export async function processOrderFile({
 }) {
 
   console.log(
+
     "PROCESS FILE:",
+
     filePath
+
   );
 
   const marketplace =
+
     await detectMarketplace(
+
       filePath
+
     );
 
   console.log(
+
     "MARKETPLACE:",
+
     marketplace
+
   );
 
-  if (!marketplace) {
+  if (
 
-    throw new Error(
-      "Marketplace tidak dikenali"
+    !marketplace
+
+  ) {
+
+    throw new BusinessError(
+
+      `Marketplace tidak dikenali.
+
+Pastikan file yang diupload berasal dari marketplace yang didukung.`
+
     );
 
   }
 
-  let orders = [];
+const parser =
+  ORDER_PARSERS[marketplace];
 
-  switch (
-    marketplace
+  if (
+
+    !parser
+
   ) {
 
-    case "SHOPEE":
+    throw new BusinessError(
 
-      orders =
-        await parseShopeeOrder(
-          filePath
-        );
+      `Marketplace "${marketplace}" belum didukung.`
 
-      break;
-
-    case "TIKTOK":
-
-      orders =
-        await parseTiktokOrder(
-          filePath
-        );
-
-      break;
-
-    default:
-
-      throw new Error(
-        `Marketplace belum didukung: ${marketplace}`
-      );
+    );
 
   }
 
+  const orders =
+
+    await parser(
+
+      filePath
+
+    );
+
   console.log(
+
     `${marketplace} ORDERS:`,
+
     orders.length
+
   );
 
   const result =

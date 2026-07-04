@@ -1,6 +1,12 @@
 import xlsx from "xlsx";
 
 import {
+  ValidationError,
+  BusinessError
+}
+from "../errors/index.js";
+
+import {
   loadStore
 }
 from "../google/store.js";
@@ -12,11 +18,14 @@ import {
 from "../google/google-sheet.js";
 
 import {
-  applySetStock,
-  applyRestock,
   createStockUpdates
 }
 from "./services.js";
+
+import {
+  STOCK_MODES
+}
+from "./registry.js";
 
 import {
   createLogRow
@@ -37,12 +46,44 @@ function readRows(
       workbook.SheetNames[0]
     ];
 
-  return xlsx.utils.sheet_to_json(
-    sheet,
-    {
-      defval: ""
-    }
-  );
+  if (
+    !sheet
+  ) {
+
+    throw new ValidationError(
+
+      "Sheet pertama tidak ditemukan."
+
+    );
+
+  }
+
+  const rows =
+    xlsx.utils.sheet_to_json(
+
+      sheet,
+
+      {
+
+        defval: ""
+
+      }
+
+    );
+
+  if (
+    rows.length === 0
+  ) {
+
+    throw new ValidationError(
+
+      "File tidak memiliki data."
+
+    );
+
+  }
+
+  return rows;
 
 }
 
@@ -66,10 +107,14 @@ function validateDuplicateSku(
         row.SKU || ""
       )
         .trim()
-        .toLowerCase();
+        .toUpperCase();
 
-    if (!sku) {
+    if (
+      !sku
+    ) {
+
       continue;
+
     }
 
     if (
@@ -79,7 +124,7 @@ function validateDuplicateSku(
     ) {
 
       duplicates.add(
-        row.SKU
+        sku
       );
 
       continue;
@@ -96,14 +141,16 @@ function validateDuplicateSku(
     duplicates.size
   ) {
 
-    throw new Error(
-`SKU duplikat ditemukan:
+    throw new BusinessError(
+
+`SKU duplikat ditemukan.
 
 ${[
   ...duplicates
 ].join("\n")}
 
-Gabungkan qty terlebih dahulu.`
+Gabungkan QTY terlebih dahulu.`
+
     );
 
   }
@@ -119,10 +166,14 @@ function parseRow(
       row.SKU || ""
     ).trim();
 
-  if (!sku) {
+  if (
+    !sku
+  ) {
 
-    throw new Error(
-      "SKU kosong"
+    throw new ValidationError(
+
+      "SKU kosong."
+
     );
 
   }
@@ -138,8 +189,10 @@ function parseRow(
     )
   ) {
 
-    throw new Error(
-      "QTY tidak valid"
+    throw new ValidationError(
+
+      `QTY "${row.QTY}" tidak valid.`
+
     );
 
   }
@@ -151,48 +204,6 @@ function parseRow(
     qty
 
   };
-
-}
-
-function getModeConfig(
-  mode
-) {
-
-  switch (
-    mode
-  ) {
-
-    case "SET":
-
-      return {
-
-        command:
-          "SET STOCK",
-
-        apply:
-          applySetStock
-
-      };
-
-    case "RESTOCK":
-
-      return {
-
-        command:
-          "RESTOCK",
-
-        apply:
-          applyRestock
-
-      };
-
-    default:
-
-      throw new Error(
-        `Mode tidak valid: ${mode}`
-      );
-
-  }
 
 }
 
@@ -208,6 +219,21 @@ export async function processStockFile({
 
 }) {
 
+  const config =
+    STOCK_MODES[mode];
+
+  if (
+    !config
+  ) {
+
+    throw new ValidationError(
+
+      `Mode "${mode}" tidak dikenali.`
+
+    );
+
+  }
+
   const rows =
     readRows(
       filePath
@@ -217,18 +243,7 @@ export async function processStockFile({
     rows
   );
 
-  const {
-
-    command,
-
-    apply
-
-  } = getModeConfig(
-    mode
-  );
-
   const store =
-
     await loadStore({
 
       google
@@ -264,7 +279,7 @@ export async function processStockFile({
 
         result
 
-      ] = apply({
+      ] = config.apply({
 
         store,
 
@@ -291,7 +306,8 @@ export async function processStockFile({
 
         createLogRow({
 
-          command,
+          command:
+            config.command,
 
           marketplace:
             "MANUAL",
@@ -328,21 +344,30 @@ export async function processStockFile({
 
   }
 
-  await Promise.all([
+  const updates =
+    createStockUpdates(
+      store
+    );
 
-    batchUpdate({
+  if (
+    updates.length
+  ) {
+
+    await batchUpdate({
 
       google,
 
-      updates:
+      updates
 
-        createStockUpdates(
-          store
-        )
+    });
 
-    }),
+  }
 
-    appendRows({
+  if (
+    logRows.length
+  ) {
+
+    await appendRows({
 
       google,
 
@@ -352,9 +377,9 @@ export async function processStockFile({
       rows:
         logRows
 
-    })
+    });
 
-  ]);
+  }
 
   return {
 
