@@ -5,7 +5,7 @@ import {
 }
 from "../../errors/index.js";
 
-export async function parseShopeeProduct(
+export async function parseShopeeOrder(
   filePath
 ) {
 
