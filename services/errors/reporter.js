@@ -28,7 +28,53 @@ import {
 }
 from "./system.js";
 
-export async function reportError({
+function isUserError(
+
+  error
+
+) {
+
+  return (
+
+    error instanceof ValidationError ||
+
+    error instanceof BusinessError ||
+
+    error instanceof LicenseError
+
+  );
+
+}
+
+async function notifyUser(
+
+  chatId,
+
+  message
+
+) {
+
+  if (
+
+    !chatId
+
+  ) {
+
+    return;
+
+  }
+
+  await sendMessage(
+
+    chatId,
+
+    message
+
+  );
+
+}
+
+async function notifyDeveloper({
 
   error,
 
@@ -40,45 +86,27 @@ export async function reportError({
 
 }) {
 
-  //
-  // User Error
-  //
+  const developerChatId =
+
+    context?.developer?.developerChatId
+
+    ||
+
+    context?.developer?.chatId
+
+    ||
+
+    process.env.DEVELOPER_CHAT_ID;
+
   if (
 
-    error instanceof ValidationError ||
-
-    error instanceof BusinessError ||
-
-    error instanceof LicenseError
+    !developerChatId
 
   ) {
-
-    if (
-
-      chatId
-
-    ) {
-
-      await sendMessage(
-
-        chatId,
-
-        error.message
-
-      );
-
-    }
 
     return;
 
   }
-
-  //
-  // Developer Error
-  //
-  const developerChatId =
-
-  context?.developer?.chatId;
 
   const report = [
 
@@ -114,35 +142,94 @@ export async function reportError({
 
   ].join("\n");
 
-  if (
+  try {
 
-    developerChatId
+    await sendMessage(
+
+      developerChatId,
+
+      report,
+
+      {
+
+        parse_mode:
+
+          "Markdown"
+
+      }
+
+    );
+
+  } catch (
+
+    developerError
 
   ) {
 
-    try {
+    console.error(
 
-      await sendMessage(
+      "FAILED SEND ERROR REPORT:",
 
-        developerChatId,
+      developerError
 
-        report,
+    );
 
-        {
+  }
 
-          parse_mode:
-            "Markdown"
+}
 
-        }
+export async function reportError({
 
-      );
+  error,
 
-    } catch {}
+  chatId,
+
+  context,
+
+  command
+
+}) {
+
+  //
+  // User Error
+  //
+  if (
+
+    isUserError(
+
+      error
+
+    )
+
+  ) {
+
+    return notifyUser(
+
+      chatId,
+
+      error.message
+
+    );
 
   }
 
   //
-  // Configuration Error
+  // Developer Report
+  //
+  await notifyDeveloper({
+
+    error,
+
+    chatId,
+
+    context,
+
+    command
+
+  });
+
+  //
+  // Configuration
   //
   if (
 
@@ -150,30 +237,20 @@ export async function reportError({
 
   ) {
 
-    if (
+    return notifyUser(
 
-      chatId
-
-    ) {
-
-      await sendMessage(
-
-        chatId,
+      chatId,
 
 `❌ Bot sedang mengalami masalah konfigurasi.
 
 Developer telah menerima laporan.`
 
-      );
-
-    }
-
-    return;
+    );
 
   }
 
   //
-  // System Error
+  // System
   //
   if (
 
@@ -181,47 +258,29 @@ Developer telah menerima laporan.`
 
   ) {
 
-    if (
+    return notifyUser(
 
-      chatId
-
-    ) {
-
-      await sendMessage(
-
-        chatId,
+      chatId,
 
 `❌ Terjadi gangguan pada sistem.
 
 Silakan coba beberapa saat lagi.`
 
-      );
-
-    }
-
-    return;
+    );
 
   }
 
   //
   // Unknown
   //
-  if (
+  return notifyUser(
 
-    chatId
-
-  ) {
-
-    await sendMessage(
-
-      chatId,
+    chatId,
 
 `❌ Terjadi kesalahan yang tidak diketahui.
 
 Developer telah menerima laporan.`
 
-    );
-
-  }
+  );
 
 }

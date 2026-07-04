@@ -5,6 +5,11 @@ import {
 }
 from "./errors.js";
 
+import {
+  ConfigurationError
+}
+from "../errors/configuration.js";
+
 const LICENSE_SHEET_ID =
   process.env.LICENSE_SHEET_ID;
 
@@ -28,26 +33,44 @@ console.log({
 
 });
 
-if (!LICENSE_SHEET_ID) {
+if (
 
-  throw new LicenseError(
+  !LICENSE_SHEET_ID
+
+) {
+
+  throw new ConfigurationError(
+
     "LICENSE_SHEET_ID is missing"
+
   );
 
 }
 
-if (!LICENSE_CLIENT_EMAIL) {
+if (
 
-  throw new LicenseError(
+  !LICENSE_CLIENT_EMAIL
+
+) {
+
+  throw new ConfigurationError(
+
     "LICENSE_CLIENT_EMAIL is missing"
+
   );
 
 }
 
-if (!LICENSE_PRIVATE_KEY) {
+if (
 
-  throw new LicenseError(
+  !LICENSE_PRIVATE_KEY
+
+) {
+
+  throw new ConfigurationError(
+
     "LICENSE_PRIVATE_KEY is missing"
+
   );
 
 }
@@ -75,6 +98,62 @@ const auth =
     ]
 
   });
+
+  function requireLicenseField({
+
+  value,
+
+  code
+
+}) {
+
+  if (
+
+    String(
+      value ?? ""
+    ).trim()
+
+  ) {
+
+    return;
+
+  }
+
+  throw new LicenseError(
+
+    code
+
+  );
+
+}
+
+function requireConfigurationField({
+
+  value,
+
+  code
+
+}) {
+
+  if (
+
+    String(
+      value ?? ""
+    ).trim()
+
+  ) {
+
+    return;
+
+  }
+
+  throw new ConfigurationError(
+
+    code
+
+  );
+
+}
 
 const sheets =
   google.sheets({
@@ -164,29 +243,6 @@ async function loadSheet(
 
 }
 
-function requireField({
-
-  value,
-
-  code
-
-}) {
-
-  if (
-
-    !String(
-      value ?? ""
-    ).trim()
-
-  ) {
-
-    throw new LicenseError(
-      code
-    );
-
-  }
-
-}
 
 export async function loadLicense({
 
@@ -256,7 +312,7 @@ export async function loadLicense({
   // CHAT_ACCESS
   //
 
-  requireField({
+  requireLicenseField({
 
     value:
       access.USER_NAME,
@@ -270,7 +326,7 @@ export async function loadLicense({
   // GOOGLE
   //
 
-  requireField({
+  requireConfigurationField({
 
     value:
       license.GOOGLE_SHEET_ID,
@@ -280,7 +336,7 @@ export async function loadLicense({
 
   });
 
-  requireField({
+  requireConfigurationField({
 
     value:
       license.GOOGLE_PROJECT_ID,
@@ -290,7 +346,7 @@ export async function loadLicense({
 
   });
 
-  requireField({
+  requireConfigurationField({
 
     value:
       license.GOOGLE_CLIENT_EMAIL,
@@ -300,7 +356,7 @@ export async function loadLicense({
 
   });
 
-  requireField({
+  requireConfigurationField({
 
     value:
       license.GOOGLE_PRIVATE_KEY,
@@ -314,7 +370,7 @@ export async function loadLicense({
   // TELEGRAM
   //
 
-  requireField({
+  requireConfigurationField({
 
     value:
       license.TELEGRAM_BOT_TOKEN,
