@@ -5,7 +5,7 @@ import XLSX from "xlsx";
 import {
   ConfigurationError
 }
-from "../errors/index.js";
+from "../../errors/index.js";
 
 import {
   nowWib

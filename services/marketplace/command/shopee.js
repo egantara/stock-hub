@@ -5,7 +5,7 @@ import ExcelJS from "exceljs";
 import {
   ConfigurationError
 }
-from "../errors/index.js";
+from "../../errors/index.js";
 
 import {
   nowWib
