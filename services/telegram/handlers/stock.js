@@ -16,6 +16,11 @@ import {
 from "../download-file.js";
 
 import {
+  validateExcelDocument
+}
+from "../validate-document.js";
+
+import {
   getCommand
 }
 from "../../utils/command.js";
@@ -92,6 +97,110 @@ async function processFile({
 
 }
 
+async function processUpload({
+
+  chatId,
+
+  google,
+
+  document,
+
+  mode,
+
+  title,
+
+  user
+
+}) {
+
+  validateExcelDocument(
+
+    document
+
+  );
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Memproses file..."
+
+  );
+
+  const result =
+
+    await processFile({
+
+      google,
+
+      document,
+
+      mode,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      ...result
+
+    })
+
+  );
+
+}
+
+async function processManual({
+
+  chatId,
+
+  google,
+
+  text,
+
+  user,
+
+  processor,
+
+  title
+
+}) {
+
+  const result =
+
+    await processor({
+
+      google,
+
+      text,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      ...result
+
+    })
+
+  );
+
+}
+
 export async function handleStock({
 
   chatId,
@@ -124,28 +233,13 @@ export async function handleStock({
 
   ) {
 
-    //
-    // SET
-    //
-    case "/set": {
+    case "/set":
 
-      if (
+      return document
 
-        document
+        ? processUpload({
 
-      ) {
-
-        await sendMessage(
-
-          chatId,
-
-          "⏳ Memproses file..."
-
-        );
-
-        const result =
-
-          await processFile({
+            chatId,
 
             google,
 
@@ -153,80 +247,39 @@ export async function handleStock({
 
             mode: "SET",
 
+            title: "✏️ Set Stock",
+
             user
-
-          });
-
-        return sendMessage(
-
-          chatId,
-
-          buildSummary({
-
-            title:
-
-              "✏️ Set Stock",
-
-            ...result
 
           })
 
-        );
+        : processManual({
 
-      }
+            chatId,
 
-      const result =
+            google,
 
-        await processSetCommand({
+            text,
 
-          google,
+            user,
 
-          text,
+            processor:
 
-          user
+              processSetCommand,
 
-        });
+            title:
 
-      return sendMessage(
+              "✏️ Set Stock"
 
-        chatId,
+          });
 
-        buildSummary({
+    case "/restock":
 
-          title:
+      return document
 
-            "✏️ Set Stock",
+        ? processUpload({
 
-          ...result
-
-        })
-
-      );
-
-    }
-
-    //
-    // RESTOCK
-    //
-    case "/restock": {
-
-      if (
-
-        document
-
-      ) {
-
-        await sendMessage(
-
-          chatId,
-
-          "⏳ Memproses file..."
-
-        );
-
-        const result =
-
-          await processFile({
+            chatId,
 
             google,
 
@@ -234,62 +287,33 @@ export async function handleStock({
 
             mode: "RESTOCK",
 
+            title: "📦 Restock",
+
             user
-
-          });
-
-        return sendMessage(
-
-          chatId,
-
-          buildSummary({
-
-            title:
-
-              "📦 Restock",
-
-            ...result
 
           })
 
-        );
+        : processManual({
 
-      }
+            chatId,
 
-      const result =
+            google,
 
-        await processRestockCommand({
+            text,
 
-          google,
+            user,
 
-          text,
+            processor:
 
-          user
+              processRestockCommand,
 
-        });
+            title:
 
-      return sendMessage(
+              "📦 Restock"
 
-        chatId,
+          });
 
-        buildSummary({
-
-          title:
-
-            "📦 Restock",
-
-          ...result
-
-        })
-
-      );
-
-    }
-
-    //
-    // TEMPLATE
-    //
-    case "/template": {
+    case "/template":
 
       await sendMessage(
 
@@ -321,11 +345,6 @@ QTY = Jumlah Penambahan`
 
       });
 
-    }
-
-    //
-    // STOCK
-    //
     case "/stock": {
 
       const result =

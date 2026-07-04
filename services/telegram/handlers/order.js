@@ -4,14 +4,19 @@ import {
 from "../telegram.js";
 
 import {
-  isCommand
-}
-from "../../utils/command.js";
-
-import {
   downloadTelegramFile
 }
 from "../download-file.js";
+
+import {
+  validateExcelDocument
+}
+from "../validate-document.js";
+
+import {
+  getCommand
+}
+from "../../utils/command.js";
 
 import {
   buildSummary
@@ -58,6 +63,128 @@ async function processFile({
 
 }
 
+async function processUpload({
+
+  chatId,
+
+  google,
+
+  document,
+
+  title,
+
+  user
+
+}) {
+
+  validateExcelDocument(
+
+    document
+
+  );
+
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Memproses file..."
+
+  );
+
+  const result =
+
+    await processFile({
+
+      google,
+
+      document,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      processed:
+
+        result.processed,
+
+      duplicateProducts:
+
+        result.duplicateOrders,
+
+      totalQty:
+
+        result.totalQty,
+
+      errors:
+
+        result.errors
+
+    })
+
+  );
+
+}
+
+async function processManual({
+
+  chatId,
+
+  google,
+
+  text,
+
+  user,
+
+  title
+
+}) {
+
+  const result =
+
+    await processSalesCommand({
+
+      google,
+
+      text,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      processed:
+
+        result.processed,
+
+      totalQty:
+
+        result.totalQty,
+
+      errors:
+
+        result.errors
+
+    })
+
+  );
+
+}
+
 export async function handleOrder({
 
   chatId,
@@ -72,129 +199,59 @@ export async function handleOrder({
 
 }) {
 
+  const command =
+
+    getCommand(
+
+      text
+
+    );
+
   const user =
 
     context?.userName;
 
-  const salesCommand =
+  switch (
 
-    isCommand({
-
-      text,
-
-      command: "/sales"
-
-    });
-
-  //
-  // SALES + FILE
-  //
-  if (
-
-    salesCommand &&
-
-    document
+    command
 
   ) {
 
-    await sendMessage(
+    case "/sales":
 
-      chatId,
+      return document
 
-      "⏳ Memproses file..."
+        ? processUpload({
 
-    );
+            chatId,
 
-    const result =
+            google,
 
-      await processFile({
+            document,
 
-        google,
+            title:
 
-        document,
+              "🛒 Sales",
 
-        user
+            user
 
-      });
+          })
 
-    return sendMessage(
+        : processManual({
 
-      chatId,
+            chatId,
 
-      buildSummary({
+            google,
 
-        title:
+            text,
 
-          "🛒 Sales",
+            user,
 
-        processed:
+            title:
 
-          result.processed,
+              "🛒 Sales"
 
-        duplicateProducts:
-
-          result.duplicateOrders,
-
-        totalQty:
-
-          result.totalQty,
-
-        errors:
-
-          result.errors
-
-      })
-
-    );
-
-  }
-
-  //
-  // SALES MANUAL
-  //
-  if (
-
-    salesCommand
-
-  ) {
-
-    const result =
-
-      await processSalesCommand({
-
-        google,
-
-        text,
-
-        user
-
-      });
-
-    return sendMessage(
-
-      chatId,
-
-      buildSummary({
-
-        title:
-
-          "🛒 Sales",
-
-        processed:
-
-          result.processed,
-
-        totalQty:
-
-          result.totalQty,
-
-        errors:
-
-          result.errors
-
-      })
-
-    );
+          });
 
   }
 

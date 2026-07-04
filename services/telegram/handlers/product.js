@@ -9,7 +9,12 @@ import {
 from "../download-file.js";
 
 import {
-  isCommand
+  validateExcelDocument
+}
+from "../validate-document.js";
+
+import {
+  getCommand
 }
 from "../../utils/command.js";
 
@@ -62,6 +67,124 @@ async function processFile({
 
 }
 
+async function processUpload({
+
+  chatId,
+
+  google,
+
+  document,
+
+  processor,
+
+  title,
+
+  loading,
+
+  summary,
+
+  user
+
+}) {
+
+  validateExcelDocument(
+
+    document
+
+  );
+
+  await sendMessage(
+
+    chatId,
+
+    loading
+
+  );
+
+  const result =
+
+    await processFile({
+
+      google,
+
+      document,
+
+      processor,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      ...summary(
+
+        result
+
+      )
+
+    })
+
+  );
+
+}
+
+async function processManual({
+
+  chatId,
+
+  google,
+
+  text,
+
+  user,
+
+  processor,
+
+  title,
+
+  summary
+
+}) {
+
+  const result =
+
+    await processor({
+
+      google,
+
+      text,
+
+      user
+
+    });
+
+  return sendMessage(
+
+    chatId,
+
+    buildSummary({
+
+      title,
+
+      ...summary(
+
+        result
+
+      )
+
+    })
+
+  );
+
+}
+
 export async function handleProduct({
 
   chatId,
@@ -76,70 +199,52 @@ export async function handleProduct({
 
 }) {
 
+  const command =
+
+    getCommand(
+
+      text
+
+    );
+
   const user =
 
     context?.userName;
 
-  const newCommand =
+  switch (
 
-    isCommand({
-
-      text,
-
-      command: "/new"
-
-    });
-
-  const statusCommand =
-
-    isCommand({
-
-      text,
-
-      command: "/status"
-
-    });
-
-  //
-  // NEW
-  //
-  if (
-
-    newCommand
+    command
 
   ) {
 
-    if (
+    //
+    // NEW
+    //
+    case "/new":
 
-      !document
+      if (
 
-    ) {
+        !document
 
-      return sendMessage(
+      ) {
+
+        return sendMessage(
+
+          chatId,
+
+          buildUploadRequired(
+
+            "/new"
+
+          )
+
+        );
+
+      }
+
+      return processUpload({
 
         chatId,
-
-        buildUploadRequired(
-
-          "/new"
-
-        )
-
-      );
-
-    }
-
-    await sendMessage(
-
-      chatId,
-
-      "⏳ Memproses file..."
-
-    );
-
-    const result =
-
-      await processFile({
 
         google,
 
@@ -149,75 +254,58 @@ export async function handleProduct({
 
           processNewFile,
 
-        user
-
-      });
-
-    return sendMessage(
-
-      chatId,
-
-      buildSummary({
-
         title:
 
           "📦 Product Import",
 
-        found:
+        loading:
 
-          result.found,
+          "⏳ Memproses file...",
 
-        newProducts:
+        user,
 
-          result.newProducts,
+        summary:
 
-        updated:
+          result => ({
 
-          result.updatedProducts,
+            found:
 
-        duplicateProducts:
+              result.found,
 
-          result.duplicateProducts,
+            newProducts:
 
-        errors:
+              result.newProducts,
 
-          result.errors
+            updated:
 
-      })
+              result.updatedProducts,
 
-    );
+            duplicateProducts:
 
-  }
+              result.duplicateProducts,
 
-  //
-  // STATUS
-  //
-  if (
+            errors:
 
-    statusCommand
+              result.errors
 
-  ) {
+          })
+
+      });
 
     //
-    // FILE
+    // STATUS
     //
-    if (
+    case "/status":
 
-      document
+      if (
 
-    ) {
+        document
 
-      await sendMessage(
+      ) {
 
-        chatId,
+        return processUpload({
 
-        "⏳ Sinkronisasi status produk..."
-
-      );
-
-      const result =
-
-        await processFile({
+          chatId,
 
           google,
 
@@ -227,90 +315,87 @@ export async function handleProduct({
 
             processStatusFile,
 
-          user
-
-        });
-
-      return sendMessage(
-
-        chatId,
-
-        buildSummary({
-
           title:
 
             "📦 Product Status",
 
-          active:
+          loading:
 
-            result.active,
+            "⏳ Sinkronisasi status produk...",
 
-          nonActive:
+          user,
 
-            result.nonActive,
+          summary:
 
-          updated:
+            result => ({
 
-            result.updated,
+              active:
 
-          skipped:
+                result.active,
 
-            result.skipped,
+              nonActive:
 
-          errors:
+                result.nonActive,
 
-            result.errors || []
+              updated:
 
-        })
+                result.updated,
 
-      );
+              skipped:
 
-    }
+                result.skipped,
 
-    //
-    // MANUAL
-    //
-    const result =
+              errors:
 
-      await processStatusCommand({
+                result.errors || []
+
+            })
+
+        });
+
+      }
+
+      return processManual({
+
+        chatId,
 
         google,
 
         text,
 
-        user
+        user,
 
-      });
+        processor:
 
-    return sendMessage(
-
-      chatId,
-
-      buildSummary({
+          processStatusCommand,
 
         title:
 
           "📦 Product Status",
 
-        processed:
+        summary:
 
-          result.processed,
+          result => ({
 
-        updated:
+            processed:
 
-          result.updated,
+              result.processed,
 
-        skipped:
+            updated:
 
-          result.skipped,
+              result.updated,
 
-        errors:
+            skipped:
 
-          result.errors
+              result.skipped,
 
-      })
+            errors:
 
-    );
+              result.errors
+
+          })
+
+      });
 
   }
 
