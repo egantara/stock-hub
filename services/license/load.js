@@ -171,4 +171,10 @@ export async function loadLicense({
 
   };
 
+  console.log({
+  sheet: process.env.LICENSE_SHEET_ID,
+  email: process.env.LICENSE_CLIENT_EMAIL,
+  hasKey: !!process.env.LICENSE_PRIVATE_KEY
+});
+
 }
