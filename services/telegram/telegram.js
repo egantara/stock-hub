@@ -65,19 +65,21 @@ export async function sendMessage(
 
     );
 
-  if (
+  const data = await response.json();
 
-    !response.ok
+if (!response.ok || !data.ok) {
 
-  ) {
+  throw new SystemError(
 
-    throw new SystemError(
+`${data.description}
 
-      `Telegram API mengembalikan HTTP ${response.status}.`
+HTTP ${response.status}`
 
-    );
+  );
 
-  }
+}
+
+return data;
 
   const data =
 

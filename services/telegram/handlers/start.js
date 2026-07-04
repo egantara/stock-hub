@@ -11,8 +11,7 @@ function buildStartMessage({
 
 }) {
 
-  return
-
+  return (
 `👋 Selamat datang di Stock Hub.
 
 Anda berhasil terhubung ke:
@@ -27,7 +26,8 @@ Bot ini membantu mengelola:
 🛒 Order
 📤 Marketplace Export
 
-Ketik /help untuk melihat daftar command.`;
+Ketik /help untuk melihat daftar command.`
+  );
 
 }
 
