@@ -98,11 +98,40 @@ async function notifyDeveloper({
 
     process.env.DEVELOPER_CHAT_ID;
 
+  //
+  // DEBUG
+  //
+  console.log({
+
+    developerChatId,
+
+    envDeveloperChatId:
+
+      process.env.DEVELOPER_CHAT_ID,
+
+    clientId:
+
+      context?.clientId,
+
+    user:
+
+      context?.userName,
+
+    command
+
+  });
+
   if (
 
     !developerChatId
 
   ) {
+
+    console.log(
+
+      "DEVELOPER_CHAT_ID NOT FOUND"
+
+    );
 
     return;
 
@@ -144,6 +173,14 @@ async function notifyDeveloper({
 
   try {
 
+    console.log(
+
+      "SEND ERROR REPORT:",
+
+      developerChatId
+
+    );
+
     await sendMessage(
 
       developerChatId,
@@ -157,6 +194,12 @@ async function notifyDeveloper({
           "Markdown"
 
       }
+
+    );
+
+    console.log(
+
+      "ERROR REPORT SENT"
 
     );
 
