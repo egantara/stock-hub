@@ -15,6 +15,10 @@ const auth = new google.auth.JWT(
   ]
 );
 
+const token = await auth.authorize();
+
+console.log(token);
+
 const sheets = google.sheets({
   version: "v4",
   auth
