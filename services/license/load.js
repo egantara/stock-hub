@@ -1,35 +1,94 @@
 import { google } from "googleapis";
 
-console.log({
-  sheet: process.env.LICENSE_SHEET_ID,
-  email: process.env.LICENSE_CLIENT_EMAIL,
-  hasKey: !!process.env.LICENSE_PRIVATE_KEY
-});
-
-const auth = new google.auth.JWT(
-  process.env.LICENSE_CLIENT_EMAIL,
-  null,
-  process.env.LICENSE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  [
-    "https://www.googleapis.com/auth/spreadsheets.readonly"
-  ]
-);
-
-const token = await auth.authorize();
-
-console.log(token);
-
-const sheets = google.sheets({
-  version: "v4",
-  auth
-});
-
 const LICENSE_SHEET_ID =
   process.env.LICENSE_SHEET_ID;
 
-async function loadSheet(range) {
+const LICENSE_CLIENT_EMAIL =
+  process.env.LICENSE_CLIENT_EMAIL;
 
-  const { data } =
+const LICENSE_PRIVATE_KEY =
+  process.env.LICENSE_PRIVATE_KEY
+    ?.replace(/\\n/g, "\n");
+
+console.log({
+
+  sheet:
+    LICENSE_SHEET_ID,
+
+  email:
+    LICENSE_CLIENT_EMAIL,
+
+  hasKey:
+    !!LICENSE_PRIVATE_KEY
+
+});
+
+if (!LICENSE_SHEET_ID) {
+
+  throw new Error(
+    "LICENSE_SHEET_ID is missing"
+  );
+
+}
+
+if (!LICENSE_CLIENT_EMAIL) {
+
+  throw new Error(
+    "LICENSE_CLIENT_EMAIL is missing"
+  );
+
+}
+
+if (!LICENSE_PRIVATE_KEY) {
+
+  throw new Error(
+    "LICENSE_PRIVATE_KEY is missing"
+  );
+
+}
+
+const auth =
+  new google.auth.GoogleAuth({
+
+    credentials: {
+
+      type:
+        "service_account",
+
+      client_email:
+        LICENSE_CLIENT_EMAIL,
+
+      private_key:
+        LICENSE_PRIVATE_KEY
+
+    },
+
+    scopes: [
+
+      "https://www.googleapis.com/auth/spreadsheets.readonly"
+
+    ]
+
+  });
+
+const sheets =
+  google.sheets({
+
+    version: "v4",
+
+    auth
+
+  });
+
+async function loadSheet(
+  range
+) {
+
+  const {
+
+    data
+
+  } =
     await sheets.spreadsheets.values.get({
 
       spreadsheetId:
@@ -42,27 +101,39 @@ async function loadSheet(range) {
   const rows =
     data.values ?? [];
 
-  if (rows.length === 0) {
+  if (
+    rows.length === 0
+  ) {
 
     return [];
 
   }
 
-  const headers = rows.shift();
+  const headers =
+    rows.shift();
 
-  return rows.map(row =>
+  return rows.map(
 
-    Object.fromEntries(
+    row =>
 
-      headers.map((key, index) => [
+      Object.fromEntries(
 
-        key,
+        headers.map(
 
-        row[index] ?? ""
+          (
+            key,
+            index
+          ) => [
 
-      ])
+            key,
 
-    )
+            row[index] ?? ""
+
+          ]
+
+        )
+
+      )
 
   );
 
@@ -82,9 +153,13 @@ export async function loadLicense({
 
   ] = await Promise.all([
 
-    loadSheet("LICENSE!A:N"),
+    loadSheet(
+      "LICENSE!A:N"
+    ),
 
-    loadSheet("CHAT_ACCESS!A:D")
+    loadSheet(
+      "CHAT_ACCESS!A:D"
+    )
 
   ]);
 
@@ -94,7 +169,9 @@ export async function loadLicense({
 
       row =>
 
-        row.CHAT_ID === String(chatId)
+        row.CHAT_ID ===
+
+        String(chatId)
 
     );
 
@@ -110,7 +187,9 @@ export async function loadLicense({
 
       row =>
 
-        row.CLIENT_ID === access.CLIENT_ID
+        row.CLIENT_ID ===
+
+        access.CLIENT_ID
 
     );
 
@@ -181,4 +260,4 @@ export async function loadLicense({
 
   };
 
-  }
+}
