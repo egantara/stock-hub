@@ -9,7 +9,7 @@ import {
 from "../marketplace/detect.js";
 
 import {
-  PARSERS
+  ORDER_PARSERS
 }
 from "./parsers/index.js";
 
