@@ -152,15 +152,17 @@ export default async function handler(
 
         await sendMessage(
 
-          chatId,
+  chatId,
 
-          error instanceof LicenseError
+  error instanceof LicenseError
 
-            ? error.message
+    ? error.message
 
-            : '❌ Error\n${error.message}'
+    : `❌ Error
 
-        );
+${error.message}`
+
+);
 
       } catch {}
 
