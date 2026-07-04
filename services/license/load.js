@@ -1,91 +1,58 @@
-import {
-  google
-}
-from "googleapis";
+import { google } from "googleapis";
+
+const auth = new google.auth.JWT(
+  process.env.LICENSE_CLIENT_EMAIL,
+  null,
+  process.env.LICENSE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  [
+    "https://www.googleapis.com/auth/spreadsheets.readonly"
+  ]
+);
+
+const sheets = google.sheets({
+  version: "v4",
+  auth
+});
 
 const LICENSE_SHEET_ID =
   process.env.LICENSE_SHEET_ID;
 
-const auth =
-  new google.auth.JWT(
+async function loadSheet(range) {
 
-    process.env
-      .LICENSE_CLIENT_EMAIL,
+  const { data } =
+    await sheets.spreadsheets.values.get({
 
-    null,
+      spreadsheetId:
+        LICENSE_SHEET_ID,
 
-    process.env
-      .LICENSE_PRIVATE_KEY
-      .replace(/\\n/g, "\n"),
+      range
 
-    [
-      "https://www.googleapis.com/auth/spreadsheets.readonly"
-    ]
-
-  );
-
-const sheets =
-  google.sheets({
-
-    version: "v4",
-
-    auth
-
-  });
-
-async function loadSheet(
-  range
-) {
-
-  const {
-
-    data
-
-  } = await sheets.spreadsheets.values.get({
-
-    spreadsheetId:
-      LICENSE_SHEET_ID,
-
-    range
-
-  });
+    });
 
   const rows =
-    data.values || [];
+    data.values ?? [];
 
-  if (
-    !rows.length
-  ) {
+  if (rows.length === 0) {
 
     return [];
 
   }
 
-  const headers =
-    rows.shift();
+  const headers = rows.shift();
 
-  return rows.map(
+  return rows.map(row =>
 
-    row =>
+    Object.fromEntries(
 
-      Object.fromEntries(
+      headers.map((key, index) => [
 
-        headers.map(
+        key,
 
-          (
-            key,
-            index
-          ) => [
+        row[index] ?? ""
 
-            key,
+      ])
 
-            row[index] || ""
-
-          ]
-
-        )
-
-      )
+    )
 
   );
 
@@ -105,13 +72,9 @@ export async function loadLicense({
 
   ] = await Promise.all([
 
-    loadSheet(
-      "LICENSE!A:N"
-    ),
+    loadSheet("LICENSE!A:N"),
 
-    loadSheet(
-      "CHAT_ACCESS!A:D"
-    )
+    loadSheet("CHAT_ACCESS!A:D")
 
   ]);
 
@@ -121,17 +84,11 @@ export async function loadLicense({
 
       row =>
 
-        row.CHAT_ID ===
-
-        String(
-          chatId
-        )
+        row.CHAT_ID === String(chatId)
 
     );
 
-  if (
-    !access
-  ) {
+  if (!access) {
 
     return null;
 
@@ -143,15 +100,11 @@ export async function loadLicense({
 
       row =>
 
-        row.CLIENT_ID ===
-
-        access.CLIENT_ID
+        row.CLIENT_ID === access.CLIENT_ID
 
     );
 
-  if (
-    !license
-  ) {
+  if (!license) {
 
     return null;
 
@@ -159,65 +112,63 @@ export async function loadLicense({
 
   return {
 
-  clientId:
-    license.CLIENT_ID,
+    clientId:
+      license.CLIENT_ID,
 
-  clientName:
-    license.CLIENT_NAME,
+    clientName:
+      license.CLIENT_NAME,
 
-  role:
-    access.ROLE,
+    role:
+      access.ROLE,
 
-  chatStatus:
-    access.STATUS,
+    chatStatus:
+      access.STATUS,
 
-  plan:
-    license.PLAN,
+    plan:
+      license.PLAN,
 
-  status:
-    license.STATUS,
+    status:
+      license.STATUS,
 
-  startDate:
-    license.START_DATE,
+    startDate:
+      license.START_DATE,
 
-  endDate:
-    license.END_DATE,
+    endDate:
+      license.END_DATE,
 
-  notes:
-    license.NOTES,
+    notes:
+      license.NOTES,
 
-  google: {
+    google: {
 
-    sheetId:
-      license.GOOGLE_SHEET_ID,
+      sheetId:
+        license.GOOGLE_SHEET_ID,
 
-    clientEmail:
-      license.GOOGLE_CLIENT_EMAIL,
+      projectId:
+        license.GOOGLE_PROJECT_ID,
 
-    projectId:
-      license.GOOGLE_PROJECT_ID,
+      clientEmail:
+        license.GOOGLE_CLIENT_EMAIL,
 
-    privateKey:
-      license.GOOGLE_PRIVATE_KEY.replace(
-        /\\n/g,
-        "\n"
-      )
+      privateKey:
+        (license.GOOGLE_PRIVATE_KEY || "")
+          .replace(/\\n/g, "\n")
 
-  },
+    },
 
-  telegram: {
+    telegram: {
 
-    botName:
-      license.BOT_NAME,
+      botName:
+        license.BOT_NAME,
 
-    botToken:
-      license.TELEGRAM_BOT_TOKEN,
+      botToken:
+        license.TELEGRAM_BOT_TOKEN,
 
-    webhook:
-      license.WEBHOOK
+      webhook:
+        license.WEBHOOK
 
-  }
+    }
 
-};
+  };
 
 }

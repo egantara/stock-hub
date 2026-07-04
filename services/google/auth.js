@@ -1,7 +1,16 @@
-import {
-  google
+import { google } from "googleapis";
+
+function requireValue(name, value) {
+
+  if (!value) {
+
+    throw new Error(`${name} is missing`);
+
+  }
+
+  return value;
+
 }
-from "googleapis";
 
 export function createGoogleSheets({
 
@@ -15,97 +24,59 @@ export function createGoogleSheets({
 
 }) {
 
-  if (
-    !sheetId
-  ) {
+  sheetId = requireValue(
+    "GOOGLE_SHEET_ID",
+    sheetId
+  );
 
-    throw new Error(
-      "GOOGLE_SHEET_ID is missing"
-    );
+  projectId = requireValue(
+    "GOOGLE_PROJECT_ID",
+    projectId
+  );
 
-  }
+  clientEmail = requireValue(
+    "GOOGLE_CLIENT_EMAIL",
+    clientEmail
+  );
 
-  if (
-    !projectId
-  ) {
+  privateKey = requireValue(
+    "GOOGLE_PRIVATE_KEY",
+    privateKey
+  ).replace(/\\n/g, "\n");
 
-    throw new Error(
-      "GOOGLE_PROJECT_ID is missing"
-    );
+  const auth = new google.auth.GoogleAuth({
 
-  }
+    credentials: {
 
-  if (
-    !clientEmail
-  ) {
+      type: "service_account",
 
-    throw new Error(
-      "GOOGLE_CLIENT_EMAIL is missing"
-    );
+      project_id: projectId,
 
-  }
+      client_email: clientEmail,
 
-  if (
-    !privateKey
-  ) {
+      private_key: privateKey
 
-    throw new Error(
-      "GOOGLE_PRIVATE_KEY is missing"
-    );
+    },
 
-  }
+    scopes: [
 
-  const auth =
+      "https://www.googleapis.com/auth/spreadsheets"
 
-    new google.auth.GoogleAuth({
+    ]
 
-      credentials: {
+  });
 
-        type:
-          "service_account",
+  return {
 
-        project_id:
-          projectId,
-
-        client_email:
-          clientEmail,
-
-        private_key:
-
-          privateKey.replace(
-
-            /\\n/g,
-
-            "\n"
-
-          )
-
-      },
-
-      scopes: [
-
-        "https://www.googleapis.com/auth/spreadsheets"
-
-      ]
-
-    });
-
-  const sheets =
-
-    google.sheets({
+    sheets: google.sheets({
 
       version: "v4",
 
       auth
 
-    });
+    }),
 
-  return {
-
-    sheets,
-
-    spreadsheetId:
-      sheetId
+    spreadsheetId: sheetId
 
   };
 
