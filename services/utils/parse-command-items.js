@@ -12,19 +12,42 @@ export function parseCommandLines({
 
 }) {
 
+  const source =
+
+    String(
+      text || ""
+    );
+
   const lines =
 
-    text
+    source.split("\n");
 
-      .slice(
+  const firstLine =
 
-        command.length
+    (lines.shift() || "")
+      .trim();
 
-      )
+  const regex =
 
-      .trim()
+    new RegExp(
 
-      .split("\n");
+      `^${command}$`,
+
+      "i"
+
+    );
+
+  if (
+
+    !regex.test(
+      firstLine
+    )
+
+  ) {
+
+    return [];
+
+  }
 
   const result = [];
 

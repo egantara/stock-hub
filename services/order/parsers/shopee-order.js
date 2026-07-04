@@ -5,6 +5,16 @@ import {
 }
 from "../../errors/index.js";
 
+const VALID_STATUS = [
+
+  "Perlu Dikirim",
+
+  "Sedang Dikirim",
+
+  "Selesai"
+
+];
+
 export async function parseShopeeOrder(
   filePath
 ) {
@@ -34,9 +44,9 @@ export async function parseShopeeOrder(
 
     throw new BusinessError(
 
-      `Sheet produk tidak ditemukan.
+`Sheet pesanan tidak ditemukan.
 
-Pastikan menggunakan template Shopee yang benar.`
+Pastikan menggunakan export pesanan Shopee.`
 
     );
 
@@ -57,8 +67,11 @@ Pastikan menggunakan template Shopee yang benar.`
     );
 
   console.log(
+
     "SHOPEE ROWS:",
+
     rows.length
+
   );
 
   if (
@@ -69,15 +82,18 @@ Pastikan menggunakan template Shopee yang benar.`
 
     throw new BusinessError(
 
-      `File Shopee tidak memiliki data produk.`
+      "File pesanan Shopee tidak memiliki data."
 
     );
 
   }
 
   console.log(
+
     "SHOPEE ROW 0:",
+
     rows[0]
+
   );
 
   if (
@@ -87,8 +103,11 @@ Pastikan menggunakan template Shopee yang benar.`
   ) {
 
     console.log(
+
       "SHOPEE ROW 1:",
+
       rows[1]
+
     );
 
   }
@@ -100,195 +119,139 @@ Pastikan menggunakan template Shopee yang benar.`
   ) {
 
     console.log(
+
       "SHOPEE ROW 2:",
+
       rows[2]
+
     );
 
   }
 
-  const products = [];
+  const orders =
 
-  for (
+    rows
 
-    const row
+      .map(
 
-    of rows
+        row => ({
 
-  ) {
+          orderId:
 
-    const productId =
+            String(
 
-      String(
+              row["No. Pesanan"] ||
 
-        row.et_title_product_id ||
+              ""
 
-        row["Kode Produk"] ||
+            ).trim(),
 
-        ""
+          status:
 
-      ).trim();
+            String(
 
-    //
-    // FORMAT BARU SHOPEE
-    //
-    const skuBaru =
+              row["Status Pesanan"] ||
 
-      String(
+              ""
 
-        row.et_title_variation_sku ||
+            ).trim(),
 
-        row.et_title_parent_sku ||
+          sku:
 
-        ""
+            String(
 
-      ).trim();
+              row["Nomor Referensi SKU"] ||
 
-    //
-    // FORMAT LAMA SHOPEE
-    //
-    const skuLama =
+              ""
 
-      String(
+            ).trim(),
 
-        row["SKU"] ||
+          qty:
 
-        ""
+            Number(
 
-      ).trim();
+              row["Jumlah"] || 0
 
-    const sku =
+            ),
 
-      skuBaru ||
+          productName:
 
-      skuLama;
+            String(
 
-    //
-    // Skip metadata
-    //
-    if (
+              row["Nama Produk"] ||
 
-      productId === "sales_info" ||
+              ""
 
-      productId === "Kode Produk" ||
+            ).trim(),
 
-      sku.startsWith("{") ||
+          variant:
 
-      !/^\d+$/.test(productId)
+            String(
 
-    ) {
+              row["Nama Variasi"] ||
 
-      continue;
+              ""
 
-    }
+            ).trim()
 
-    if (
+        })
 
-      !sku
+      )
 
-    ) {
+      .filter(
 
-      continue;
+        order =>
 
-    }
+          order.orderId &&
 
-    products.push({
+          order.sku &&
 
-      sku,
+          order.qty > 0 &&
 
-      nama:
+          VALID_STATUS.includes(
 
-        String(
+            order.status
 
-          row.et_title_product_name ||
+          )
 
-          row["Nama Produk"] ||
-
-          ""
-
-        ).trim(),
-
-      variasi:
-
-        String(
-
-          row.et_title_variation_name ||
-
-          row["Nama Variasi"] ||
-
-          ""
-
-        ).trim(),
-
-      stock:
-
-        Number(
-
-          row.et_title_variation_stock ||
-
-          row["Stok"] ||
-
-          0
-
-        ),
-
-      shopeeProductId:
-
-        productId,
-
-      shopeeVariationId:
-
-        String(
-
-          row.et_title_variation_id ||
-
-          row["Kode Variasi"] ||
-
-          ""
-
-        ).trim(),
-
-      hargaShopee:
-
-        Number(
-
-          row.et_title_variation_price ||
-
-          row["Harga"] ||
-
-          0
-
-        )
-
-    });
-
-  }
+      );
 
   console.log(
-    "SHOPEE PRODUCTS:",
-    products.length
+
+    "SHOPEE ORDERS:",
+
+    orders.length
+
   );
 
   if (
 
-    products.length === 0
+    orders.length === 0
 
   ) {
 
     throw new BusinessError(
 
-      `Tidak ada produk yang dapat diproses.
+`Tidak ada pesanan yang dapat diproses.
 
-Pastikan file yang diupload adalah export produk Shopee.`
+Pastikan file yang diupload adalah export pesanan Shopee dan memiliki status:
+
+• Perlu Dikirim
+• Sedang Dikirim
+• Selesai`
 
     );
 
   }
 
   console.log(
-    "FIRST PRODUCT:",
-    products[0]
+
+    "FIRST ORDER:",
+
+    orders[0]
+
   );
 
-  return products;
+  return orders;
 
 }

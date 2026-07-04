@@ -2,13 +2,13 @@ const MESSAGES = {
 
   CHAT_NOT_REGISTERED:
 
-`❌ Telegram ini belum terdaftar.
+`❌ Akun telegram ini belum terdaftar.
 
 Silakan hubungi Administrator.`,
 
   CHAT_DISABLED:
 
-`❌ Telegram ini tidak memiliki akses.
+`❌ Akun telegram ini tidak memiliki akses.
 
 Silakan hubungi Administrator.`,
 
@@ -22,7 +22,7 @@ Silakan hubungi Administrator.`,
 
 `❌ Lisensi telah berakhir.
 
-Silakan hubungi Administrator untuk melakukan perpanjangan.`,
+Silakan hubungi Administrator untuk melakukan perpanjangan lisensi.`,
 
   BOT_NOT_FOUND:
 

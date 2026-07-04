@@ -43,15 +43,15 @@ import {
 }
 from "./handlers/unknown.js";
 
-const routes = {
+const ROUTES = {
 
   "/start": handleStart,
 
   "/help": handleHelp,
 
-  "/template": handleStock,
-
   "/ping": handlePing,
+
+  "/template": handleStock,
 
   "/sales": handleOrder,
 
@@ -79,17 +79,31 @@ function getCommand(
   text
 ) {
 
-  return String(
+  const firstToken =
 
-    text || ""
+    String(
+      text || ""
+    )
 
-  )
+      .trim()
 
-    .trim()
+      .split(/\s+/)[0]
 
-    .split(/\s+/)[0]
+      .toLowerCase();
 
-    .toLowerCase();
+  //
+  // Support command group:
+  // /start@my_bot
+  //
+  return firstToken
+
+    .replace(
+
+      /@.+$/,
+
+      ""
+
+    );
 
 }
 
@@ -110,7 +124,9 @@ export async function router({
   const command =
 
     getCommand(
+
       text
+
     );
 
   console.log({
@@ -133,9 +149,13 @@ export async function router({
 
   const handler =
 
-    routes[command];
+    ROUTES[command];
 
-  if (!handler) {
+  if (
+
+    !handler
+
+  ) {
 
     return handleUnknown({
 

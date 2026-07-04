@@ -78,7 +78,7 @@ export async function reportError({
   //
   const developerChatId =
 
-    context?.developerChatId;
+  context?.developer?.chatId;
 
   const report = [
 

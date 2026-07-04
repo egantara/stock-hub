@@ -204,7 +204,7 @@ export async function loadLicense({
 
     loadSheet(
 
-      "LICENSE!A:N"
+      "LICENSE!A:Z"
 
     ),
 
@@ -358,8 +358,8 @@ export async function loadLicense({
 
   developer: {
 
-    chatId:
-      license.DEVELOPER_CHAT_ID
+    developerChatId:
+  license.DEVELOPER_CHAT_ID,
 
   },
 
