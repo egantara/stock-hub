@@ -102,7 +102,9 @@ async function loadSheet(
     data.values ?? [];
 
   if (
+
     rows.length === 0
+
   ) {
 
     return [];
@@ -110,7 +112,18 @@ async function loadSheet(
   }
 
   const headers =
-    rows.shift();
+
+    rows
+      .shift()
+      .map(
+
+        header =>
+
+          String(header)
+            .trim()
+            .toUpperCase()
+
+      );
 
   return rows.map(
 
@@ -121,13 +134,20 @@ async function loadSheet(
         headers.map(
 
           (
+
             key,
+
             index
+
           ) => [
 
             key,
 
-            row[index] ?? ""
+            String(
+
+              row[index] ?? ""
+
+            ).trim()
 
           ]
 
@@ -154,11 +174,15 @@ export async function loadLicense({
   ] = await Promise.all([
 
     loadSheet(
+
       "LICENSE!A:N"
+
     ),
 
     loadSheet(
-      "CHAT_ACCESS!A:D"
+
+      "CHAT_ACCESS!A:E"
+
     )
 
   ]);
