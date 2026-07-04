@@ -139,51 +139,33 @@ export default async function handler(
 
   } catch (error) {
 
-    console.error(
+  console.error("TELEGRAM ERROR:", error);
 
-      "TELEGRAM ERROR:",
+  context = context || error.context;
 
-      error
+  try {
 
-    );
-
-    try {
-
-      await reportError({
-
-        error,
-
-        chatId,
-
-        context,
-
-        command:
-          text
-
-      });
-
-    } catch (
-
-      reporterError
-
-    ) {
-
-      console.error(
-
-        "ERROR REPORTER:",
-
-        reporterError
-
-      );
-
-    }
-
-    return res.status(200).json({
-
-      ok: false
-
+    await reportError({
+      error,
+      chatId,
+      context,
+      command: text
     });
 
+  } catch (reporterError) {
+
+    console.error(
+      "ERROR REPORTER:",
+      reporterError
+    );
+
   }
+
+  return res.status(200).json({
+    ok: false
+  });
+
+}
+
 
 }
