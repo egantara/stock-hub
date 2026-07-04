@@ -16,7 +16,7 @@ import {
 from "../download-file.js";
 
 import {
-  isCommand
+  getCommand
 }
 from "../../utils/command.js";
 
@@ -106,168 +106,194 @@ export async function handleStock({
 
 }) {
 
+  const command =
+
+    getCommand(
+
+      text
+
+    );
+
   const user =
 
     context?.userName;
 
-  const setCommand =
+  switch (
 
-    isCommand({
-
-      text,
-
-      command: "/set"
-
-    });
-
-  const restockCommand =
-
-    isCommand({
-
-      text,
-
-      command: "/restock"
-
-    });
-
-  const stockCommand =
-
-    isCommand({
-
-      text,
-
-      command: "/stock"
-
-    });
-
-  const templateCommand =
-
-    isCommand({
-
-      text,
-
-      command: "/template"
-
-    });
-
-  //
-  // SET / RESTOCK (FILE)
-  //
-  if (
-
-    document &&
-
-    (
-
-      setCommand ||
-
-      restockCommand
-
-    )
+    command
 
   ) {
 
-    await sendMessage(
+    //
+    // SET
+    //
+    case "/set": {
 
-      chatId,
+      if (
 
-      "⏳ Memproses file..."
+        document
 
-    );
+      ) {
 
-    const result =
+        await sendMessage(
 
-      await processFile({
+          chatId,
 
-        google,
+          "⏳ Memproses file..."
 
-        document,
+        );
 
-        mode:
+        const result =
 
-          setCommand
+          await processFile({
 
-            ? "SET"
+            google,
 
-            : "RESTOCK",
+            document,
 
-        user
+            mode: "SET",
 
-      });
+            user
 
-    return sendMessage(
+          });
 
-      chatId,
+        return sendMessage(
 
-      buildSummary({
+          chatId,
 
-        title:
+          buildSummary({
 
-          setCommand
+            title:
 
-            ? "✏️ Set Stock"
+              "✏️ Set Stock",
 
-            : "📦 Restock",
+            ...result
 
-        ...result
+          })
 
-      })
+        );
 
-    );
+      }
 
-  }
+      const result =
 
-  //
-  // SET MANUAL
-  //
-  if (
+        await processSetCommand({
 
-    setCommand
+          google,
 
-  ) {
+          text,
 
-    const result =
+          user
 
-      await processSetCommand({
+        });
 
-        google,
+      return sendMessage(
 
-        text,
+        chatId,
 
-        user
+        buildSummary({
 
-      });
+          title:
 
-    return sendMessage(
+            "✏️ Set Stock",
 
-      chatId,
+          ...result
 
-      buildSummary({
+        })
 
-        title:
+      );
 
-          "✏️ Set Stock",
+    }
 
-        ...result
+    //
+    // RESTOCK
+    //
+    case "/restock": {
 
-      })
+      if (
 
-    );
+        document
 
-  }
+      ) {
 
-  //
-  // TEMPLATE
-  //
-  if (
+        await sendMessage(
 
-    templateCommand
+          chatId,
 
-  ) {
+          "⏳ Memproses file..."
 
-    await sendMessage(
+        );
 
-      chatId,
+        const result =
+
+          await processFile({
+
+            google,
+
+            document,
+
+            mode: "RESTOCK",
+
+            user
+
+          });
+
+        return sendMessage(
+
+          chatId,
+
+          buildSummary({
+
+            title:
+
+              "📦 Restock",
+
+            ...result
+
+          })
+
+        );
+
+      }
+
+      const result =
+
+        await processRestockCommand({
+
+          google,
+
+          text,
+
+          user
+
+        });
+
+      return sendMessage(
+
+        chatId,
+
+        buildSummary({
+
+          title:
+
+            "📦 Restock",
+
+          ...result
+
+        })
+
+      );
+
+    }
+
+    //
+    // TEMPLATE
+    //
+    case "/template": {
+
+      await sendMessage(
+
+        chatId,
 
 `📄 Stock Template
 
@@ -279,93 +305,52 @@ QTY = Stock Akhir
 • /restock
 QTY = Jumlah Penambahan`
 
-    );
+      );
 
-    return sendDocument({
+      return sendDocument({
 
-      chatId,
+        chatId,
 
-      filePath:
+        filePath:
 
-        TEMPLATE_PATH,
+          TEMPLATE_PATH,
 
-      caption:
+        caption:
 
-        "📄 Stock Template"
-
-    });
-
-  }
-
-  //
-  // RESTOCK MANUAL
-  //
-  if (
-
-    restockCommand
-
-  ) {
-
-    const result =
-
-      await processRestockCommand({
-
-        google,
-
-        text,
-
-        user
+          "📄 Stock Template"
 
       });
 
-    return sendMessage(
+    }
 
-      chatId,
+    //
+    // STOCK
+    //
+    case "/stock": {
 
-      buildSummary({
+      const result =
 
-        title:
+        await processStockCommand({
 
-          "📦 Restock",
+          google,
 
-        ...result
+          text
 
-      })
+        });
 
-    );
+      return sendMessage(
 
-  }
+        chatId,
 
-  //
-  // STOCK
-  //
-  if (
+        buildStock(
 
-    stockCommand
+          result
 
-  ) {
+        )
 
-    const result =
+      );
 
-      await processStockCommand({
-
-        google,
-
-        text
-
-      });
-
-    return sendMessage(
-
-      chatId,
-
-      buildStock(
-
-        result
-
-      )
-
-    );
+    }
 
   }
 
