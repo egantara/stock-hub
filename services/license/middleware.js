@@ -94,14 +94,6 @@ export async function authorize({
 
       );
 
-    case "GOOGLE_NOT_CONFIGURED":
-
-      throw new LicenseError(
-
-        "GOOGLE_NOT_CONFIGURED"
-
-      );
-
     default:
 
       throw new LicenseError(

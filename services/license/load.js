@@ -30,7 +30,7 @@ console.log({
 
 if (!LICENSE_SHEET_ID) {
 
-  throw new Error(
+  throw new LicenseError(
     "LICENSE_SHEET_ID is missing"
   );
 
@@ -38,7 +38,7 @@ if (!LICENSE_SHEET_ID) {
 
 if (!LICENSE_CLIENT_EMAIL) {
 
-  throw new Error(
+  throw new LicenseError(
     "LICENSE_CLIENT_EMAIL is missing"
   );
 
@@ -46,7 +46,7 @@ if (!LICENSE_CLIENT_EMAIL) {
 
 if (!LICENSE_PRIVATE_KEY) {
 
-  throw new Error(
+  throw new LicenseError(
     "LICENSE_PRIVATE_KEY is missing"
   );
 
