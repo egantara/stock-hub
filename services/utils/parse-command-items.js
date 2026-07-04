@@ -4,6 +4,48 @@ import {
 }
 from "../errors/index.js";
 
+function createCommandRegex(
+  command
+) {
+
+  return new RegExp(
+
+    `^${command}(\\s+.*)?$`,
+
+    "i"
+
+  );
+
+}
+
+function extractInlineCommand({
+
+  firstLine,
+
+  command
+
+}) {
+
+  return firstLine
+
+    .replace(
+
+      new RegExp(
+
+        `^${command}`,
+
+        "i"
+
+      ),
+
+      ""
+
+    )
+
+    .trim();
+
+}
+
 export function parseCommandLines({
 
   text,
@@ -16,7 +58,17 @@ export function parseCommandLines({
 
     String(
       text || ""
-    );
+    ).trim();
+
+  if (
+
+    !source
+
+  ) {
+
+    return [];
+
+  }
 
   const lines =
 
@@ -27,21 +79,11 @@ export function parseCommandLines({
     (lines.shift() || "")
       .trim();
 
-  const regex =
-
-    new RegExp(
-
-      `^${command}$`,
-
-      "i"
-
-    );
-
   if (
 
-    !regex.test(
-      firstLine
-    )
+    !createCommandRegex(command)
+
+      .test(firstLine)
 
   ) {
 
@@ -51,6 +93,40 @@ export function parseCommandLines({
 
   const result = [];
 
+  //
+  // Support:
+  // /set SKU 10
+  //
+  const inline =
+
+    extractInlineCommand({
+
+      firstLine,
+
+      command
+
+    });
+
+  if (
+
+    inline
+
+  ) {
+
+    result.push(
+
+      inline
+
+    );
+
+  }
+
+  //
+  // Support:
+  //
+  // /set
+  // SKU 10
+  //
   for (
 
     const line
@@ -73,9 +149,6 @@ export function parseCommandLines({
 
     }
 
-    //
-    // Stop jika sudah masuk command berikutnya
-    //
     if (
 
       value.startsWith("/")
@@ -142,11 +215,7 @@ SKU QTY`
 
   if (
 
-    Number.isNaN(
-
-      qty
-
-    )
+    Number.isNaN(qty)
 
   ) {
 
@@ -161,7 +230,9 @@ SKU QTY`
   const sku =
 
     parts
+
       .join(" ")
+
       .trim();
 
   if (
@@ -220,11 +291,7 @@ function validateDuplicateSku(
 
     if (
 
-      skuSet.has(
-
-        key
-
-      )
+      skuSet.has(key)
 
     ) {
 
@@ -328,11 +395,6 @@ SKU-B 5`
 
           line,
 
-          //
-          // +2 karena:
-          // baris 1 = command
-          // baris 2 = item pertama
-          //
           lineNumber:
 
             index + 2
