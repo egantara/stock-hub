@@ -8,6 +8,18 @@ import {
 }
 from "../google/auth.js";
 
+function normalize(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+}
+
 function isExpired(
   endDate
 ) {
@@ -18,12 +30,12 @@ function isExpired(
 
   }
 
+  const expiredDate =
+    new Date(endDate);
+
   return (
-
     new Date() >
-
-    new Date(endDate)
-
+    expiredDate
   );
 
 }
@@ -55,9 +67,45 @@ export async function checkLicense({
 
   }
 
+  const chatStatus =
+
+    normalize(
+
+      context.chatStatus
+
+    );
+
+  const licenseStatus =
+
+    normalize(
+
+      context.status
+
+    );
+
+  console.log({
+
+    clientId:
+      context.clientId,
+
+    clientName:
+      context.clientName,
+
+    plan:
+      context.plan,
+
+    chatStatus,
+
+    licenseStatus,
+
+    endDate:
+      context.endDate
+
+  });
+
   if (
 
-    context.chatStatus !==
+    chatStatus !==
 
     "ACTIVE"
 
@@ -76,7 +124,7 @@ export async function checkLicense({
 
   if (
 
-    context.status !==
+    licenseStatus !==
 
     "ACTIVE"
 
@@ -94,12 +142,6 @@ export async function checkLicense({
   }
 
   if (
-
-    context.plan !==
-
-      "LIFETIME"
-
-    &&
 
     isExpired(
 
@@ -122,20 +164,20 @@ export async function checkLicense({
 
   const google =
 
-  createGoogleSheets(
+    createGoogleSheets(
 
-    context.google
+      context.google
 
-  );
+    );
 
-return {
+  return {
 
-  ok: true,
+    ok: true,
 
-  context,
+    context,
 
-  google
+    google
 
-};
+  };
 
 }
