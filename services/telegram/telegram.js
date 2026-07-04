@@ -65,37 +65,23 @@ export async function sendMessage(
 
     );
 
-  const data = await response.json();
-
-if (!response.ok || !data.ok) {
-
-  throw new SystemError(
-
-`${data.description}
-
-HTTP ${response.status}`
-
-  );
-
-}
-
-return data;
-
   const data =
 
     await response.json();
 
   if (
 
-    !data?.ok
+    !response.ok ||
+
+    !data.ok
 
   ) {
 
     throw new SystemError(
 
-      data?.description ||
+`${data.description}
 
-      "Gagal mengirim pesan ke Telegram."
+HTTP ${response.status}`
 
     );
 
