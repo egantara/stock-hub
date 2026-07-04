@@ -37,6 +37,14 @@ import {
 }
 from "../utils/require-user.js";
 
+const REQUIRED_HEADERS = [
+
+  "SKU",
+
+  "QTY"
+
+];
+
 function readRows(
   filePath
 ) {
@@ -93,7 +101,69 @@ function readRows(
 
   }
 
+  validateHeaders(
+    rows
+  );
+
   return rows;
+
+}
+
+function validateHeaders(
+  rows
+) {
+
+  const headers =
+
+    Object.keys(
+
+      rows[0] || {}
+
+    ).map(
+
+      header =>
+
+        String(header)
+
+          .trim()
+
+          .toUpperCase()
+
+    );
+
+  const missing =
+
+    REQUIRED_HEADERS.filter(
+
+      header =>
+
+        !headers.includes(
+          header
+        )
+
+    );
+
+  if (
+
+    missing.length
+
+  ) {
+
+    throw new ValidationError(
+
+`Template tidak dikenali.
+
+Header berikut tidak ditemukan:
+
+${missing.join("\n")}
+
+Gunakan template stock yang dapat diunduh melalui:
+
+/template`
+
+    );
+
+  }
 
 }
 
