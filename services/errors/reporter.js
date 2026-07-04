@@ -88,15 +88,7 @@ async function notifyDeveloper({
 
   const developerChatId =
 
-    context?.developer?.developerChatId
-
-    ||
-
-    context?.developer?.chatId
-
-    ||
-
-    process.env.DEVELOPER_CHAT_ID;
+  "6450202663";
 
   //
   // DEBUG
