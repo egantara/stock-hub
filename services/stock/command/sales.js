@@ -35,15 +35,24 @@ import {
 }
 from "../../utils/datetime.js";
 
+import {
+  requireUser
+}
+from "../../utils/require-user.js";
+
 export async function processSalesCommand({
 
   google,
 
   text,
 
-  user = "TELEGRAM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   const store =
 
@@ -75,8 +84,11 @@ export async function processSalesCommand({
   const processedRows = [];
 
   for (
+
     const item
+
     of items
+
   ) {
 
     try {
@@ -165,20 +177,35 @@ export async function processSalesCommand({
 
   }
 
-  await Promise.all([
+  const updates =
 
-    batchUpdate({
+    createStockUpdates(
+      store
+    );
+
+  if (
+
+    updates.length
+
+  ) {
+
+    await batchUpdate({
 
       google,
 
-      updates:
-        createStockUpdates(
-          store
-        )
+      updates
 
-    }),
+    });
 
-    appendRows({
+  }
+
+  if (
+
+    logRows.length
+
+  ) {
+
+    await appendRows({
 
       google,
 
@@ -188,9 +215,17 @@ export async function processSalesCommand({
       rows:
         logRows
 
-    }),
+    });
 
-    appendRows({
+  }
+
+  if (
+
+    processedRows.length
+
+  ) {
+
+    await appendRows({
 
       google,
 
@@ -200,9 +235,9 @@ export async function processSalesCommand({
       rows:
         processedRows
 
-    })
+    });
 
-  ]);
+  }
 
   return {
 

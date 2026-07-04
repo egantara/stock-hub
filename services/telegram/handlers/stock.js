@@ -16,6 +16,11 @@ import {
 from "../download-file.js";
 
 import {
+  isCommand
+}
+from "../../utils/command.js";
+
+import {
   buildSummary,
   buildStock
 }
@@ -103,7 +108,47 @@ export async function handleStock({
 
   const user =
 
-  context?.userName;
+    context?.userName;
+
+  const setCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/set"
+
+    });
+
+  const restockCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/restock"
+
+    });
+
+  const stockCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/stock"
+
+    });
+
+  const templateCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/template"
+
+    });
 
   //
   // SET / RESTOCK (FILE)
@@ -114,19 +159,13 @@ export async function handleStock({
 
     (
 
-      text.startsWith("/set")
+      setCommand ||
 
-      ||
-
-      text.startsWith("/restock")
+      restockCommand
 
     )
 
   ) {
-
-    const isSet =
-
-      text.startsWith("/set");
 
     await sendMessage(
 
@@ -146,7 +185,7 @@ export async function handleStock({
 
         mode:
 
-          isSet
+          setCommand
 
             ? "SET"
 
@@ -164,7 +203,7 @@ export async function handleStock({
 
         title:
 
-          isSet
+          setCommand
 
             ? "✏️ Set Stock"
 
@@ -182,7 +221,9 @@ export async function handleStock({
   // SET MANUAL
   //
   if (
-    text.startsWith("/set")
+
+    setCommand
+
   ) {
 
     const result =
@@ -204,6 +245,7 @@ export async function handleStock({
       buildSummary({
 
         title:
+
           "✏️ Set Stock",
 
         ...result
@@ -218,7 +260,9 @@ export async function handleStock({
   // TEMPLATE
   //
   if (
-    text === "/template"
+
+    templateCommand
+
   ) {
 
     await sendMessage(
@@ -242,9 +286,11 @@ QTY = Jumlah Penambahan`
       chatId,
 
       filePath:
+
         TEMPLATE_PATH,
 
       caption:
+
         "📄 Stock Template"
 
     });
@@ -255,7 +301,9 @@ QTY = Jumlah Penambahan`
   // RESTOCK MANUAL
   //
   if (
-    text.startsWith("/restock")
+
+    restockCommand
+
   ) {
 
     const result =
@@ -277,6 +325,7 @@ QTY = Jumlah Penambahan`
       buildSummary({
 
         title:
+
           "📦 Restock",
 
         ...result
@@ -291,7 +340,9 @@ QTY = Jumlah Penambahan`
   // STOCK
   //
   if (
-    text.startsWith("/stock")
+
+    stockCommand
+
   ) {
 
     const result =

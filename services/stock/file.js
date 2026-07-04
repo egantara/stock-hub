@@ -32,6 +32,11 @@ import {
 }
 from "../utils/logs.js";
 
+import {
+  requireUser
+}
+from "../utils/require-user.js";
+
 function readRows(
   filePath
 ) {
@@ -47,7 +52,9 @@ function readRows(
     ];
 
   if (
+
     !sheet
+
   ) {
 
     throw new ValidationError(
@@ -59,6 +66,7 @@ function readRows(
   }
 
   const rows =
+
     xlsx.utils.sheet_to_json(
 
       sheet,
@@ -72,7 +80,9 @@ function readRows(
     );
 
   if (
+
     rows.length === 0
+
   ) {
 
     throw new ValidationError(
@@ -98,19 +108,27 @@ function validateDuplicateSku(
     new Set();
 
   for (
+
     const row
+
     of rows
+
   ) {
 
     const sku =
+
       String(
         row.SKU || ""
       )
+
         .trim()
+
         .toUpperCase();
 
     if (
+
       !sku
+
     ) {
 
       continue;
@@ -118,9 +136,11 @@ function validateDuplicateSku(
     }
 
     if (
+
       skuSet.has(
         sku
       )
+
     ) {
 
       duplicates.add(
@@ -138,7 +158,9 @@ function validateDuplicateSku(
   }
 
   if (
+
     duplicates.size
+
   ) {
 
     throw new BusinessError(
@@ -162,12 +184,15 @@ function parseRow(
 ) {
 
   const sku =
+
     String(
       row.SKU || ""
     ).trim();
 
   if (
+
     !sku
+
   ) {
 
     throw new ValidationError(
@@ -179,14 +204,17 @@ function parseRow(
   }
 
   const qty =
+
     Number(
       row.QTY
     );
 
   if (
+
     Number.isNaN(
       qty
     )
+
   ) {
 
     throw new ValidationError(
@@ -215,15 +243,22 @@ export async function processStockFile({
 
   mode,
 
-  user = "SYSTEM"
+  user
 
 }) {
 
+  requireUser(
+    user
+  );
+
   const config =
+
     STOCK_MODES[mode];
 
   if (
+
     !config
+
   ) {
 
     throw new ValidationError(
@@ -235,6 +270,7 @@ export async function processStockFile({
   }
 
   const rows =
+
     readRows(
       filePath
     );
@@ -244,6 +280,7 @@ export async function processStockFile({
   );
 
   const store =
+
     await loadStore({
 
       google
@@ -259,8 +296,11 @@ export async function processStockFile({
   const logRows = [];
 
   for (
+
     const row
+
     of rows
+
   ) {
 
     try {
@@ -299,8 +339,7 @@ export async function processStockFile({
 
       processed++;
 
-      totalQty +=
-        qty;
+      totalQty += qty;
 
       logRows.push(
 
@@ -345,12 +384,15 @@ export async function processStockFile({
   }
 
   const updates =
+
     createStockUpdates(
       store
     );
 
   if (
+
     updates.length
+
   ) {
 
     await batchUpdate({
@@ -364,7 +406,9 @@ export async function processStockFile({
   }
 
   if (
+
     logRows.length
+
   ) {
 
     await appendRows({

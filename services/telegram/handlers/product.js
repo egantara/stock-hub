@@ -9,6 +9,11 @@ import {
 from "../download-file.js";
 
 import {
+  isCommand
+}
+from "../../utils/command.js";
+
+import {
   buildSummary,
   buildUploadRequired
 }
@@ -57,24 +62,6 @@ async function processFile({
 
 }
 
-async function sendResult({
-
-  chatId,
-
-  text
-
-}) {
-
-  return sendMessage(
-
-    chatId,
-
-    text
-
-  );
-
-}
-
 export async function handleProduct({
 
   chatId,
@@ -91,50 +78,142 @@ export async function handleProduct({
 
   const user =
 
-  context?.userName;
+    context?.userName;
 
-  const command =
+  const newCommand =
 
-    text
+    isCommand({
 
-      .trim()
+      text,
 
-      .split(/\s+/)[0]
+      command: "/new"
 
-      .toLowerCase();
+    });
 
-  switch (
-    command
+  const statusCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/status"
+
+    });
+
+  //
+  // NEW
+  //
+  if (
+
+    newCommand
+
   ) {
 
-    //
-    // NEW
-    //
-    case "/new": {
+    if (
 
-      if (!document) {
+      !document
 
-        return sendResult({
+    ) {
 
-          chatId,
-
-          text:
-            buildUploadRequired(
-              "/new"
-            )
-
-        });
-
-      }
-
-      await sendResult({
+      return sendMessage(
 
         chatId,
 
-        text:
-          "⏳ Memproses file..."
+        buildUploadRequired(
+
+          "/new"
+
+        )
+
+      );
+
+    }
+
+    await sendMessage(
+
+      chatId,
+
+      "⏳ Memproses file..."
+
+    );
+
+    const result =
+
+      await processFile({
+
+        google,
+
+        document,
+
+        processor:
+
+          processNewFile,
+
+        user
 
       });
+
+    return sendMessage(
+
+      chatId,
+
+      buildSummary({
+
+        title:
+
+          "📦 Product Import",
+
+        found:
+
+          result.found,
+
+        newProducts:
+
+          result.newProducts,
+
+        updated:
+
+          result.updatedProducts,
+
+        duplicateProducts:
+
+          result.duplicateProducts,
+
+        errors:
+
+          result.errors
+
+      })
+
+    );
+
+  }
+
+  //
+  // STATUS
+  //
+  if (
+
+    statusCommand
+
+  ) {
+
+    //
+    // FILE
+    //
+    if (
+
+      document
+
+    ) {
+
+      await sendMessage(
+
+        chatId,
+
+        "⏳ Sinkronisasi status produk..."
+
+      );
 
       const result =
 
@@ -145,164 +224,93 @@ export async function handleProduct({
           document,
 
           processor:
-            processNewFile,
+
+            processStatusFile,
 
           user
 
         });
 
-      return sendResult({
+      return sendMessage(
 
         chatId,
 
-        text:
+        buildSummary({
 
-          buildSummary({
+          title:
 
-            title:
-              "📦 Product Import",
+            "📦 Product Status",
 
-            found:
-              result.found,
+          active:
 
-            newProducts:
-              result.newProducts,
+            result.active,
 
-            updated:
-              result.updatedProducts,
+          nonActive:
 
-            duplicateProducts:
-              result.duplicateProducts,
+            result.nonActive,
 
-            errors:
-              result.errors
+          updated:
 
-          })
+            result.updated,
 
-      });
+          skipped:
+
+            result.skipped,
+
+          errors:
+
+            result.errors || []
+
+        })
+
+      );
 
     }
 
     //
-    // STATUS
+    // MANUAL
     //
-    case "/status": {
+    const result =
 
-      //
-      // FILE
-      //
-      if (document) {
+      await processStatusCommand({
 
-        await sendResult({
+        google,
 
-          chatId,
+        text,
 
-          text:
-            "⏳ Sinkronisasi status produk..."
-
-        });
-
-        const result =
-
-          await processFile({
-
-            google,
-
-            document,
-
-            processor:
-              processStatusFile,
-
-            user
-
-          });
-
-        return sendResult({
-
-          chatId,
-
-          text:
-
-            buildSummary({
-
-              title:
-                "📦 Product Status",
-
-              active:
-                result.active,
-
-              nonActive:
-                result.nonActive,
-
-              updated:
-                result.updated,
-
-              skipped:
-                result.skipped,
-
-              errors:
-                result.errors || []
-
-            })
-
-        });
-
-      }
-
-      //
-      // MANUAL
-      //
-      const result =
-
-        await processStatusCommand({
-
-          google,
-
-          text,
-
-          user
-
-        });
-
-      return sendResult({
-
-        chatId,
-
-        text:
-
-          buildSummary({
-
-            title:
-              "📦 Product Status",
-
-            processed:
-              result.processed,
-
-            updated:
-              result.updated,
-
-            skipped:
-              result.skipped,
-
-            errors:
-              result.errors
-
-          })
+        user
 
       });
 
-    }
+    return sendMessage(
 
-    default:
+      chatId,
 
-      return sendResult({
+      buildSummary({
 
-        chatId,
+        title:
 
-        text:
-          "❌ Command tidak dikenali."
+          "📦 Product Status",
 
-      });
+        processed:
+
+          result.processed,
+
+        updated:
+
+          result.updated,
+
+        skipped:
+
+          result.skipped,
+
+        errors:
+
+          result.errors
+
+      })
+
+    );
 
   }
 

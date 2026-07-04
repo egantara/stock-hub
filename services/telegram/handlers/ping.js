@@ -3,13 +3,9 @@ import {
 }
 from "../telegram.js";
 
-export async function handlePing({
+function formatUptime() {
 
-  chatId
-
-}) {
-
-  const uptime =
+  const totalSeconds =
 
     Math.floor(
 
@@ -17,15 +13,65 @@ export async function handlePing({
 
     );
 
-  return sendMessage(
+  const hours =
 
-    chatId,
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const minutes =
+
+    Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+
+  const seconds =
+
+    totalSeconds % 60;
+
+  if (
+
+    hours > 0
+
+  ) {
+
+    return `${hours}j ${minutes}m ${seconds}d`;
+
+  }
+
+  if (
+
+    minutes > 0
+
+  ) {
+
+    return `${minutes}m ${seconds}d`;
+
+  }
+
+  return `${seconds}d`;
+
+}
+
+export async function handlePing({
+
+  chatId
+
+}) {
+
+  const message =
 
 `🏓 Pong
 
 🟢 Status : Online
 📦 Version : v2
-⏱️ Uptime : ${uptime}s`
+⏱️ Uptime : ${formatUptime()}`;
+
+  await sendMessage(
+
+    chatId,
+
+    message
 
   );
 

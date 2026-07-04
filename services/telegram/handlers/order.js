@@ -4,6 +4,11 @@ import {
 from "../telegram.js";
 
 import {
+  isCommand
+}
+from "../../utils/command.js";
+
+import {
   downloadTelegramFile
 }
 from "../download-file.js";
@@ -69,18 +74,24 @@ export async function handleOrder({
 
   const user =
 
-  context?.userName;
+    context?.userName;
+
+  const salesCommand =
+
+    isCommand({
+
+      text,
+
+      command: "/sales"
+
+    });
 
   //
   // SALES + FILE
   //
   if (
 
-    text.startsWith(
-      "/sales"
-    )
-
-    &&
+    salesCommand &&
 
     document
 
@@ -113,18 +124,23 @@ export async function handleOrder({
       buildSummary({
 
         title:
+
           "🛒 Sales",
 
         processed:
+
           result.processed,
 
         duplicateProducts:
+
           result.duplicateOrders,
 
         totalQty:
+
           result.totalQty,
 
         errors:
+
           result.errors
 
       })
@@ -138,9 +154,7 @@ export async function handleOrder({
   //
   if (
 
-    text.startsWith(
-      "/sales"
-    )
+    salesCommand
 
   ) {
 
@@ -163,15 +177,19 @@ export async function handleOrder({
       buildSummary({
 
         title:
+
           "🛒 Sales",
 
         processed:
+
           result.processed,
 
         totalQty:
+
           result.totalQty,
 
         errors:
+
           result.errors
 
       })

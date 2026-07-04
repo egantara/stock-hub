@@ -10,15 +10,15 @@ import {
 from "../../google/store.js";
 
 import {
-  findProduct
-}
-from "../service.js";
-
-import {
   batchUpdate,
   appendRows
 }
 from "../../google/google-sheet.js";
+
+import {
+  findProduct
+}
+from "../service.js";
 
 import {
   createLogRow
@@ -29,6 +29,11 @@ import {
   parseCommandLines
 }
 from "../../utils/parse-command-items.js";
+
+import {
+  requireUser
+}
+from "../../utils/require-user.js";
 
 const VALID_STATUS = [
 
@@ -46,9 +51,13 @@ export async function processStatusCommand({
 
   text,
 
-  user = "SYSTEM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   const lines =
 
@@ -63,7 +72,7 @@ export async function processStatusCommand({
 
   if (
 
-    !lines.length
+    lines.length === 0
 
   ) {
 
@@ -146,8 +155,11 @@ Caption:
       const status =
 
         parts
+
           .join(" ")
+
           .trim()
+
           .toUpperCase();
 
       if (

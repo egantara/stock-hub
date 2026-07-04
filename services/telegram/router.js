@@ -1,4 +1,9 @@
 import {
+  getCommand
+}
+from "../utils/command.js";
+
+import {
   handleStart
 }
 from "./handlers/start.js";
@@ -75,38 +80,6 @@ const ROUTES = {
 
 };
 
-function getCommand(
-  text
-) {
-
-  const firstToken =
-
-    String(
-      text || ""
-    )
-
-      .trim()
-
-      .split(/\s+/)[0]
-
-      .toLowerCase();
-
-  //
-  // Support command group:
-  // /start@my_bot
-  //
-  return firstToken
-
-    .replace(
-
-      /@.+$/,
-
-      ""
-
-    );
-
-}
-
 export async function router({
 
   chatId,
@@ -123,11 +96,7 @@ export async function router({
 
   const command =
 
-    getCommand(
-
-      text
-
-    );
+    getCommand(text);
 
   console.log({
 
@@ -135,9 +104,7 @@ export async function router({
 
     client:
 
-      context?.clientId ||
-
-      null,
+      context?.clientId,
 
     file:
 
@@ -149,29 +116,9 @@ export async function router({
 
   const handler =
 
-    ROUTES[command];
+    ROUTES[command] ||
 
-  if (
-
-    !handler
-
-  ) {
-
-    return handleUnknown({
-
-      chatId,
-
-      text,
-
-      document,
-
-      google,
-
-      context
-
-    });
-
-  }
+    handleUnknown;
 
   return handler({
 

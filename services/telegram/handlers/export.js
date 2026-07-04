@@ -11,6 +11,11 @@ import {
 from "../send-document.js";
 
 import {
+  isCommand
+}
+from "../../utils/command.js";
+
+import {
   exportShopee
 }
 from "../../marketplace/command/shopee.js";
@@ -24,6 +29,14 @@ function safeDelete(
   filePath
 ) {
 
+  if (
+    !filePath
+  ) {
+
+    return;
+
+  }
+
   try {
 
     fs.unlinkSync(
@@ -35,10 +48,53 @@ function safeDelete(
       filePath
     );
 
-  } catch {
+  } catch (error) {
 
     console.log(
       "DELETE FAILED:",
+      filePath,
+      error.message
+    );
+
+  }
+
+}
+
+async function exportMarketplace({
+
+  chatId,
+
+  google,
+
+  caption,
+
+  processor
+
+}) {
+
+  const filePath =
+
+    await processor({
+
+      google
+
+    });
+
+  try {
+
+    await sendDocument({
+
+      chatId,
+
+      filePath,
+
+      caption
+
+    });
+
+  } finally {
+
+    safeDelete(
       filePath
     );
 
@@ -56,11 +112,46 @@ export async function handleExport({
 
 }) {
 
+  const exportShopeeCommand =
+
+    isCommand({
+
+      text,
+
+      command:
+        "/exportshopee"
+
+    });
+
+  const exportTikTokCommand =
+
+    isCommand({
+
+      text,
+
+      command:
+        "/exporttiktok"
+
+    });
+
+  const exportAllCommand =
+
+    isCommand({
+
+      text,
+
+      command:
+        "/exportall"
+
+    });
+
   //
   // EXPORT SHOPEE
   //
   if (
-    text === "/exportshopee"
+
+    exportShopeeCommand
+
   ) {
 
     await sendMessage(
@@ -71,30 +162,21 @@ export async function handleExport({
 
     );
 
-    const filePath =
-
-      await exportShopee({
-
-        google
-
-      });
-
-    await sendDocument({
+    return exportMarketplace({
 
       chatId,
 
-      filePath,
+      google,
 
       caption:
-        "📦 Export Shopee"
+
+        "📦 Export Shopee",
+
+      processor:
+
+        exportShopee
 
     });
-
-    safeDelete(
-      filePath
-    );
-
-    return;
 
   }
 
@@ -102,7 +184,9 @@ export async function handleExport({
   // EXPORT TIKTOK
   //
   if (
-    text === "/exporttiktok"
+
+    exportTikTokCommand
+
   ) {
 
     await sendMessage(
@@ -113,30 +197,21 @@ export async function handleExport({
 
     );
 
-    const filePath =
-
-      await exportTikTok({
-
-        google
-
-      });
-
-    await sendDocument({
+    return exportMarketplace({
 
       chatId,
 
-      filePath,
+      google,
 
       caption:
-        "📦 Export TikTok"
+
+        "📦 Export TikTok",
+
+      processor:
+
+        exportTikTok
 
     });
-
-    safeDelete(
-      filePath
-    );
-
-    return;
 
   }
 
@@ -144,7 +219,9 @@ export async function handleExport({
   // EXPORT ALL
   //
   if (
-    text === "/exportall"
+
+    exportAllCommand
+
   ) {
 
     await sendMessage(
@@ -155,59 +232,37 @@ export async function handleExport({
 
     );
 
-    //
-    // SHOPEE
-    //
-    const shopeeFile =
-
-      await exportShopee({
-
-        google
-
-      });
-
-    await sendDocument({
+    await exportMarketplace({
 
       chatId,
 
-      filePath:
-        shopeeFile,
+      google,
 
       caption:
-        "📦 Export Shopee"
+
+        "📦 Export Shopee",
+
+      processor:
+
+        exportShopee
 
     });
 
-    safeDelete(
-      shopeeFile
-    );
-
-    //
-    // TIKTOK
-    //
-    const tiktokFile =
-
-      await exportTikTok({
-
-        google
-
-      });
-
-    await sendDocument({
+    await exportMarketplace({
 
       chatId,
 
-      filePath:
-        tiktokFile,
+      google,
 
       caption:
-        "📦 Export TikTok"
+
+        "📦 Export TikTok",
+
+      processor:
+
+        exportTikTok
 
     });
-
-    safeDelete(
-      tiktokFile
-    );
 
     await sendMessage(
 

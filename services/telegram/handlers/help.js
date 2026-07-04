@@ -3,15 +3,7 @@ import {
 }
 from "../telegram.js";
 
-export async function handleHelp({
-
-  chatId
-
-}) {
-
-  return sendMessage(
-
-    chatId,
+const HELP_MESSAGE =
 
 `📚 Stock Hub Help
 
@@ -26,7 +18,7 @@ Cek stock
 Set stock (Manual / Upload File)
 
 /restock
-Tambah stock (Manual / Upload File)
+Tambah stock (Manual /Upload File)
 
 /sales
 Kurangi stock (Manual / Upload File)
@@ -55,7 +47,19 @@ Export Shopee
 Export TikTok
 
 /exportall
-Export Shopee & TikTok`
+Export Shopee & TikTok`;
+
+export async function handleHelp({
+
+  chatId
+
+}) {
+
+  await sendMessage(
+
+    chatId,
+
+    HELP_MESSAGE
 
   );
 

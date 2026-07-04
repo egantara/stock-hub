@@ -28,6 +28,11 @@ import {
 }
 from "../utils/logs.js";
 
+import {
+  requireUser
+}
+from "../utils/require-user.js";
+
 export async function processOrder({
 
   google,
@@ -36,9 +41,13 @@ export async function processOrder({
 
   marketplace,
 
-  user = "SYSTEM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   const store =
 
@@ -61,13 +70,17 @@ export async function processOrder({
   const logRows = [];
 
   for (
+
     const order
+
     of orders
+
   ) {
 
     try {
 
       const exists =
+
         isProcessed({
 
           processedSet:
@@ -82,7 +95,9 @@ export async function processOrder({
         });
 
       if (
+
         exists
+
       ) {
 
         duplicateOrders++;
@@ -92,6 +107,7 @@ export async function processOrder({
       }
 
       const stock =
+
         getStockBySku({
 
           store,
@@ -102,7 +118,9 @@ export async function processOrder({
         });
 
       if (
+
         !stock
+
       ) {
 
         errors.push({
@@ -218,16 +236,19 @@ export async function processOrder({
 
   }
 
+  const updates =
+
+    createStockUpdates(
+      store
+    );
+
   await Promise.all([
 
     batchUpdate({
 
       google,
 
-      updates:
-        createStockUpdates(
-          store
-        )
+      updates
 
     }),
 

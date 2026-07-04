@@ -3,17 +3,22 @@ import {
 }
 from "../telegram.js";
 
-export async function handleStart({
+function buildStartMessage({
 
-  chatId
+  clientName,
+
+  userName
 
 }) {
 
-  return sendMessage(
-
-    chatId,
+  return
 
 `👋 Selamat datang di Stock Hub.
+
+Anda berhasil terhubung ke:
+
+🏢 Client : ${clientName}
+👤 User   : ${userName}
 
 Bot ini membantu mengelola:
 
@@ -22,7 +27,37 @@ Bot ini membantu mengelola:
 🛒 Order
 📤 Marketplace Export
 
-Ketik /help untuk melihat daftar command.`
+Ketik /help untuk melihat daftar command.`;
+
+}
+
+export async function handleStart({
+
+  chatId,
+
+  context
+
+}) {
+
+  await sendMessage(
+
+    chatId,
+
+    buildStartMessage({
+
+      clientName:
+
+        context?.clientName ||
+
+        "-",
+
+      userName:
+
+        context?.userName ||
+
+        "-"
+
+    })
 
   );
 

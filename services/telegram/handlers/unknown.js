@@ -3,6 +3,22 @@ import {
 }
 from "../telegram.js";
 
+const UNKNOWN_COMMAND_MESSAGE =
+
+`❌ Command tidak dikenali.
+
+Ketik /help untuk melihat daftar command yang tersedia.`;
+
+const FILE_WITHOUT_COMMAND_MESSAGE =
+
+`📄 File berhasil diterima.
+
+Namun bot tidak mengetahui proses yang diinginkan.
+
+Silakan kirim ulang file dengan caption command.
+
+Ketik /help untuk melihat daftar command yang tersedia.`;
+
 export async function handleUnknown({
 
   chatId,
@@ -11,37 +27,19 @@ export async function handleUnknown({
 
 }) {
 
-  if (document) {
+  const message =
 
-    return sendMessage(
+    document
 
-      chatId,
+      ? FILE_WITHOUT_COMMAND_MESSAGE
 
-`❌ File diterima, tetapi tidak ada command.
+      : UNKNOWN_COMMAND_MESSAGE;
 
-Contoh:
-
-📄 products.xlsx
-
-Caption:
-/new
-
-atau
-
-Caption:
-/status`
-
-    );
-
-  }
-
-  return sendMessage(
+  await sendMessage(
 
     chatId,
 
-`❌ Command tidak dikenali.
-
-Ketik /help untuk melihat daftar command.`
+    message
 
   );
 

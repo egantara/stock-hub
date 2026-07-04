@@ -1,4 +1,9 @@
 import {
+  sendMessage
+}
+from "../telegram.js";
+
+import {
   dailyBackup
 }
 from "../../../backup/daily-backup.js";
@@ -11,7 +16,15 @@ export async function handleBackup({
 
 }) {
 
-  return dailyBackup({
+  await sendMessage(
+
+    chatId,
+
+    "⏳ Memulai backup..."
+
+  );
+
+  await dailyBackup({
 
     chatId,
 

@@ -4,6 +4,11 @@ import {
 from "../google/store.js";
 
 import {
+  requireUser
+}
+from "../utils/require-user.js";
+
+import {
   appendRows,
   batchUpdate
 }
@@ -276,9 +281,13 @@ export async function processProductImport({
 
   marketplace,
 
-  user = "SYSTEM"
+  user
 
 }) {
+
+  requireUser(
+  user
+);
 
   const store =
 

@@ -4,6 +4,11 @@ import {
 from "../errors/index.js";
 
 import {
+  requireUser
+}
+from "../utils/require-user.js";
+
+import {
   detectMarketplace
 }
 from "../marketplace/detect.js";
@@ -51,7 +56,7 @@ async function loadProducts(
 
     throw new BusinessError(
 
-      `Marketplace tidak dikenali.
+`Marketplace tidak dikenali.
 
 Pastikan file yang diupload berasal dari marketplace yang didukung.`
 
@@ -59,8 +64,9 @@ Pastikan file yang diupload berasal dari marketplace yang didukung.`
 
   }
 
-const parser =
-  PRODUCT_PARSERS[marketplace];
+  const parser =
+
+    PRODUCT_PARSERS[marketplace];
 
   if (
 
@@ -108,9 +114,13 @@ export async function processNewFile({
 
   filePath,
 
-  user = "SYSTEM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   console.log(
 
@@ -174,9 +184,13 @@ export async function processStatusFile({
 
   filePath,
 
-  user = "SYSTEM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   const {
 

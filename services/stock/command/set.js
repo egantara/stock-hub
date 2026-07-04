@@ -25,15 +25,24 @@ import {
 }
 from "../../utils/logs.js";
 
+import {
+  requireUser
+}
+from "../../utils/require-user.js";
+
 export async function processSetCommand({
 
   google,
 
   text,
 
-  user = "TELEGRAM"
+  user
 
 }) {
+
+  requireUser(
+    user
+  );
 
   const store =
 
@@ -64,8 +73,11 @@ export async function processSetCommand({
   const logRows = [];
 
   for (
+
     const item
+
     of items
+
   ) {
 
     try {
@@ -132,20 +144,35 @@ export async function processSetCommand({
 
   }
 
-  await Promise.all([
+  const updates =
 
-    batchUpdate({
+    createStockUpdates(
+      store
+    );
+
+  if (
+
+    updates.length
+
+  ) {
+
+    await batchUpdate({
 
       google,
 
-      updates:
-        createStockUpdates(
-          store
-        )
+      updates
 
-    }),
+    });
 
-    appendRows({
+  }
+
+  if (
+
+    logRows.length
+
+  ) {
+
+    await appendRows({
 
       google,
 
@@ -155,9 +182,9 @@ export async function processSetCommand({
       rows:
         logRows
 
-    })
+    });
 
-  ]);
+  }
 
   return {
 
