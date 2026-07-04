@@ -1,5 +1,10 @@
 import { google } from "googleapis";
 
+import {
+  LicenseError
+}
+from "./errors.js";
+
 const LICENSE_SHEET_ID =
   process.env.LICENSE_SHEET_ID;
 
@@ -159,6 +164,30 @@ async function loadSheet(
 
 }
 
+function requireField({
+
+  value,
+
+  code
+
+}) {
+
+  if (
+
+    !String(
+      value ?? ""
+    ).trim()
+
+  ) {
+
+    throw new LicenseError(
+      code
+    );
+
+  }
+
+}
+
 export async function loadLicense({
 
   chatId
@@ -223,6 +252,78 @@ export async function loadLicense({
 
   }
 
+  //
+  // CHAT_ACCESS
+  //
+
+  requireField({
+
+    value:
+      access.USER_NAME,
+
+    code:
+      "USER_NAME_NOT_CONFIGURED"
+
+  });
+
+  //
+  // GOOGLE
+  //
+
+  requireField({
+
+    value:
+      license.GOOGLE_SHEET_ID,
+
+    code:
+      "GOOGLE_SHEET_NOT_CONFIGURED"
+
+  });
+
+  requireField({
+
+    value:
+      license.GOOGLE_PROJECT_ID,
+
+    code:
+      "GOOGLE_PROJECT_NOT_CONFIGURED"
+
+  });
+
+  requireField({
+
+    value:
+      license.GOOGLE_CLIENT_EMAIL,
+
+    code:
+      "GOOGLE_CLIENT_EMAIL_NOT_CONFIGURED"
+
+  });
+
+  requireField({
+
+    value:
+      license.GOOGLE_PRIVATE_KEY,
+
+    code:
+      "GOOGLE_PRIVATE_KEY_NOT_CONFIGURED"
+
+  });
+
+  //
+  // TELEGRAM
+  //
+
+  requireField({
+
+    value:
+      license.TELEGRAM_BOT_TOKEN,
+
+    code:
+      "BOT_TOKEN_NOT_CONFIGURED"
+
+  });
+
   return {
 
     clientId:
@@ -230,6 +331,9 @@ export async function loadLicense({
 
     clientName:
       license.CLIENT_NAME,
+
+    userName:
+      access.USER_NAME,
 
     role:
       access.ROLE,
@@ -264,7 +368,7 @@ export async function loadLicense({
         license.GOOGLE_CLIENT_EMAIL,
 
       privateKey:
-        (license.GOOGLE_PRIVATE_KEY || "")
+        license.GOOGLE_PRIVATE_KEY
           .replace(/\\n/g, "\n")
 
     },

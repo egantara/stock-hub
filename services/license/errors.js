@@ -32,9 +32,41 @@ Silakan hubungi Administrator untuk melakukan perpanjangan.`,
 
 `❌ Bot tidak sesuai dengan data lisensi.`,
 
-  GOOGLE_NOT_CONFIGURED:
+  //
+  // CHAT_ACCESS
+  //
 
-`❌ Google Sheets belum dikonfigurasi.`,
+  USER_NAME_NOT_CONFIGURED:
+
+`❌ Kolom USER_NAME pada CHAT_ACCESS belum dikonfigurasi.`,
+
+  //
+  // GOOGLE
+  //
+
+  GOOGLE_SHEET_NOT_CONFIGURED:
+
+`❌ Kolom GOOGLE_SHEET_ID pada LICENSE belum dikonfigurasi.`,
+
+  GOOGLE_PROJECT_NOT_CONFIGURED:
+
+`❌ Kolom GOOGLE_PROJECT_ID pada LICENSE belum dikonfigurasi.`,
+
+  GOOGLE_CLIENT_EMAIL_NOT_CONFIGURED:
+
+`❌ Kolom GOOGLE_CLIENT_EMAIL pada LICENSE belum dikonfigurasi.`,
+
+  GOOGLE_PRIVATE_KEY_NOT_CONFIGURED:
+
+`❌ Kolom GOOGLE_PRIVATE_KEY pada LICENSE belum dikonfigurasi.`,
+
+  //
+  // TELEGRAM
+  //
+
+  BOT_TOKEN_NOT_CONFIGURED:
+
+`❌ Kolom TELEGRAM_BOT_TOKEN pada LICENSE belum dikonfigurasi.`,
 
   UNKNOWN:
 

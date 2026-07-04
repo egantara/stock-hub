@@ -69,9 +69,7 @@ export async function handleOrder({
 
   const user =
 
-    context?.user ||
-
-    "TELEGRAM";
+  context?.userName;
 
   //
   // SALES + FILE

@@ -91,9 +91,7 @@ export async function handleProduct({
 
   const user =
 
-    context?.user ||
-
-    "TELEGRAM";
+  context?.userName;
 
   const command =
 

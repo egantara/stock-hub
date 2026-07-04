@@ -103,9 +103,7 @@ export async function handleStock({
 
   const user =
 
-    context?.user ||
-
-    "TELEGRAM";
+  context?.userName;
 
   //
   // SET / RESTOCK (FILE)
