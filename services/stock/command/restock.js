@@ -99,7 +99,7 @@ export async function processRestockCommand({
 
       throw new ValidationError(
 
-        "QTY harus lebih dari 0."
+        "QTY tidak boleh bernilai negatif."
 
       );
 
