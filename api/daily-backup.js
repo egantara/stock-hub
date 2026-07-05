@@ -75,6 +75,20 @@ export default async function handler(
 
           });
 
+          console.log(
+
+  JSON.stringify(
+
+    client,
+
+    null,
+
+    2
+
+  )
+
+);
+
         for (
 
           const user
