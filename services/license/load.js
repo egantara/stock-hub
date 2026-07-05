@@ -497,3 +497,222 @@ export async function loadLicense({
 };
 
 }
+
+export async function loadAllLicenses() {
+
+  const licenses =
+
+    await loadSheet(
+
+      "LICENSE!A:Z"
+
+    );
+
+  const clients = [];
+
+  for (
+
+    const license
+
+    of licenses
+
+  ) {
+
+    //
+    // Skip client nonaktif
+    //
+    if (
+
+      String(
+
+        license.STATUS || ""
+
+      )
+
+        .trim()
+
+        .toUpperCase()
+
+      !==
+
+      "ACTIVE"
+
+    ) {
+
+      continue;
+
+    }
+
+    const context = {
+
+      clientId:
+        license.CLIENT_ID,
+
+      clientName:
+        license.CLIENT_NAME,
+
+      userName:
+        "SYSTEM",
+
+      developer: {
+
+        developerChatId:
+          license.DEVELOPER_CHAT_ID
+
+      }
+
+    };
+
+    //
+    // GOOGLE
+    //
+    requireConfigurationField({
+
+      value:
+        license.GOOGLE_SHEET_ID,
+
+      field:
+        "GOOGLE_SHEET_ID",
+
+      context
+
+    });
+
+    requireConfigurationField({
+
+      value:
+        license.GOOGLE_PROJECT_ID,
+
+      field:
+        "GOOGLE_PROJECT_ID",
+
+      context
+
+    });
+
+    requireConfigurationField({
+
+      value:
+        license.GOOGLE_CLIENT_EMAIL,
+
+      field:
+        "GOOGLE_CLIENT_EMAIL",
+
+      context
+
+    });
+
+    requireConfigurationField({
+
+      value:
+        license.GOOGLE_PRIVATE_KEY,
+
+      field:
+        "GOOGLE_PRIVATE_KEY",
+
+      context
+
+    });
+
+    //
+    // TELEGRAM
+    //
+    requireConfigurationField({
+
+      value:
+        license.TELEGRAM_BOT_TOKEN,
+
+      field:
+        "TELEGRAM_BOT_TOKEN",
+
+      context
+
+    });
+
+    requireConfigurationField({
+
+      value:
+        license.DEVELOPER_CHAT_ID,
+
+      field:
+        "DEVELOPER_CHAT_ID",
+
+      context
+
+    });
+
+    clients.push({
+
+      clientId:
+        license.CLIENT_ID,
+
+      clientName:
+        license.CLIENT_NAME,
+
+      plan:
+        license.PLAN,
+
+      status:
+        license.STATUS,
+
+      startDate:
+        license.START_DATE,
+
+      endDate:
+        license.END_DATE,
+
+      notes:
+        license.NOTES,
+
+      developer: {
+
+        developerChatId:
+          license.DEVELOPER_CHAT_ID
+
+      },
+
+      google: {
+
+        sheetId:
+          license.GOOGLE_SHEET_ID,
+
+        projectId:
+          license.GOOGLE_PROJECT_ID,
+
+        clientEmail:
+          license.GOOGLE_CLIENT_EMAIL,
+
+        privateKey:
+
+          license.GOOGLE_PRIVATE_KEY
+
+            .replace(
+
+              /\\n/g,
+
+              "\n"
+
+            )
+
+      },
+
+      telegram: {
+
+        botName:
+          license.BOT_NAME,
+
+        botToken:
+          license.TELEGRAM_BOT_TOKEN,
+
+        webhook:
+          license.WEBHOOK
+
+      }
+
+    });
+
+  }
+
+  return clients;
+
+}
