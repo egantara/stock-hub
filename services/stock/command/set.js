@@ -1,4 +1,9 @@
 import {
+  ValidationError
+}
+from "../../errors/index.js";
+
+import {
   loadStore
 }
 from "../../google/store.js";
@@ -21,6 +26,11 @@ import {
 from "../../utils/parse-command-items.js";
 
 import {
+  validateDuplicateSku
+}
+from "../../utils/validate-duplicate-sku.js";
+
+import {
   createLogRow
 }
 from "../../utils/logs.js";
@@ -29,11 +39,6 @@ import {
   requireUser
 }
 from "../../utils/require-user.js";
-
-import {
-  requireQty
-}
-from "../../utils/qty.js";
 
 export async function processSetCommand({
 
@@ -71,9 +76,9 @@ export async function processSetCommand({
 
     });
 
-    validateDuplicateSku(
-  items
-);
+  validateDuplicateSku(
+    items
+  );
 
   //
   // VALIDASI QTY
@@ -86,15 +91,19 @@ export async function processSetCommand({
 
   ) {
 
-    requireQty({
+    if (
 
-      qty:
-        item.qty,
+      item.qty < 0
 
-      allowZero:
-        true
+    ) {
 
-    });
+      throw new ValidationError(
+
+        "QTY tidak boleh bernilai negatif."
+
+      );
+
+    }
 
   }
 

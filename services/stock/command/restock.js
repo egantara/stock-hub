@@ -1,4 +1,9 @@
 import {
+  ValidationError
+}
+from "../../errors/index.js";
+
+import {
   loadStore
 }
 from "../../google/store.js";
@@ -21,6 +26,11 @@ import {
 from "../../utils/parse-command-items.js";
 
 import {
+  validateDuplicateSku
+}
+from "../../utils/validate-duplicate-sku.js";
+
+import {
   createLogRow
 }
 from "../../utils/logs.js";
@@ -29,11 +39,6 @@ import {
   requireUser
 }
 from "../../utils/require-user.js";
-
-import {
-  requireQty
-}
-from "../../utils/qty.js";
 
 export async function processRestockCommand({
 
@@ -71,9 +76,9 @@ export async function processRestockCommand({
 
     });
 
-        validateDuplicateSku(
-  items
-);
+  validateDuplicateSku(
+    items
+  );
 
   //
   // VALIDASI QTY
@@ -86,12 +91,19 @@ export async function processRestockCommand({
 
   ) {
 
-    requireQty({
+    if (
 
-      qty:
-        item.qty
+      item.qty <= 0
 
-    });
+    ) {
+
+      throw new ValidationError(
+
+        "QTY harus lebih dari 0."
+
+      );
+
+    }
 
   }
 
