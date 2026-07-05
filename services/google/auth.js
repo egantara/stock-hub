@@ -1,209 +1,145 @@
 import {
-  dailyBackup
+  google
 }
-from "../backup/daily-backup.js";
+from "googleapis";
 
 import {
-  loadAllLicenses
+  ConfigurationError
 }
-from "../services/license/load.js";
+from "../errors/index.js";
 
-import {
-  createGoogleSheets
-}
-from "../services/google/auth.js";
+function requireValue(
 
-export default async function handler(
+  field,
 
-  req,
-
-  res
+  value
 
 ) {
 
-  console.log(
+  if (
 
-    "AUTO DAILY BACKUP START"
-
-  );
-
-  const summary = [];
-
-  try {
-
-    const clients =
-
-      await loadAllLicenses();
-
-    for (
-
-      const client
-
-      of clients
-
-    ) {
-
-      console.log(
-
-        "CLIENT:",
-
-        client.clientId
-
-      );
-
-      try {
-
-        const google =
-
-          createGoogleSheets({
-
-            sheetId:
-
-              client.google.sheetId,
-
-            projectId:
-
-              client.google.projectId,
-
-            clientEmail:
-
-              client.google.clientEmail,
-
-            privateKey:
-
-              client.google.privateKey
-
-          });
-
-        //
-        // Kirim backup ke seluruh user ACTIVE
-        //
-        for (
-
-          const user
-
-          of client.backup
-
-        ) {
-
-          console.log(
-
-            "SEND BACKUP:",
-
-            client.clientId,
-
-            user.userName,
-
-            user.chatId
-
-          );
-
-          await dailyBackup({
-
-            chatId:
-
-              user.chatId,
-
-            google
-
-          });
-
-        }
-
-        summary.push({
-
-          client:
-
-            client.clientId,
-
-          success:
-
-            true,
-
-          receivers:
-
-            client.backup.length
-
-        });
-
-      } catch (
-
-        error
-
-      ) {
-
-        console.error(
-
-          "BACKUP FAILED:",
-
-          client.clientId,
-
-          error
-
-        );
-
-        summary.push({
-
-          client:
-
-            client.clientId,
-
-          success:
-
-            false,
-
-          error:
-
-            error.message
-
-        });
-
-      }
-
-    }
-
-    console.log(
-
-      "AUTO DAILY BACKUP FINISH"
-
-    );
-
-    return res.status(200).json({
-
-      success: true,
-
-      totalClients:
-
-        summary.length,
-
-      summary
-
-    });
-
-  } catch (
-
-    error
+    !value
 
   ) {
 
-    console.error(
+    throw new ConfigurationError({
 
-      "AUTO DAILY BACKUP ERROR:",
+      message:
 
-      error
+        "Konfigurasi Google Sheets belum lengkap.\n\nSilakan hubungi Administrator.",
 
-    );
-
-    return res.status(500).json({
-
-      success: false,
-
-      error:
-
-        error.message
+      field
 
     });
 
   }
+
+  return value;
+
+}
+
+export function createGoogleSheets({
+
+  sheetId,
+
+  projectId,
+
+  clientEmail,
+
+  privateKey
+
+}) {
+
+  sheetId =
+
+    requireValue(
+
+      "GOOGLE_SHEET_ID",
+
+      sheetId
+
+    );
+
+  projectId =
+
+    requireValue(
+
+      "GOOGLE_PROJECT_ID",
+
+      projectId
+
+    );
+
+  clientEmail =
+
+    requireValue(
+
+      "GOOGLE_CLIENT_EMAIL",
+
+      clientEmail
+
+    );
+
+  privateKey =
+
+    requireValue(
+
+      "GOOGLE_PRIVATE_KEY",
+
+      privateKey
+
+    ).replace(
+
+      /\\n/g,
+
+      "\n"
+
+    );
+
+  const auth =
+
+    new google.auth.GoogleAuth({
+
+      credentials: {
+
+        type:
+          "service_account",
+
+        project_id:
+          projectId,
+
+        client_email:
+          clientEmail,
+
+        private_key:
+          privateKey
+
+      },
+
+      scopes: [
+
+        "https://www.googleapis.com/auth/spreadsheets"
+
+      ]
+
+    });
+
+  return {
+
+    sheets:
+
+      google.sheets({
+
+        version: "v4",
+
+        auth
+
+      }),
+
+    spreadsheetId:
+
+      sheetId
+
+  };
 
 }
