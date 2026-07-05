@@ -500,13 +500,27 @@ export async function loadLicense({
 
 export async function loadAllLicenses() {
 
-  const licenses =
+  const [
 
-    await loadSheet(
+  licenses,
 
-      "LICENSE!A:Z"
+  accesses
 
-    );
+] = await Promise.all([
+
+  loadSheet(
+
+    "LICENSE!A:Z"
+
+  ),
+
+  loadSheet(
+
+    "CHAT_ACCESS!A:E"
+
+  )
+
+]);
 
   const clients = [];
 
@@ -641,75 +655,147 @@ export async function loadAllLicenses() {
 
     });
 
+const backup =
+
+  accesses
+
+    .filter(
+
+      access =>
+
+        access.CLIENT_ID ===
+
+          license.CLIENT_ID
+
+        &&
+
+        String(
+
+          access.STATUS || ""
+
+        )
+
+          .trim()
+
+          .toUpperCase()
+
+        ===
+
+        "ACTIVE"
+
+    )
+
+    .map(
+
+      access => ({
+
+        chatId:
+
+          access.CHAT_ID,
+
+        userName:
+
+          access.USER_NAME,
+
+        role:
+
+          access.ROLE
+
+      })
+
+    );
+
+    if (
+
+  backup.length === 0
+
+) {
+
+  throw new ConfigurationError({
+
+    message:
+
+      "Belum ada CHAT_ACCESS ACTIVE untuk client.",
+
+    field:
+
+      "CHAT_ACCESS"
+
+  });
+
+}
+
     clients.push({
 
-      clientId:
-        license.CLIENT_ID,
+  clientId:
+    license.CLIENT_ID,
 
-      clientName:
-        license.CLIENT_NAME,
+  clientName:
+    license.CLIENT_NAME,
 
-      plan:
-        license.PLAN,
+  plan:
+    license.PLAN,
 
-      status:
-        license.STATUS,
+  status:
+    license.STATUS,
 
-      startDate:
-        license.START_DATE,
+  startDate:
+    license.START_DATE,
 
-      endDate:
-        license.END_DATE,
+  endDate:
+    license.END_DATE,
 
-      notes:
-        license.NOTES,
+  notes:
+    license.NOTES,
 
-      developer: {
+  developer: {
 
-        developerChatId:
-          license.DEVELOPER_CHAT_ID
+    developerChatId:
+      license.DEVELOPER_CHAT_ID
 
-      },
+  },
 
-      google: {
+  backup,
 
-        sheetId:
-          license.GOOGLE_SHEET_ID,
+  google: {
 
-        projectId:
-          license.GOOGLE_PROJECT_ID,
+    sheetId:
+      license.GOOGLE_SHEET_ID,
 
-        clientEmail:
-          license.GOOGLE_CLIENT_EMAIL,
+    projectId:
+      license.GOOGLE_PROJECT_ID,
 
-        privateKey:
+    clientEmail:
+      license.GOOGLE_CLIENT_EMAIL,
 
-          license.GOOGLE_PRIVATE_KEY
+    privateKey:
 
-            .replace(
+      license.GOOGLE_PRIVATE_KEY
 
-              /\\n/g,
+        .replace(
 
-              "\n"
+          /\\n/g,
 
-            )
+          "\n"
 
-      },
+        )
 
-      telegram: {
+  },
 
-        botName:
-          license.BOT_NAME,
+  telegram: {
 
-        botToken:
-          license.TELEGRAM_BOT_TOKEN,
+    botName:
+      license.BOT_NAME,
 
-        webhook:
-          license.WEBHOOK
+    botToken:
+      license.TELEGRAM_BOT_TOKEN,
 
-      }
+    webhook:
+      license.WEBHOOK
 
-    });
+  }
+
+});
 
   }
 
