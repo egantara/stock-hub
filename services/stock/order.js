@@ -242,6 +242,24 @@ export async function processOrder({
       store
     );
 
+console.table({
+
+  processed,
+
+  processedRows:
+
+    processedRows.length,
+
+  logRows:
+
+    logRows.length,
+
+  updates:
+
+    updates.length
+
+});
+
   await Promise.all([
 
     batchUpdate({
