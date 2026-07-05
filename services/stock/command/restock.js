@@ -30,6 +30,11 @@ import {
 }
 from "../../utils/require-user.js";
 
+import {
+  requireQty
+}
+from "../../utils/qty.js";
+
 export async function processRestockCommand({
 
   google,
@@ -65,6 +70,30 @@ export async function processRestockCommand({
         false
 
     });
+
+        validateDuplicateSku(
+  items
+);
+
+  //
+  // VALIDASI QTY
+  //
+  for (
+
+    const item
+
+    of items
+
+  ) {
+
+    requireQty({
+
+      qty:
+        item.qty
+
+    });
+
+  }
 
   let processed = 0;
 

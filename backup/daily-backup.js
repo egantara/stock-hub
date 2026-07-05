@@ -176,7 +176,7 @@ Rows : ${logBackup.totalRows}`
 
 `✅ Daily Backup Selesai
 
-📄 PROCESSED_ORDERS : Data H+14 dihapus
+📄 PROCESSED_ORDERS : Data H-14 dihapus
 📄 LOG : Dibersihkan seluruhnya`
 
     );
