@@ -31,6 +31,11 @@ import {
 from "../../utils/parse-command-items.js";
 
 import {
+  validateDuplicateSku
+}
+from "../../utils/validate-duplicate-sku.js";
+
+import {
   requireUser
 }
 from "../../utils/require-user.js";
@@ -100,6 +105,28 @@ Caption:
 
   }
 
+  //
+  // VALIDASI DUPLICATE SKU
+  //
+  const items =
+
+    lines.map(
+
+      line => ({
+
+        sku:
+
+          line
+            .split(/\s+/)[0]
+
+      })
+
+    );
+
+  validateDuplicateSku(
+    items
+  );
+
   const store =
 
     await loadStore({
@@ -155,19 +182,14 @@ Caption:
       const status =
 
         parts
-
           .join(" ")
-
           .trim()
-
           .toUpperCase();
 
       if (
 
         !VALID_STATUS.includes(
-
           status
-
         )
 
       ) {

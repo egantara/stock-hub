@@ -4,6 +4,11 @@ import {
 from "../../errors/index.js";
 
 import {
+  validateDuplicateSku
+}
+from "../../utils/validate-duplicate-sku.js";
+
+import {
   loadStore
 }
 from "../../google/store.js";
@@ -147,6 +152,20 @@ export async function processStockCommand({
       text
 
     );
+
+    validateDuplicateSku(
+
+  skus.map(
+
+    sku => ({
+
+      sku
+
+    })
+
+  )
+
+);
 
   return skus.map(
 
