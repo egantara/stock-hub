@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Stock Hub</title>
+    <style>
+      :root {
+        --bg: #f8fbff;
+        --surface: #ffffff;
+        --surface-soft: #f3f7ff;
+        --ink: #0d1733;
+        --muted: #64708f;
+        --line: #dfe7f4;
+        --blue: #2563ff;
+        --green: #16a66a;
+        --orange: #f28a0c;
+        --red: #ee4b4b;
+        --violet: #8159e6;
+        --shadow: 0 16px 42px rgba(30, 48, 90, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body.is-locked .app {
+        display: none;
+      }
+
+      body.is-authenticated .login-screen {
+        display: none;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .login-screen {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 28px;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(37, 99, 255, 0.13), transparent 28%),
+          radial-gradient(circle at 84% 22%, rgba(129, 89, 230, 0.14), transparent 30%),
+          var(--bg);
+      }
+
+      .login-card {
+        width: min(440px, 100%);
+        padding: 30px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 24px 80px rgba(30, 48, 90, 0.14);
+      }
+
+      .login-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+        font-size: 26px;
+        font-weight: 850;
+      }
+
+      .login-card h1 {
+        margin-bottom: 8px;
+      }
+
+      .login-card form {
+        display: grid;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        padding: 28px 22px;
+        border-right: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 6px 18px;
+        border-bottom: 1px solid var(--line);
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #2563ff, #8758f4);
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .nav {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav button {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 52px;
+        padding: 0 14px;
+        border-radius: 8px;
+        background: transparent;
+        color: #263654;
+        text-align: left;
+      }
+
+      .nav button.active {
+        background: #edf4ff;
+        color: var(--blue);
+        box-shadow: inset 0 0 0 1px #d9e7ff;
+      }
+
+      .help {
+        margin-top: auto;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+      }
+
+      .help strong,
+      .help span {
+        display: block;
+      }
+
+      .help span,
+      .footer,
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .help a,
+      .link-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        margin-top: 12px;
+        padding: 0 12px;
+        border-radius: 7px;
+        background: #eef4ff;
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .content {
+        min-width: 0;
+        padding: 28px 30px 38px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 26px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 27px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        font-size: 15px;
+        letter-spacing: 0;
+      }
+
+      .account {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .bell {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid var(--line);
+      }
+
+      .bell::after {
+        content: "3";
+        position: absolute;
+        top: -2px;
+        right: -1px;
+        display: grid;
+        place-items: center;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: var(--red);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .auth-card {
+        display: grid;
+        grid-template-columns: minmax(180px, 240px) auto;
+        gap: 8px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .user-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 220px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #eee7ff;
+        color: var(--violet);
+        font-weight: 800;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
+      }
+
+      textarea {
+        min-height: 164px;
+        resize: vertical;
+        line-height: 1.55;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(37, 99, 255, 0.12);
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        font-weight: 750;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .button.light {
+        background: #f3f7ff;
+        color: var(--blue);
+        border: 1px solid var(--line);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 18px;
+        margin-bottom: 26px;
+      }
+
+      .metric {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-height: 136px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .metric.blue {
+        border-color: #cfe0ff;
+      }
+
+      .metric.green {
+        border-color: #cfeadb;
+      }
+
+      .metric.orange {
+        border-color: #f5dcc0;
+      }
+
+      .metric.red {
+        border-color: #f2cccc;
+      }
+
+      .metric.violet {
+        border-color: #dfd4fb;
+      }
+
+      .icon {
+        display: grid;
+        place-items: center;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        font-size: 30px;
+        font-weight: 900;
+      }
+
+      .blue .icon {
+        background: #e6efff;
+        color: var(--blue);
+      }
+
+      .green .icon {
+        background: #def6e9;
+        color: var(--green);
+      }
+
+      .orange .icon {
+        background: #fff0db;
+        color: var(--orange);
+      }
+
+      .red .icon {
+        background: #ffe1e1;
+        color: var(--red);
+      }
+
+      .violet .icon {
+        background: #eee7ff;
+        color: var(--violet);
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 22px;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .grid-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .grid-bottom {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 0.9fr) minmax(360px, 1.05fr);
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .upload-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .drop {
+        display: grid;
+        place-items: center;
+        gap: 10px;
+        min-height: 274px;
+        padding: 20px;
+        border: 1.5px dashed #aac3ff;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #fbfdff, #f7fbff);
+        text-align: center;
+      }
+
+      .drop.product {
+        border-color: #b6dfbf;
+        background: linear-gradient(180deg, #fbfffc, #f7fff9);
+      }
+
+      .drop.adjustment {
+        border-color: #ceb8f2;
+        background: linear-gradient(180deg, #fefdff, #fbf8ff);
+      }
+
+      .drop input {
+        display: none;
+      }
+
+      .drop .icon {
+        width: 62px;
+        height: 62px;
+      }
+
+      .drop small {
+        color: var(--muted);
+      }
+
+      .note-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .quick-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .quick {
+        display: grid;
+        grid-template-columns: 48px 1fr auto;
+        align-items: center;
+        gap: 14px;
+        min-height: 82px;
+        padding: 0 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        text-align: left;
+      }
+
+      .quick.green {
+        background: #f4fffa;
+        border-color: #c9ecd9;
+      }
+
+      .quick.orange {
+        background: #fffaf4;
+        border-color: #f2dcc1;
+      }
+
+      .quick.blue {
+        background: #f5f9ff;
+        border-color: #d6e5ff;
+      }
+
+      .quick .mini-icon {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .quick.green .mini-icon {
+        background: var(--green);
+      }
+
+      .quick.orange .mini-icon {
+        background: var(--orange);
+      }
+
+      .quick.blue .mini-icon {
+        background: var(--blue);
+      }
+
+      .quick small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .export-card {
+        display: grid;
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffaf4;
+      }
+
+      .export-card.tiktok {
+        background: #fbfdff;
+      }
+
+      .activity-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .activity {
+        display: grid;
+        grid-template-columns: 38px 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #edf2f8;
+      }
+
+      .activity:last-child {
+        border-bottom: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: #dbf7e8;
+        color: #11814f;
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .search-box {
+        display: grid;
+        gap: 14px;
+      }
+
+      .search-result {
+        display: grid;
+        grid-template-columns: 64px 1fr auto;
+        gap: 14px;
+        align-items: center;
+        min-height: 118px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+      }
+
+      .thumb {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        background: #eef3fa;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .stock-number {
+        color: var(--blue);
+        font-size: 24px;
+        font-weight: 800;
+        text-align: right;
+      }
+
+      .drawer {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: rgba(10, 17, 36, 0.34);
+        z-index: 20;
+      }
+
+      .drawer.open {
+        display: grid;
+      }
+
+      .modal {
+        width: min(720px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow: auto;
+        padding: 22px;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 24px 80px rgba(10, 17, 36, 0.22);
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 14px;
+        margin: 18px 0;
+      }
+
+      .result {
+        min-height: 160px;
+        padding: 14px;
+        overflow: auto;
+        border-radius: 8px;
+        background: #0f172a;
+        color: #eaf1ff;
+        font-family: Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .status {
+        min-height: 20px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status.error {
+        color: #c23333;
+      }
+
+      @media (max-width: 1180px) {
+        .metrics,
+        .grid-main,
+        .grid-bottom {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .metric.violet,
+        .grid-bottom .panel:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .app,
+        .metrics,
+        .grid-main,
+        .grid-bottom,
+        .upload-row,
+        .cards,
+        .auth-card,
+        .modal-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .content {
+          padding: 22px 16px 32px;
+        }
+
+        .topbar,
+        .account {
+          display: grid;
+        }
+      }
+    </style>
+  </head>
+  <body class="is-locked">
+    <section class="login-screen">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="brand-mark">S</div>
+          <span>Stock Hub</span>
+        </div>
+        <h1>Sign in</h1>
+        <p class="muted">.</p>
+        <form id="loginForm">
+
+  <input
+    id="loginUsername"
+    type="text"
+    name="username"
+    autocomplete="username"
+    placeholder="Username"
+  >
+
+  <input
+    id="loginPassword"
+    type="password"
+    name="password"
+    autocomplete="current-password"
+    placeholder="Password"
+  >
+
+  <button
+    class="button"
+    type="submit"
+  >
+    Open Dashboard
+  </button>
+
+  <span
+    class="status"
+    id="loginStatus"
+  ></span>
+
+</form>
+      </div>
+    </section>
+
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span>Stock Hub</span>
+        </div>
+        <nav class="nav">
+          <button class="active" type="button" data-scroll="dashboard"><span>■</span><strong>Dashboard</strong><span></span></button>
+          <button type="button" data-scroll="upload"><span>⇧</span><strong>Upload</strong><span>⌃</span></button>
+          <button type="button" data-upload-shortcut="order"><span></span><strong>Order</strong><span></span></button>
+          <button type="button" data-upload-shortcut="product"><span></span><strong>Product</strong><span></span></button>
+          <button type="button" data-upload-shortcut="adjustment"><span></span><strong>Adjustment</strong><span></span></button>
+          <button type="button" data-scroll="quick"><span>↯</span><strong>Quick Action</strong><span>⌄</span></button>
+          <button type="button" data-scroll="download"><span>⇩</span><strong>Download</strong><span></span></button>
+          <button type="button" data-scroll="search"><span>⌕</span><strong>Search Stock</strong><span></span></button>
+          <button type="button" data-scroll="activity"><span>◷</span><strong>Activity</strong><span></span></button>
+          <button type="button" data-open-settings><span>⚙</span><strong>Settings</strong><span></span></button>
+        </nav>
+        <div class="help">
+          <strong>Need help?</strong>
+          <span>View the Stock Hub usage guide here.</span>
+          <a href="#" data-open-settings>View Guide</a>
+        </div>
+        <div class="footer">© 2026 Stock Hub<br>All rights reserved.</div>
+      </aside>
+
+      <main class="content" id="dashboard">
+        <div class="topbar">
+          <div>
+            <h1>Dashboard</h1>
+            <p class="muted">Current activity summary and stock condition</p>
+          </div>
+          <div class="account">
+            <div class="bell">♧</div>
+            <form class="auth-card" id="authForm">
+              <input id="accessKey" type="password" autocomplete="current-password" placeholder="Password">
+              <button class="button" type="submit">Switch</button>
+            </form>
+            <div class="user-card">
+              <div>
+                <strong id="clientName">Store</strong>
+                <div class="muted" id="clientPlan">Plan: -</div>
+              </div>
+              <div class="avatar" id="clientAvatar">TH</div>
+            </div>
+          </div>
+        </div>
+
+        <section class="metrics" aria-label="Stock summary">
+          <div class="metric blue"><div class="icon">□</div><div><strong id="mSku">0</strong><span>Total SKU</span><span>All registered products</span></div></div>
+          <div class="metric green"><div class="icon">✓</div><div><strong id="mActive">0</strong><span>Active SKU</span><span>Active products</span></div></div>
+          <div class="metric orange"><div class="icon">!</div><div><strong id="mLow">0</strong><span>Low Stock</span><span>Running low</span></div></div>
+          <div class="metric red"><div class="icon">×</div><div><strong id="mOut">0</strong><span>Out of Stock</span><span>No stock available</span></div></div>
+          <div class="metric violet"><div class="icon">▮</div><div><strong id="mOrders">0</strong><span>Orders Today</span><span id="mUpdate">Last update -</span></div></div>
+        </section>
+
+        <section class="grid-main">
+          <div class="panel" id="upload">
+            <div class="panel-head">
+              <div>
+                <h2>Upload File</h2>
+                <p class="muted">Upload files to process data</p>
+              </div>
+            </div>
+            <div class="upload-row">
+              <label class="drop" data-drop="order">
+                <input type="file" data-file="order" accept=".xlsx,.xls,.csv">
+                <div class="icon">⌁</div>
+                <h3>Upload Order</h3>
+                <p class="muted">Shopee / TikTok</p>
+                <small>Drop file here<br>or click to choose a file</small>
+                <small>.xlsx / .xls</small>
+              </label>
+              <label class="drop product" data-drop="product">
+                <input type="file" data-file="product" accept=".xlsx,.xls,.csv">
+                <div class="icon">▣</div>
+                <h3>Upload Product</h3>
+                <p class="muted">Product / Master Data</p>
+                <small>Drop file here<br>or click to choose a file</small>
+                <small>.xlsx / .xls</small>
+              </label>
+              <label class="drop adjustment" data-drop="adjustment">
+                <input type="file" data-file="adjustment" accept=".xlsx,.xls">
+                <div class="icon">↕</div>
+                <h3>Upload Adjustment</h3>
+                <select id="adjustmentMode">
+                  <option value="restock">Restock</option>
+                  <option value="set">Set Stock</option>
+                  <option value="status">Status</option>
+                </select>
+                <small>Drop file here<br>or click to choose a file</small>
+              </label>
+            </div>
+            <div class="note-row">
+              <span id="uploadStatus">Make sure the file format matches the available template.</span>
+              <a class="link-button" href="#" data-template="stock">View Template</a>
+            </div>
+          </div>
+
+          <div class="panel" id="quick">
+            <div class="panel-head">
+              <div>
+                <h2>Quick Action (Multi SKU)</h2>
+                <p class="muted">Fast stock changes without uploading a file</p>
+              </div>
+            </div>
+            <div class="quick-list">
+              <button class="quick green" type="button" data-quick="restock"><span class="mini-icon">+</span><span><strong>Restock (Add Stock)</strong><small>Add stock to multiple SKUs at once</small></span><strong>›</strong></button>
+              <button class="quick orange" type="button" data-quick="sales"><span class="mini-icon">−</span><span><strong>Sales (Offline Sales)</strong><small>Reduce stock for multiple SKUs at once</small></span><strong>›</strong></button>
+              <button class="quick blue" type="button" data-quick="set"><span class="mini-icon">✎</span><span><strong>Set Stock</strong><small>Set stock quantity for multiple SKUs</small></span><strong>›</strong></button>
+              <button class="button light" type="button" data-quick="stock">View Format Example</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid-bottom">
+          <div class="panel" id="download">
+            <div class="panel-head">
+              <div>
+                <h2>Download Export</h2>
+                <p class="muted">Download stock update files for marketplaces</p>
+              </div>
+            </div>
+            <div class="cards">
+              <div class="export-card">
+                <div class="icon">S</div>
+                <h3>Shopee Export</h3>
+                <p class="muted">Stock update for Shopee</p>
+                <a class="button light" href="#" data-export="shopee">Download</a>
+              </div>
+              <div class="export-card tiktok">
+                <div class="icon">T</div>
+                <h3>TikTok Export</h3>
+                <p class="muted">Stock update for TikTok Shop</p>
+                <a class="button light" href="#" data-export="tiktok">Download</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="activity">
+            <div class="panel-head">
+              <h2>Recent Activity</h2>
+              <a class="link-button" href="#" id="refreshDashboard">View All</a>
+            </div>
+            <div class="activity-list" id="activityList"></div>
+          </div>
+
+          <div class="panel" id="search">
+            <div class="panel-head">
+              <div>
+                <h2>Search Stock</h2>
+                <p class="muted">Search stock by SKU / Name / Barcode</p>
+              </div>
+            </div>
+            <div class="search-box">
+              <input id="searchInput" placeholder="Search SKU, product name, or barcode...">
+              <div class="muted">Search Results</div>
+              <div id="searchResults"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer" id="quickModal">
+      <div class="modal">
+        <div class="panel-head">
+          <div>
+            <h2 id="quickTitle">Quick Action</h2>
+            <p class="muted" id="quickHint">Enter one SKU per line.</p>
+          </div>
+          <button class="button light" type="button" data-close-modal>Close</button>
+        </div>
+        <div class="modal-grid">
+          <select id="manualAction">
+            <option value="stock">Check stock</option>
+            <option value="restock">Restock</option>
+            <option value="sales">Offline sales</option>
+            <option value="set">Set stock</option>
+            <option value="status">Update status</option>
+          </select>
+          <input id="exampleText" readonly>
+        </div>
+        <textarea id="manualText" spellcheck="false"></textarea>
+        <div class="note-row">
+          <span class="status" id="manualStatus"></span>
+          <button class="button" id="runManual" type="button">Process</button>
+        </div>
+        <pre class="result" id="manualResult">No result yet.</pre>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        accessKey: localStorage.getItem("stockHubAccessKey") || ""
+      };
+
+      const examples = {
+        stock: "SKU-A\nSKU-B",
+        restock: "SKU-A 10\nSKU-B 5",
+        sales: "SKU-A 2\nSKU-B 1",
+        set: "SKU-A 25\nSKU-B 40",
+        status: "SKU-A ACTIVE\nSKU-B NON-ACTIVE"
+      };
+
+      const labels = {
+        stock: ["Check Stock", "Format: one SKU per line."],
+        restock: ["Restock (Add Stock)", "Format: SKU QTY per line."],
+        sales: ["Sales (Offline Sales)", "Format: SKU QTY per line."],
+        set: ["Set Stock", "Format: SKU QTY per line."],
+        status: ["Update Product Status", "Format: SKU STATUS per line."]
+      };
+
+      const accessKeyInput = document.querySelector("#accessKey");
+      const loginUsernameInput = document.querySelector("#loginUsername");
+      const loginPasswordInput = document.querySelector("#loginPassword");
+      const loginStatus = document.querySelector("#loginStatus");
+      const manualAction = document.querySelector("#manualAction");
+      const manualText = document.querySelector("#manualText");
+      const exampleText = document.querySelector("#exampleText");
+      const manualStatus = document.querySelector("#manualStatus");
+      const manualResult = document.querySelector("#manualResult");
+      const quickModal = document.querySelector("#quickModal");
+      const uploadStatus = document.querySelector("#uploadStatus");
+      const searchInput = document.querySelector("#searchInput");
+      const searchResults = document.querySelector("#searchResults");
+
+      accessKeyInput.value = state.accessKey;
+      loginAccessKeyInput.value = "";
+
+      function setStatus(element, text, isError = false) {
+        element.textContent = text;
+        element.classList.toggle("error", isError);
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("id-ID").format(Number(value || 0));
+      }
+
+      function initials(value) {
+        return String(value || "TH")
+          .split(/\s+/)
+          .map(part => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
+      }
+
+      async function readResponse(response) {
+        const contentType = response.headers.get("content-type") || "";
+        return contentType.includes("application/json")
+          ? response.json()
+          : { ok: response.ok, error: await response.text() };
+      }
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, options);
+        const payload = await readResponse(response);
+
+        if (!response.ok || payload.ok === false) {
+          throw new Error(payload.error || "Request gagal.");
+        }
+
+        return payload;
+      }
+
+      function securePath(route, extra = "") {
+        return `/api/web?route=${route}${extra}&key=${encodeURIComponent(state.accessKey)}`;
+      }
+
+      function parseManualLines(action) {
+        return manualText.value
+          .split("\n")
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => {
+            if (action === "stock") {
+              return line;
+            }
+
+            const parts = line.split(/\s+/);
+            const value = parts.pop();
+
+            return {
+              sku: parts.join(" "),
+              [action === "status" ? "status" : "qty"]: value
+            };
+          });
+      }
+
+      function openQuick(action) {
+        manualAction.value = action;
+        refreshQuickCopy(true);
+        quickModal.classList.add("open");
+      }
+
+      function refreshQuickCopy(replaceText = false) {
+        const action = manualAction.value;
+        document.querySelector("#quickTitle").textContent = labels[action][0];
+        document.querySelector("#quickHint").textContent = labels[action][1];
+        exampleText.value = examples[action].split("\n")[0];
+
+        if (replaceText || !manualText.value.trim()) {
+          manualText.value = examples[action];
+        }
+      }
+
+      async function loadSession() {
+        if (!state.accessKey) {
+          return;
+        }
+
+        const payload = await api("/api/web?route=session", {
+          headers: { "x-access-key": state.accessKey }
+        });
+
+        document.querySelector("#clientName").textContent = payload.client.name || payload.client.id || "Store";
+        document.querySelector("#clientPlan").textContent = "Plan: " + (payload.client.plan || "Active");
+        document.querySelector("#clientAvatar").textContent = initials(payload.client.name || payload.client.user);
+      }
+
+      async function signIn(password) {
+        state.accessKey = String(password || "").trim();
+        localStorage.setItem("stockHubAccessKey", state.accessKey);
+        accessKeyInput.value = state.accessKey;
+
+        await loadSession();
+        await loadDashboard();
+
+        document.body.classList.remove("is-locked");
+        document.body.classList.add("is-authenticated");
+      }
+
+      document.querySelector("#loginForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        setStatus(loginStatus, "Signing in...");
+
+        try {
+          await signIn(loginPasswordInput.value);
+          setStatus(loginStatus, "");
+        } catch (error) {
+          setStatus(loginStatus, error.message, true);
+        }
+      });
+
+      async function loadDashboard() {
+        if (!state.accessKey) {
+          return;
+        }
+
+        const payload = await api("/api/web?route=dashboard", {
+          headers: { "x-access-key": state.accessKey }
+        });
+
+        const data = payload.dashboard;
+        document.querySelector("#mSku").textContent = formatNumber(data.totals.sku);
+        document.querySelector("#mActive").textContent = formatNumber(data.totals.activeSku);
+        document.querySelector("#mLow").textContent = formatNumber(data.totals.lowStock);
+        document.querySelector("#mOut").textContent = formatNumber(data.totals.outOfStock);
+        document.querySelector("#mOrders").textContent = formatNumber(data.totals.ordersToday);
+        document.querySelector("#mUpdate").textContent = "Last update " + (data.lastUpdate || "-");
+
+        const activities = data.activities.length ? data.activities : [
+          { command: "No activity yet", sku: "-", qty: "", time: "" }
+        ];
+
+        document.querySelector("#activityList").innerHTML = activities.map(item => `
+          <div class="activity">
+            <div class="thumb">${String(item.command || "A").slice(0, 1)}</div>
+            <div>
+              <strong>${item.command || "Activity"}</strong>
+              <div class="muted">${item.sku || "-"} ${item.qty ? "- " + item.qty : ""}</div>
+            </div>
+            <div>
+              <span class="badge">Success</span>
+              <div class="muted">${item.time || ""}</div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      async function uploadFile(action, file) {
+        const form = new FormData();
+        form.append("action", action);
+        form.append("file", file);
+
+        setStatus(uploadStatus, "Uploading and processing...");
+
+        const payload = await api("/api/web?route=upload", {
+          method: "POST",
+          headers: { "x-access-key": state.accessKey },
+          body: form
+        });
+
+        setStatus(uploadStatus, "Done: " + JSON.stringify(payload.result));
+        await loadDashboard();
+      }
+
+      async function runSearch() {
+        const query = searchInput.value.trim();
+
+        if (!query || !state.accessKey) {
+          searchResults.innerHTML = "";
+          return;
+        }
+
+        const payload = await api(`/api/web?route=search&q=${encodeURIComponent(query)}`, {
+          headers: { "x-access-key": state.accessKey }
+        });
+
+        searchResults.innerHTML = payload.results.length
+          ? payload.results.map(item => `
+            <div class="search-result">
+              <div class="thumb">${initials(item.name || item.sku)}</div>
+              <div>
+                <span class="badge">${item.status || "Unknown"}</span>
+                <h3>${item.sku}</h3>
+                <p class="muted">${item.name || "-"} ${item.variation ? "- " + item.variation : ""}</p>
+                <p class="muted">Shopee: ${item.shopee ?? "-"} · TikTok: ${item.tiktok ?? "-"}</p>
+              </div>
+              <div class="stock-number">${formatNumber(item.stock)}</div>
+            </div>
+          `).join("")
+          : "<p class='muted'>No results found.</p>";
+      }
+
+      document.querySelector("#authForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        try {
+          await signIn(accessKeyInput.value);
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      document.querySelectorAll("[data-scroll]").forEach(button => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".nav button").forEach(item => item.classList.remove("active"));
+          button.classList.add("active");
+          document.querySelector("#" + button.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      document.querySelectorAll("[data-upload-shortcut]").forEach(button => {
+        button.addEventListener("click", () => {
+          document.querySelector("#upload").scrollIntoView({ behavior: "smooth" });
+        });
+      });
+
+      document.querySelectorAll("[data-quick]").forEach(button => {
+        button.addEventListener("click", () => openQuick(button.dataset.quick));
+      });
+
+      document.querySelector("[data-close-modal]").addEventListener("click", () => quickModal.classList.remove("open"));
+      quickModal.addEventListener("click", event => {
+        if (event.target === quickModal) {
+          quickModal.classList.remove("open");
+        }
+      });
+      manualAction.addEventListener("change", () => refreshQuickCopy(true));
+
+      document.querySelector("#runManual").addEventListener("click", async () => {
+        const action = manualAction.value;
+        const lines = parseManualLines(action);
+
+        setStatus(manualStatus, "Processing...");
+
+        try {
+          const payload = await api("/api/web?route=command", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-access-key": state.accessKey
+            },
+            body: JSON.stringify(action === "stock"
+              ? { action, skus: lines }
+              : { action, items: lines })
+          });
+
+          manualResult.textContent = JSON.stringify(payload.result, null, 2);
+          setStatus(manualStatus, "Done.");
+          await loadDashboard();
+        } catch (error) {
+          setStatus(manualStatus, error.message, true);
+        }
+      });
+
+      document.querySelectorAll("[data-file]").forEach(input => {
+        input.addEventListener("change", async () => {
+          if (!input.files.length) {
+            return;
+          }
+
+          const action = input.dataset.file === "adjustment"
+            ? document.querySelector("#adjustmentMode").value
+            : input.dataset.file;
+
+          try {
+            await uploadFile(action, input.files[0]);
+          } catch (error) {
+            setStatus(uploadStatus, error.message, true);
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-template]").forEach(link => {
+        link.addEventListener("click", event => {
+          event.preventDefault();
+          window.location.href = securePath("template", "&name=" + link.dataset.template);
+        });
+      });
+
+      document.querySelectorAll("[data-export]").forEach(link => {
+        link.addEventListener("click", event => {
+          event.preventDefault();
+          window.location.href = securePath("export", "&name=" + link.dataset.export);
+        });
+      });
+
+      document.querySelector("#refreshDashboard").addEventListener("click", event => {
+        event.preventDefault();
+        loadDashboard().catch(error => alert(error.message));
+      });
+
+      let searchTimer;
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => runSearch().catch(error => {
+          searchResults.innerHTML = "<p class='muted'>" + error.message + "</p>";
+        }), 350);
+      });
+
+      document.querySelectorAll("[data-open-settings]").forEach(link => {
+        link.addEventListener("click", event => {
+          event.preventDefault();
+          openQuick("stock");
+        });
+      });
+
+      refreshQuickCopy(true);
+    </script>
+  </body>
+</html>
