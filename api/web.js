@@ -76,6 +76,10 @@ function getAccessKey(req) {
   return req.headers["x-access-key"] || req.query?.key || "";
 }
 
+function getAccessUser(req) {
+  return req.headers["x-user"] || req.query?.user || "";
+}
+
 function requireWebPassword(req) {
   const password = String(getAccessKey(req) || "").trim();
 
@@ -86,6 +90,18 @@ function requireWebPassword(req) {
   }
 
   return password;
+}
+
+function requireWebUser(req) {
+  const user = String(getAccessUser(req) || "").trim();
+
+  if (!user) {
+    const error = new Error("User wajib diisi.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return user;
 }
 
 async function readBuffer(req, limit) {
@@ -241,6 +257,7 @@ function buildStockText(command, skus = []) {
 
 async function getAuth(req) {
   return authorizeWeb({
+    user: requireWebUser(req),
     password: requireWebPassword(req)
   });
 }

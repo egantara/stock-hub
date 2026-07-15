@@ -89,7 +89,7 @@ export async function login({
     await createSession({
 
       google:
-        context.google,
+        context.googleClient,
 
       clientId:
         context.clientId,

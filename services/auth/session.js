@@ -27,7 +27,7 @@ const SESSION_HOURS =
 
 export async function createSession({
 
-  licenseGoogle,
+  google,
 
   clientId,
 
@@ -130,7 +130,7 @@ export async function createSession({
 
 export async function findSession({
 
-  licenseGoogle,
+  google,
 
   token
 
@@ -209,7 +209,7 @@ export async function touchSession({
 
     await findSession({
 
-      licenseGoogle,
+      google,
 
       token
 
@@ -271,7 +271,7 @@ export async function destroySession({
 
     await findSession({
 
-      licenseGoogle,
+      google,
 
       token
 

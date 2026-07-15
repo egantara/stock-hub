@@ -36,9 +36,9 @@ Silakan hubungi Administrator untuk melakukan perpanjangan lisensi.`,
   // CHAT_ACCESS
   //
 
-  USER_NAME_NOT_CONFIGURED:
+  USER_NOT_CONFIGURED:
 
-`❌ Kolom USER_NAME pada CHAT_ACCESS belum dikonfigurasi.`,
+`❌ Kolom USER pada CHAT_ACCESS belum dikonfigurasi.`,
 
   //
   // GOOGLE

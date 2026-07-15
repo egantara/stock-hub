@@ -10,6 +10,11 @@ import {
 }
 from "../errors/configuration.js";
 
+import {
+  createGoogleSheets
+}
+from "../google/auth.js";
+
 const LICENSE_SHEET_ID =
   process.env.LICENSE_SHEET_ID;
 
@@ -99,7 +104,66 @@ const auth =
 
   });
 
-  function requireLicenseField({
+function normalize(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+}
+
+function isExpired(
+  endDate
+) {
+
+  if (!endDate) {
+
+    return false;
+
+  }
+
+  return new Date() > new Date(endDate);
+
+}
+
+function getAccessUser(
+  access
+) {
+
+  return (
+    access.USER ||
+    access.USER_NAME ||
+    ""
+  );
+
+}
+
+function getPasswordCandidates(
+  license,
+  access
+) {
+
+  return [
+
+    access.PASSWORD,
+    access.WEB_PASSWORD,
+    access.ACCESS_KEY,
+    license.WEB_PASSWORD,
+    license.PASSWORD,
+    license.ACCESS_KEY,
+    license.WEB_ACCESS_KEY
+
+  ].filter(
+    Boolean
+  );
+
+}
+
+function requireLicenseField({
 
   value,
 
@@ -280,7 +344,7 @@ export async function loadLicense({
 
     loadSheet(
 
-      "CHAT_ACCESS!A:E"
+      "CHAT_ACCESS!A:Z"
 
     )
 
@@ -331,7 +395,9 @@ export async function loadLicense({
       license.CLIENT_NAME,
 
     userName:
-      access.USER_NAME,
+      getAccessUser(
+        access
+      ),
 
     developer: {
 
@@ -350,10 +416,12 @@ export async function loadLicense({
   requireLicenseField({
 
     value:
-      access.USER_NAME,
+      getAccessUser(
+        access
+      ),
 
     code:
-      "USER_NAME_NOT_CONFIGURED"
+      "USER_NOT_CONFIGURED"
 
   });
 
@@ -434,7 +502,14 @@ export async function loadLicense({
     license.CLIENT_NAME,
 
   userName:
-    access.USER_NAME,
+    getAccessUser(
+      access
+    ),
+
+  user:
+    getAccessUser(
+      access
+    ),
 
   role:
     access.ROLE,
@@ -516,7 +591,7 @@ export async function loadAllLicenses() {
 
   loadSheet(
 
-    "CHAT_ACCESS!A:E"
+    "CHAT_ACCESS!A:Z"
 
   )
 
@@ -695,7 +770,15 @@ const backup =
 
         userName:
 
-          access.USER_NAME,
+          getAccessUser(
+            access
+          ),
+
+        user:
+
+          getAccessUser(
+            access
+          ),
 
         role:
 
@@ -800,5 +883,393 @@ const backup =
   }
 
   return clients;
+
+}
+
+function buildContext({
+
+  license,
+
+  access
+
+}) {
+
+  const user =
+    getAccessUser(
+      access
+    );
+
+  const errorContext = {
+
+    clientId:
+      license.CLIENT_ID,
+
+    clientName:
+      license.CLIENT_NAME,
+
+    userName:
+      user,
+
+    developer: {
+
+      developerChatId:
+        license.DEVELOPER_CHAT_ID
+
+    }
+
+  };
+
+  requireLicenseField({
+
+    value:
+      user,
+
+    code:
+      "USER_NOT_CONFIGURED"
+
+  });
+
+  requireConfigurationField({
+
+    value:
+      license.GOOGLE_SHEET_ID,
+
+    field:
+      "GOOGLE_SHEET_ID",
+
+    context:
+      errorContext
+
+  });
+
+  requireConfigurationField({
+
+    value:
+      license.GOOGLE_PROJECT_ID,
+
+    field:
+      "GOOGLE_PROJECT_ID",
+
+    context:
+      errorContext
+
+  });
+
+  requireConfigurationField({
+
+    value:
+      license.GOOGLE_CLIENT_EMAIL,
+
+    field:
+      "GOOGLE_CLIENT_EMAIL",
+
+    context:
+      errorContext
+
+  });
+
+  requireConfigurationField({
+
+    value:
+      license.GOOGLE_PRIVATE_KEY,
+
+    field:
+      "GOOGLE_PRIVATE_KEY",
+
+    context:
+      errorContext
+
+  });
+
+  return {
+
+    clientId:
+      license.CLIENT_ID,
+
+    clientName:
+      license.CLIENT_NAME,
+
+    user:
+      user,
+
+    userName:
+      user,
+
+    role:
+      access.ROLE,
+
+    chatStatus:
+      access.STATUS,
+
+    plan:
+      license.PLAN,
+
+    status:
+      license.STATUS,
+
+    startDate:
+      license.START_DATE,
+
+    endDate:
+      license.END_DATE,
+
+    notes:
+      license.NOTES,
+
+    developer: {
+
+      developerChatId:
+        license.DEVELOPER_CHAT_ID,
+
+    },
+
+    google: {
+
+      sheetId:
+        license.GOOGLE_SHEET_ID,
+
+      projectId:
+        license.GOOGLE_PROJECT_ID,
+
+      clientEmail:
+        license.GOOGLE_CLIENT_EMAIL,
+
+      privateKey:
+        license.GOOGLE_PRIVATE_KEY
+          .replace(/\\n/g, "\n")
+
+    },
+
+    telegram: {
+
+      botName:
+        license.BOT_NAME,
+
+      botToken:
+        license.TELEGRAM_BOT_TOKEN,
+
+      webhook:
+        license.WEBHOOK
+
+    }
+
+  };
+
+}
+
+function requireActive({
+
+  license,
+
+  access
+
+}) {
+
+  if (
+    normalize(
+      access.STATUS
+    ) !== "ACTIVE"
+  ) {
+
+    throw new LicenseError(
+      "CHAT_DISABLED"
+    );
+
+  }
+
+  if (
+    normalize(
+      license.STATUS
+    ) !== "ACTIVE"
+  ) {
+
+    throw new LicenseError(
+      "LICENSE_DISABLED"
+    );
+
+  }
+
+  if (
+    isExpired(
+      license.END_DATE
+    )
+  ) {
+
+    throw new LicenseError(
+      "LICENSE_EXPIRED"
+    );
+
+  }
+
+}
+
+export async function loadLicenseByClientId({
+
+  clientId
+
+}) {
+
+  const [
+
+    licenses,
+
+    accesses
+
+  ] = await Promise.all([
+
+    loadSheet(
+      "LICENSE!A:Z"
+    ),
+
+    loadSheet(
+      "CHAT_ACCESS!A:Z"
+    )
+
+  ]);
+
+  const license =
+    licenses.find(
+      row =>
+        row.CLIENT_ID ===
+        String(clientId)
+    );
+
+  if (!license) {
+
+    return null;
+
+  }
+
+  const access =
+    accesses.find(
+      row =>
+        row.CLIENT_ID === license.CLIENT_ID
+        &&
+        normalize(row.STATUS) === "ACTIVE"
+    ) ||
+    {};
+
+  return buildContext({
+
+    license,
+
+    access
+
+  });
+
+}
+
+export async function loadWebUser({
+
+  username,
+
+  password
+
+}) {
+
+  const user =
+    normalize(
+      username
+    );
+
+  const webPassword =
+    String(
+      password ?? ""
+    ).trim();
+
+  const [
+
+    licenses,
+
+    accesses
+
+  ] = await Promise.all([
+
+    loadSheet(
+      "LICENSE!A:Z"
+    ),
+
+    loadSheet(
+      "CHAT_ACCESS!A:Z"
+    )
+
+  ]);
+
+  const access =
+    accesses.find(
+      row =>
+        normalize(
+          row.USER
+        ) === user
+    );
+
+  if (!access) {
+
+    throw new LicenseError(
+      "CHAT_NOT_REGISTERED"
+    );
+
+  }
+
+  const license =
+    licenses.find(
+      row =>
+        row.CLIENT_ID ===
+        access.CLIENT_ID
+    );
+
+  if (!license) {
+
+    throw new LicenseError(
+      "CHAT_NOT_REGISTERED"
+    );
+
+  }
+
+  requireActive({
+
+    license,
+
+    access
+
+  });
+
+  const passwords =
+    getPasswordCandidates(
+      license,
+      access
+    );
+
+  if (
+    !passwords.includes(
+      webPassword
+    )
+  ) {
+
+    throw new LicenseError(
+      "CHAT_NOT_REGISTERED"
+    );
+
+  }
+
+  const context =
+    buildContext({
+
+      license,
+
+      access
+
+    });
+
+  return {
+
+    ...context,
+
+    googleClient:
+      createGoogleSheets(
+        context.google
+      )
+
+  };
 
 }

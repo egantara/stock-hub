@@ -762,7 +762,7 @@
     type="text"
     name="username"
     autocomplete="username"
-    placeholder="Username"
+    placeholder="User"
   >
 
   <input
@@ -983,7 +983,8 @@
 
     <script>
       const state = {
-        accessKey: localStorage.getItem("stockHubAccessKey") || ""
+        accessKey: localStorage.getItem("stockHubAccessKey") || "",
+        user: localStorage.getItem("stockHubUser") || ""
       };
 
       const examples = {
@@ -1017,7 +1018,7 @@
       const searchResults = document.querySelector("#searchResults");
 
       accessKeyInput.value = state.accessKey;
-      loginAccessKeyInput.value = "";
+      loginUsernameInput.value = state.user;
 
       function setStatus(element, text, isError = false) {
         element.textContent = text;
@@ -1055,8 +1056,16 @@
         return payload;
       }
 
+      function authHeaders(extra = {}) {
+        return {
+          ...extra,
+          "x-access-key": state.accessKey,
+          "x-user": state.user
+        };
+      }
+
       function securePath(route, extra = "") {
-        return `/api/web?route=${route}${extra}&key=${encodeURIComponent(state.accessKey)}`;
+        return `/api/web?route=${route}${extra}&key=${encodeURIComponent(state.accessKey)}&user=${encodeURIComponent(state.user)}`;
       }
 
       function parseManualLines(action) {
@@ -1097,12 +1106,12 @@
       }
 
       async function loadSession() {
-        if (!state.accessKey) {
+        if (!state.accessKey || !state.user) {
           return;
         }
 
         const payload = await api("/api/web?route=session", {
-          headers: { "x-access-key": state.accessKey }
+          headers: authHeaders()
         });
 
         document.querySelector("#clientName").textContent = payload.client.name || payload.client.id || "Store";
@@ -1110,10 +1119,13 @@
         document.querySelector("#clientAvatar").textContent = initials(payload.client.name || payload.client.user);
       }
 
-      async function signIn(password) {
+      async function signIn(user, password) {
+        state.user = String(user || "").trim();
         state.accessKey = String(password || "").trim();
+        localStorage.setItem("stockHubUser", state.user);
         localStorage.setItem("stockHubAccessKey", state.accessKey);
         accessKeyInput.value = state.accessKey;
+        loginUsernameInput.value = state.user;
 
         await loadSession();
         await loadDashboard();
@@ -1127,7 +1139,7 @@
         setStatus(loginStatus, "Signing in...");
 
         try {
-          await signIn(loginPasswordInput.value);
+          await signIn(loginUsernameInput.value, loginPasswordInput.value);
           setStatus(loginStatus, "");
         } catch (error) {
           setStatus(loginStatus, error.message, true);
@@ -1135,12 +1147,12 @@
       });
 
       async function loadDashboard() {
-        if (!state.accessKey) {
+        if (!state.accessKey || !state.user) {
           return;
         }
 
         const payload = await api("/api/web?route=dashboard", {
-          headers: { "x-access-key": state.accessKey }
+          headers: authHeaders()
         });
 
         const data = payload.dashboard;
@@ -1179,7 +1191,7 @@
 
         const payload = await api("/api/web?route=upload", {
           method: "POST",
-          headers: { "x-access-key": state.accessKey },
+          headers: authHeaders(),
           body: form
         });
 
@@ -1190,13 +1202,13 @@
       async function runSearch() {
         const query = searchInput.value.trim();
 
-        if (!query || !state.accessKey) {
+        if (!query || !state.accessKey || !state.user) {
           searchResults.innerHTML = "";
           return;
         }
 
         const payload = await api(`/api/web?route=search&q=${encodeURIComponent(query)}`, {
-          headers: { "x-access-key": state.accessKey }
+          headers: authHeaders()
         });
 
         searchResults.innerHTML = payload.results.length
@@ -1218,7 +1230,7 @@
       document.querySelector("#authForm").addEventListener("submit", async event => {
         event.preventDefault();
         try {
-          await signIn(accessKeyInput.value);
+          await signIn(state.user || loginUsernameInput.value, accessKeyInput.value);
         } catch (error) {
           alert(error.message);
         }
@@ -1259,10 +1271,9 @@
         try {
           const payload = await api("/api/web?route=command", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-access-key": state.accessKey
-            },
+            headers: authHeaders({
+              "Content-Type": "application/json"
+            }),
             body: JSON.stringify(action === "stock"
               ? { action, skus: lines }
               : { action, items: lines })
