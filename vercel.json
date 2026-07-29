@@ -4,6 +4,12 @@
       "maxDuration": 300
     }
   },
+  "rewrites": [
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/index.html"
+    }
+  ],
   "crons": [
     {
       "path": "/api/daily-backup",

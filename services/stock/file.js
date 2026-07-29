@@ -151,15 +151,7 @@ function validateHeaders(
 
     throw new ValidationError(
 
-`Template tidak dikenali.
-
-Header berikut tidak ditemukan:
-
-${missing.join("\n")}
-
-Gunakan template stock yang dapat diunduh melalui:
-
-/template`
+`Template tidak dikenali. Gunakan template stock yang dapat diunduh pada tombol Download Template`
 
     );
 

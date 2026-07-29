@@ -52,7 +52,7 @@ const UPLOAD_PROCESSORS = {
 };
 
 const TEMPLATES = {
-  stock: "template-stock.xlsx",
+  stock: "template-stock-restock-only.xlsx",
   shopee: "template-shopee.xlsx",
   tiktok: "template-tiktok.xlsx"
 };
@@ -286,7 +286,38 @@ function formatTime(value) {
   return String(value || "").trim();
 }
 
-function buildDashboard({ store, logs }) {
+function groupActivities(logs) {
+  const groups = new Map();
+
+  for (const row of logs) {
+    const activity = {
+      command: row.COMMAND || row.AKSI || row.ACTION || "Activity",
+      sku: row.SKU || "",
+      qty: row.QTY || "",
+      marketplace: row.MARKETPLACE || "",
+      user: row.USER || "",
+      time: formatTime(row.TIMESTAMP || row.DATE || row.CREATED_AT || row.WAKTU),
+      count: 0,
+      items: []
+    };
+    const batchKey = [activity.command, activity.marketplace, activity.user, activity.time].join("\u0000");
+    const group = groups.get(batchKey) || activity;
+
+    if (!groups.has(batchKey)) {
+      groups.set(batchKey, group);
+    }
+
+    group.count += 1;
+    group.items.push({
+      sku: activity.sku,
+      qty: activity.qty
+    });
+  }
+
+  return Array.from(groups.values()).reverse();
+}
+
+function buildDashboard({ store, logs, activityLimit = 6 }) {
   const stockRows = store.stockRows || [];
   const productRows = store.productRows || [];
   const today = new Date().toISOString().slice(0, 10);
@@ -313,15 +344,49 @@ function buildDashboard({ store, logs }) {
       .map(row => row.LAST_UPDATE)
       .filter(Boolean)
       .slice(-1)[0] || "",
-    activities: logs.slice(-6).reverse().map(row => ({
-      command: row.COMMAND || row.AKSI || row.ACTION || "Activity",
-      sku: row.SKU || "",
-      qty: row.QTY || "",
-      marketplace: row.MARKETPLACE || "",
-      user: row.USER || "",
-      time: formatTime(row.TIMESTAMP || row.DATE || row.CREATED_AT || row.WAKTU)
-    }))
+    activities: groupActivities(logs).slice(0, activityLimit)
   };
+}
+
+function buildMetricDetails(store, type) {
+  const stockRows = store.stockRows || [];
+  const today = new Date().toISOString().slice(0, 10);
+  const stockItems = rows => rows.map(row => ({
+    sku: String(row.SKU || "").trim(),
+    qty: asNumber(row.STOCK)
+  })).filter(item => item.sku);
+  const details = {
+    sku: { title: "Total SKU", subtitle: "All registered products", items: stockItems(stockRows) },
+    active: {
+      title: "Active SKU",
+      subtitle: "Active products",
+      items: (store.productRows || []).filter(row => String(row.STATUS || "").toUpperCase() === "ACTIVE")
+        .map(row => ({ sku: String(row.SKU || "").trim(), qty: asNumber(store.stockMap.get(row.SKU)?.STOCK) }))
+        .filter(item => item.sku)
+    },
+    low: { title: "Low Stock", subtitle: "Stock from 1 to 5", items: stockItems(stockRows).filter(item => item.qty > 0 && item.qty <= 5) },
+    out: { title: "Out of Stock", subtitle: "Products with zero stock", items: stockItems(stockRows).filter(item => item.qty <= 0) },
+    orders: {
+      title: "Orders Today",
+      subtitle: "Processed order items today",
+      items: Array.from((store.processedRows || []).filter(row => Object.values(row).join(" ").includes(today))
+        .reduce((items, row) => {
+          const sku = String(row.SKU || "").trim();
+          if (sku) items.set(sku, (items.get(sku) || 0) + 1);
+          return items;
+        }, new Map()), ([sku, qty]) => ({ sku, qty }))
+    }
+  };
+  const detail = details[type];
+
+  if (!detail) {
+    const error = new Error("Metric tidak dikenal.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  detail.items.sort((a, b) => a.sku.localeCompare(b.sku, "en", { sensitivity: "base" }));
+  return detail;
 }
 
 async function handleDashboard(req, res) {
@@ -336,6 +401,22 @@ async function handleDashboard(req, res) {
     ok: true,
     dashboard: buildDashboard({ store, logs })
   });
+}
+
+async function handleActivities(req, res) {
+  const auth = await getAuth(req);
+  const logs = await getRows({ google: auth.google, sheetName: "LOG" }).catch(() => []);
+
+  sendJson(res, 200, {
+    ok: true,
+    activities: groupActivities(logs)
+  });
+}
+
+async function handleMetricDetails(req, res) {
+  const auth = await getAuth(req);
+  const store = await loadStore({ google: auth.google });
+  sendJson(res, 200, { ok: true, metric: buildMetricDetails(store, String(req.query?.type || "").trim()) });
 }
 
 async function handleSearch(req, res) {
@@ -498,6 +579,16 @@ export default async function handler(req, res) {
 
     if (req.method === "GET" && route === "dashboard") {
       await handleDashboard(req, res);
+      return;
+    }
+
+    if (req.method === "GET" && route === "activities") {
+      await handleActivities(req, res);
+      return;
+    }
+
+    if (req.method === "GET" && route === "metric") {
+      await handleMetricDetails(req, res);
       return;
     }
 

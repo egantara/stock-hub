@@ -59,7 +59,7 @@ const TEMPLATE_PATH =
 
     "templates",
 
-    "template-stock.xlsx"
+    "template-stock-restock-only.xlsx"
 
   );
 

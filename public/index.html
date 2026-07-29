@@ -4,8 +4,116 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Stock Hub</title>
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem("stockHubTheme");
+
+const theme =
+    storedTheme ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light");
+
+document.documentElement.dataset.theme = theme;
+          const session = JSON.parse(localStorage.getItem("stockHubSession") || "null");
+          const hasCredentials = localStorage.getItem("stockHubUser") && localStorage.getItem("stockHubAccessKey");
+          const isActive = session?.lastActivity && Date.now() - session.lastActivity < 30 * 60 * 1000;
+
+          if (hasCredentials && isActive) {
+            document.documentElement.classList.add("has-session");
+          }
+        } catch {
+          // Sesi yang rusak akan ditangani oleh proses pemulihan setelah halaman dimuat.
+        }
+      })();
+    </script>
     <style>
+
+:root{
+
+    /* Brand */
+    --brand-start:#2563ff;
+    --brand-end:#8758f4;
+
+    /* Upload Cards */
+    --drop-blue:#aac3ff;
+    --drop-green:#b6dfbf;
+    --drop-violet:#ceb8f2;
+    --drop-hover:#8eb3ff;
+
+    /* Metric Border */
+    --metric-blue:#cfe0ff;
+    --metric-green:#cfeadb;
+    --metric-orange:#f5dcc0;
+    --metric-red:#f2cccc;
+    --metric-violet:#dfd4fb;
+
+    /* Icon Background */
+    --icon-blue:#e6efff;
+    --icon-green:#def6e9;
+    --icon-orange:#fff0db;
+    --icon-red:#ffe1e1;
+    --icon-violet:#eee7ff;
+
+    /* Avatar */
+    --avatar-bg:#eee7ff;
+
+    /* Success Badge */
+    --badge-bg:#dbf7e8;
+    --badge-text:#11814f;
+
+    /* Danger Hover */
+    --danger-hover:#fff1f1;
+
+    /* Hover */
+    --hover-border:#b9ccf0;
+}
+
+:root[data-theme="dark"]{
+
+
+    --brand-start:#365cff;
+    --brand-end:#6f5cff;
+
+    --drop-blue:#6d8fe6;
+    --drop-green:#4e9b72;
+    --drop-violet:#7d6acb;
+    --drop-hover:#79a2ff;
+
+    --metric-blue:#36558d;
+    --metric-green:#2f745d;
+    --metric-orange:#805e37;
+    --metric-red:#7d474e;
+    --metric-violet:#5c4c91;
+
+    --icon-blue:#203b6d;
+    --icon-green:#1d4d3d;
+    --icon-orange:#5b4226;
+    --icon-red:#602f38;
+    --icon-violet:#41336e;
+
+    --avatar-bg:#41336e;
+
+    --badge-bg:#1f6045;
+    --badge-text:#c8ffe2;
+
+    --danger-hover:#402a31;
+
+    --hover-border:#5573b6;
+}
+
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] textarea:focus,
+:root[data-theme="dark"] select:focus{
+
+  border-color:#79a2ff;
+    box-shadow:
+        0 0 0 3px rgba(121,162,255,.25);
+}
       :root {
+      --terminal:#0f172a;
+--terminal-text:#eaf1ff;
         --bg: #f8fbff;
         --surface: #ffffff;
         --surface-soft: #f3f7ff;
@@ -20,11 +128,32 @@
         --shadow: 0 16px 42px rgba(30, 48, 90, 0.08);
       }
 
+      :root[data-theme="dark"] {
+      --terminal:#09111f;
+--terminal-text:#edf3ff;
+        color-scheme: dark;
+        --bg: #101827;
+        --surface: #182235;
+        --surface-soft: #223049;
+        --ink: #edf3ff;
+        --muted: #aab8d2;
+        --line: #30415e;
+        --blue: #79a2ff;
+        --green: #4bd59a;
+        --orange: #f7ad55;
+        --red: #ff7474;
+        --violet: #b293ff;
+        --shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+      }
+
       * {
         box-sizing: border-box;
       }
 
       body {
+      transition:
+    background .25s ease,
+    color .25s ease;
         margin: 0;
         min-height: 100vh;
         background: var(--bg);
@@ -37,6 +166,14 @@
       }
 
       body.is-authenticated .login-screen {
+        display: none;
+      }
+
+      html.has-session body.is-locked .app {
+        display: block;
+      }
+
+      html.has-session body.is-locked .login-screen {
         display: none;
       }
 
@@ -53,8 +190,6 @@
       }
 
       .app {
-        display: grid;
-        grid-template-columns: 280px minmax(0, 1fr);
         min-height: 100vh;
       }
 
@@ -74,36 +209,30 @@
         padding: 30px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.96);
+        background: var(--surface);
         box-shadow: 0 24px 80px rgba(30, 48, 90, 0.14);
       }
 
       .login-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 22px;
-        font-size: 26px;
-        font-weight: 850;
-      }
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:12px;
+    margin-bottom:22px;
+
+    font-size:26px;
+    font-weight:850;
+}
 
       .login-card h1 {
-        margin-bottom: 8px;
+        margin-bottom:8px;
+    text-align:center;
       }
 
       .login-card form {
         display: grid;
         gap: 12px;
         margin-top: 22px;
-      }
-
-      .sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 22px;
-        padding: 28px 22px;
-        border-right: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.92);
       }
 
       .brand {
@@ -119,52 +248,19 @@
       .brand-mark {
         display: grid;
         place-items: center;
+        text-align: center;
         width: 40px;
         height: 40px;
         border-radius: 10px;
-        background: linear-gradient(135deg, #2563ff, #8758f4);
+        background:linear-gradient(
+    135deg,
+    var(--brand-start),
+    var(--brand-end)
+);
         color: #fff;
         font-weight: 900;
       }
 
-      .nav {
-        display: grid;
-        gap: 8px;
-      }
-
-      .nav button {
-        display: grid;
-        grid-template-columns: 28px 1fr auto;
-        align-items: center;
-        gap: 10px;
-        min-height: 52px;
-        padding: 0 14px;
-        border-radius: 8px;
-        background: transparent;
-        color: #263654;
-        text-align: left;
-      }
-
-      .nav button.active {
-        background: #edf4ff;
-        color: var(--blue);
-        box-shadow: inset 0 0 0 1px #d9e7ff;
-      }
-
-      .help {
-        margin-top: auto;
-        padding: 16px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fbfdff;
-      }
-
-      .help strong,
-      .help span {
-        display: block;
-      }
-
-      .help span,
       .footer,
       .muted {
         color: var(--muted);
@@ -172,7 +268,6 @@
         line-height: 1.5;
       }
 
-      .help a,
       .link-button {
         display: inline-flex;
         align-items: center;
@@ -181,7 +276,7 @@
         margin-top: 12px;
         padding: 0 12px;
         border-radius: 7px;
-        background: #eef4ff;
+        background:var(--surface-soft);
         color: var(--blue);
         font-size: 13px;
         font-weight: 700;
@@ -190,7 +285,7 @@
 
       .content {
         min-width: 0;
-        padding: 28px 30px 38px;
+        padding: 28px 34px 38px;
       }
 
       .topbar {
@@ -237,45 +332,99 @@
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        background: #fff;
+        background: var(--surface);
         border: 1px solid var(--line);
+        color: var(--ink);
+        transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
       }
 
-      .bell::after {
-        content: "3";
-        position: absolute;
-        top: -2px;
-        right: -1px;
-        display: grid;
-        place-items: center;
-        width: 17px;
-        height: 17px;
-        border-radius: 50%;
-        background: var(--red);
-        color: #fff;
-        font-size: 10px;
-        font-weight: 800;
+      .bell:hover {
+        background: var(--surface-soft);
+        border-color: var(--blue);
       }
 
-      .auth-card {
-        display: grid;
-        grid-template-columns: minmax(180px, 240px) auto;
-        gap: 8px;
-        padding: 9px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
+      .theme-icon {
+        width: 19px;
+        height: 19px;
       }
+
+      .theme-icon-sun {
+        display: none;
+      }
+
+      :root[data-theme="dark"] .theme-icon-moon {
+        display: none;
+      }
+
+      :root[data-theme="dark"] .theme-icon-sun {
+        display: block;
+      }
+
+.user-card:hover{
+    border-color:var(--hover-border);
+    box-shadow:0 10px 28px rgba(30,48,90,.08);
+}
+
+:root[data-theme="dark"] .user-card:hover{
+    border-color:#5573b6;
+    box-shadow:0 10px 28px rgba(0,0,0,.35);
+}
 
       .user-card {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 12px;
         min-width: 220px;
         padding: 10px 12px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fff;
+        background: var(--surface);
+        color: var(--ink);
+        text-align: left;
+      }
+
+      .guide-button {
+        margin-top: 0;
+      }
+
+      .profile {
+        position: relative;
+      }
+
+      :root[data-theme="dark"] .profile-menu{
+    box-shadow:0 20px 50px rgba(0,0,0,.45);
+}
+      .profile-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        z-index: 20;
+        display: none;
+        min-width: 180px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 18px 48px rgba(30, 48, 90, 0.14);
+      }
+
+      .profile.open .profile-menu {
+        display: grid;
+      }
+
+      .profile-menu button {
+        min-height: 40px;
+        padding: 0 12px;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--red);
+        font-weight: 750;
+        text-align: left;
+      }
+
+      .profile-menu button:hover {
+        background:var(--danger-hover);
       }
 
       .avatar {
@@ -284,7 +433,7 @@
         width: 38px;
         height: 38px;
         border-radius: 50%;
-        background: #eee7ff;
+        background:var(--avatar-bg);
         color: var(--violet);
         font-weight: 800;
       }
@@ -297,7 +446,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 10px 12px;
-        background: #fff;
+        background: var(--surface);
         color: var(--ink);
         outline: none;
       }
@@ -331,7 +480,7 @@
       }
 
       .button.light {
-        background: #f3f7ff;
+        background: var(--surface-soft);
         color: var(--blue);
         border: 1px solid var(--line);
       }
@@ -344,6 +493,9 @@
       }
 
       .metric {
+      transition:
+    background .25s ease,
+    border-color .25s ease;
         display: flex;
         align-items: center;
         gap: 18px;
@@ -353,28 +505,39 @@
         border-radius: 8px;
         background: var(--surface);
         box-shadow: var(--shadow);
+        color: var(--ink);
+        text-align: left;
       }
 
-      .metric.blue {
-        border-color: #cfe0ff;
+      .metric:hover {
+        border-color: var(--blue);
+        transform: translateY(-1px);
       }
 
-      .metric.green {
-        border-color: #cfeadb;
+      .metric:focus-visible {
+        outline: 3px solid rgba(37, 99, 255, 0.3);
+        outline-offset: 2px;
       }
 
-      .metric.orange {
-        border-color: #f5dcc0;
-      }
+      .metric.blue{
+    border-color:var(--metric-blue);
+}
 
-      .metric.red {
-        border-color: #f2cccc;
-      }
+      .metric.green{
+    border-color:var(--metric-green);
+}
 
-      .metric.violet {
-        border-color: #dfd4fb;
-      }
+.metric.orange{
+    border-color:var(--metric-orange);
+}
 
+.metric.red{
+    border-color:var(--metric-red);
+}
+
+.metric.violet{
+    border-color:var(--metric-violet);
+}
       .icon {
         display: grid;
         place-items: center;
@@ -386,32 +549,27 @@
         font-weight: 900;
       }
 
-      .blue .icon {
-        background: #e6efff;
-        color: var(--blue);
-      }
+      .blue .icon{
+    background:var(--icon-blue);
+}
 
-      .green .icon {
-        background: #def6e9;
-        color: var(--green);
-      }
+      .green .icon{
+    background:var(--icon-green);
+}
 
-      .orange .icon {
-        background: #fff0db;
-        color: var(--orange);
-      }
+.orange .icon{
+    background:var(--icon-orange);
+}
 
-      .red .icon {
-        background: #ffe1e1;
-        color: var(--red);
-      }
+.red .icon{
+    background:var(--icon-red);
+}
 
-      .violet .icon {
-        background: #eee7ff;
-        color: var(--violet);
-      }
+.violet .icon{
+    background:var(--icon-violet);
+}
 
-      .metric strong {
+        .metric strong {
         display: block;
         font-size: 22px;
       }
@@ -423,20 +581,28 @@
         font-size: 13px;
       }
 
+
+
+
       .grid-main {
-        display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
-        gap: 18px;
-        margin-bottom: 22px;
-      }
+    display: grid;
+    grid-template-columns: minmax(600px, 1fr) minmax(260px, 0.42fr) minmax(540px, 0.88fr);
+    gap: 18px;
+    margin-bottom: 22px;
+
+    align-items: stretch;
+}
 
       .grid-bottom {
         display: grid;
-        grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 0.9fr) minmax(360px, 1.05fr);
+        grid-template-columns: repeat(2, minmax(300px, 1fr));
         gap: 18px;
       }
 
       .panel {
+      transition:
+    background .25s ease,
+    border-color .25s ease;
         padding: 20px;
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -452,6 +618,11 @@
         margin-bottom: 18px;
       }
 
+      #upload .panel-head .link-button,
+      #activity .panel-head .link-button {
+        margin-top: 0;
+      }
+
       .upload-row {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -459,25 +630,34 @@
       }
 
       .drop {
+      transition:
+    background .25s ease,
+    border-color .25s ease;
         display: grid;
         place-items: center;
         gap: 10px;
         min-height: 274px;
         padding: 20px;
-        border: 1.5px dashed #aac3ff;
+        border:1.5px dashed var(--drop-blue);
         border-radius: 8px;
-        background: linear-gradient(180deg, #fbfdff, #f7fbff);
+        background: linear-gradient(180deg, var(--surface), var(--surface-soft));
         text-align: center;
       }
 
+      .drop.is-dragging {
+        border-color: var(--blue);
+        background: var(--surface-soft);
+        box-shadow: 0 0 0 3px rgba(37, 99, 255, 0.16);
+      }
+
       .drop.product {
-        border-color: #b6dfbf;
-        background: linear-gradient(180deg, #fbfffc, #f7fff9);
+        border-color:var(--drop-green);
+        background: linear-gradient(180deg, var(--surface), var(--surface-soft));
       }
 
       .drop.adjustment {
-        border-color: #ceb8f2;
-        background: linear-gradient(180deg, #fefdff, #fbf8ff);
+        border-color:var(--drop-violet);
+        background: linear-gradient(180deg, var(--surface), var(--surface-soft));
       }
 
       .drop input {
@@ -503,62 +683,72 @@
         font-size: 13px;
       }
 
-      .quick-list {
-        display: grid;
-        gap: 12px;
+.quick {
+transition:
+    background .25s ease,
+    border-color .25s ease;
+    display: grid;
+    place-items: center;
+    gap: 10px;
+
+    min-height: 274px;
+
+    padding: 20px;
+
+    border:1.5px dashed var(--drop-blue);
+    border-radius: 8px;
+
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
+
+    text-align: center;
+}
+
+.quick strong {
+    font-size: 15px;
+}
+
+.quick small {
+    margin-top: 6px;
+    text-align: center;
+    max-width:260px;
+    line-height:1.6;
+}
+
+      #quick .quick {
+        width: 100%;
       }
 
-      .quick {
-        display: grid;
-        grid-template-columns: 48px 1fr auto;
-        align-items: center;
-        gap: 14px;
-        min-height: 82px;
-        padding: 0 18px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-        color: var(--ink);
-        text-align: left;
+      #download .cards {
+        grid-template-columns: repeat(2, minmax(210px, 1fr));
       }
 
-      .quick.green {
-        background: #f4fffa;
-        border-color: #c9ecd9;
-      }
-
-      .quick.orange {
-        background: #fffaf4;
-        border-color: #f2dcc1;
-      }
-
-      .quick.blue {
-        background: #f5f9ff;
-        border-color: #d6e5ff;
+      .quick:hover {
+      border-color:var(--drop-hover);
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
+        box-shadow: 0 12px 34px rgba(37, 99, 255, 0.1);
       }
 
       .quick .mini-icon {
-        display: grid;
-        place-items: center;
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        color: #fff;
-        font-size: 24px;
-        font-weight: 900;
-      }
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-      .quick.green .mini-icon {
-        background: var(--green);
-      }
+    width: auto;
+    height: auto;
 
-      .quick.orange .mini-icon {
-        background: var(--orange);
-      }
+    color: var(--ink);
+    background: transparent;
+    border-radius: 0;
 
-      .quick.blue .mini-icon {
-        background: var(--blue);
-      }
+    margin: 0;
+    font-size: 30px;
+}
+
+.quick .mini-icon i {
+     font-size:32px;
+    color:var(--ink);
+    margin-bottom:8px;
+}
 
       .quick small {
         display: block;
@@ -574,15 +764,37 @@
 
       .export-card {
         display: grid;
-        gap: 14px;
-        padding: 16px;
-        border: 1px solid var(--line);
+        min-height: 274px;
+        align-content: center;
+        justify-items: center;
+        gap: 10px;
+        padding: 20px;
+        border: 1px dashed var(--line);
         border-radius: 8px;
-        background: #fffaf4;
+        background: var(--surface-soft);
+        text-align: center;
       }
 
       .export-card.tiktok {
-        background: #fbfdff;
+        background: var(--surface-soft);
+      }
+
+      .drop h3,
+      .quick strong,
+      .export-card h3 {
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .drop small,
+      .quick small,
+      .export-card .muted {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .export-card .button {
+        width: 100%;
       }
 
       .activity-list {
@@ -592,16 +804,97 @@
 
       .activity {
         display: grid;
-        grid-template-columns: 38px 1fr auto;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
         align-items: center;
         gap: 12px;
         padding: 8px 0;
-        border-bottom: 1px solid #edf2f8;
+        border-bottom: 1px solid var(--line);
       }
 
       .activity:last-child {
         border-bottom: 0;
       }
+
+      .activity-count {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .marketplace-logo {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: var(--surface-soft);
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 850;
+      }
+
+      .marketplace-logo.shopee { color: #ee4d2d; }
+      .marketplace-logo.tiktok { color: #00a6c7; }
+
+      .activity-detail {
+        grid-column: 2 / -1;
+        margin: -2px 0 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .activity-detail summary {
+        cursor: pointer;
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .activity-items {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .activity-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .activity-modal {
+        width: min(840px, 100%);
+      }
+
+      .activity-modal .activity-list {
+        max-height: min(60vh, 560px);
+        overflow-y: auto;
+        padding-right: 6px;
+      }
+
+      .metric-modal { width: min(680px, 100%); }
+
+      .metric-list {
+        max-height: min(60vh, 560px);
+        overflow-y: auto;
+        padding-right: 28px;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric-row:last-child { border-bottom: 0; }
+      .metric-qty { color: var(--blue); font-weight: 800; }
 
       .badge {
         display: inline-flex;
@@ -610,8 +903,8 @@
         min-height: 24px;
         padding: 0 10px;
         border-radius: 999px;
-        background: #dbf7e8;
-        color: #11814f;
+    background:var(--badge-bg);
+color:var(--badge-text);
         font-size: 12px;
         font-weight: 750;
       }
@@ -630,7 +923,7 @@
         padding: 14px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fbfdff;
+        background: var(--surface-soft);
       }
 
       .thumb {
@@ -639,7 +932,7 @@
         width: 64px;
         height: 64px;
         border-radius: 8px;
-        background: #eef3fa;
+        background: var(--surface-soft);
         color: var(--muted);
         font-weight: 800;
       }
@@ -661,25 +954,30 @@
         z-index: 20;
       }
 
+            :root[data-theme="dark"] .drawer{
+    background:rgba(0,0,0,.6);
+}
+
       .drawer.open {
         display: grid;
       }
 
+      :root[data-theme="dark"] .modal{
+    box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
       .modal {
         width: min(720px, 100%);
         max-height: calc(100vh - 40px);
         overflow: auto;
         padding: 22px;
         border-radius: 8px;
-        background: #fff;
+        background: var(--surface);
         box-shadow: 0 24px 80px rgba(10, 17, 36, 0.22);
       }
 
       .modal-grid {
         display: grid;
-        grid-template-columns: 180px 1fr;
-        gap: 14px;
-        margin: 18px 0;
+    grid-template-columns: 1fr;
       }
 
       .result {
@@ -687,8 +985,8 @@
         padding: 14px;
         overflow: auto;
         border-radius: 8px;
-        background: #0f172a;
-        color: #eaf1ff;
+       background:var(--terminal);
+    color:var(--terminal-text);
         font-family: Consolas, "Liberation Mono", monospace;
         font-size: 13px;
         line-height: 1.5;
@@ -705,6 +1003,19 @@
         color: #c23333;
       }
 
+      :root[data-theme="dark"] .login-screen {
+        background:
+          radial-gradient(circle at 18% 18%, rgba(80, 125, 255, 0.17), transparent 28%),
+          radial-gradient(circle at 84% 22%, rgba(178, 147, 255, 0.15), transparent 30%),
+          var(--bg);
+      }
+
+      :root[data-theme="dark"] .login-card{
+    box-shadow:
+        0 28px 90px rgba(0,0,0,.45);
+}
+
+        :root[data-theme="dark"] .link-button { background: var(--surface-soft); }
       @media (max-width: 1180px) {
         .metrics,
         .grid-main,
@@ -712,8 +1023,7 @@
           grid-template-columns: 1fr 1fr;
         }
 
-        .metric.violet,
-        .grid-bottom .panel:last-child {
+        .metric.violet {
           grid-column: 1 / -1;
         }
       }
@@ -725,14 +1035,8 @@
         .grid-bottom,
         .upload-row,
         .cards,
-        .auth-card,
         .modal-grid {
           grid-template-columns: 1fr;
-        }
-
-        .sidebar {
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
         }
 
         .content {
@@ -743,17 +1047,21 @@
         .account {
           display: grid;
         }
+
+        #download .cards {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body class="is-locked">
-    <section class="login-screen">
+    <section class="login-screen" id="login">
       <div class="login-card">
         <div class="login-brand">
           <div class="brand-mark">S</div>
           <span>Stock Hub</span>
         </div>
-        <h1>Sign in</h1>
+        <h1>Login</h1>
         <p class="muted">.</p>
         <form id="loginForm">
 
@@ -777,7 +1085,7 @@
     class="button"
     type="submit"
   >
-    Open Dashboard
+    LOGIN
   </button>
 
   <span
@@ -790,31 +1098,6 @@
     </section>
 
     <div class="app">
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-mark">S</div>
-          <span>Stock Hub</span>
-        </div>
-        <nav class="nav">
-          <button class="active" type="button" data-scroll="dashboard"><span>■</span><strong>Dashboard</strong><span></span></button>
-          <button type="button" data-scroll="upload"><span>⇧</span><strong>Upload</strong><span>⌃</span></button>
-          <button type="button" data-upload-shortcut="order"><span></span><strong>Order</strong><span></span></button>
-          <button type="button" data-upload-shortcut="product"><span></span><strong>Product</strong><span></span></button>
-          <button type="button" data-upload-shortcut="adjustment"><span></span><strong>Adjustment</strong><span></span></button>
-          <button type="button" data-scroll="quick"><span>↯</span><strong>Quick Action</strong><span>⌄</span></button>
-          <button type="button" data-scroll="download"><span>⇩</span><strong>Download</strong><span></span></button>
-          <button type="button" data-scroll="search"><span>⌕</span><strong>Search Stock</strong><span></span></button>
-          <button type="button" data-scroll="activity"><span>◷</span><strong>Activity</strong><span></span></button>
-          <button type="button" data-open-settings><span>⚙</span><strong>Settings</strong><span></span></button>
-        </nav>
-        <div class="help">
-          <strong>Need help?</strong>
-          <span>View the Stock Hub usage guide here.</span>
-          <a href="#" data-open-settings>View Guide</a>
-        </div>
-        <div class="footer">© 2026 Stock Hub<br>All rights reserved.</div>
-      </aside>
-
       <main class="content" id="dashboard">
         <div class="topbar">
           <div>
@@ -822,27 +1105,55 @@
             <p class="muted">Current activity summary and stock condition</p>
           </div>
           <div class="account">
-            <div class="bell">♧</div>
-            <form class="auth-card" id="authForm">
-              <input id="accessKey" type="password" autocomplete="current-password" placeholder="Password">
-              <button class="button" type="submit">Switch</button>
-            </form>
-            <div class="user-card">
-              <div>
-                <strong id="clientName">Store</strong>
-                <div class="muted" id="clientPlan">Plan: -</div>
+             <button class="button light guide-button" type="button" data-open-settings>View Guide</button>
+            <button class="bell" id="themeToggle" type="button" title="Toggle Theme">
+
+  <svg class="theme-icon theme-icon-moon"
+       xmlns="http://www.w3.org/2000/svg"
+       fill="none"
+       viewBox="0 0 24 24"
+       stroke="currentColor">
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 12.79A9 9 0 1111.21 3
+             7 7 0 0021 12.79z"/>
+  </svg>
+
+  <svg class="theme-icon theme-icon-sun"
+       xmlns="http://www.w3.org/2000/svg"
+       fill="none"
+       viewBox="0 0 24 24"
+       stroke="currentColor">
+    <path stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36l-1.41 1.41M7.05 16.95l-1.41 1.41m0-12.72l1.41 1.41m9.9 9.9l1.41 1.41M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+  </svg>
+
+</button>
+
+            <div class="profile" id="profileMenu">
+              <button class="user-card" id="profileButton" type="button" aria-expanded="false" aria-haspopup="true">
+                <div>
+                  <strong id="clientName">Store</strong>
+                  <div class="muted" id="clientPlan">Plan: -</div>
+                </div>
+                <div class="avatar" id="clientAvatar">TH</div>
+              </button>
+              <div class="profile-menu" role="menu">
+                <button type="button" id="logoutButton" role="menuitem">Logout</button>
               </div>
-              <div class="avatar" id="clientAvatar">TH</div>
             </div>
           </div>
         </div>
 
         <section class="metrics" aria-label="Stock summary">
-          <div class="metric blue"><div class="icon">□</div><div><strong id="mSku">0</strong><span>Total SKU</span><span>All registered products</span></div></div>
-          <div class="metric green"><div class="icon">✓</div><div><strong id="mActive">0</strong><span>Active SKU</span><span>Active products</span></div></div>
-          <div class="metric orange"><div class="icon">!</div><div><strong id="mLow">0</strong><span>Low Stock</span><span>Running low</span></div></div>
-          <div class="metric red"><div class="icon">×</div><div><strong id="mOut">0</strong><span>Out of Stock</span><span>No stock available</span></div></div>
-          <div class="metric violet"><div class="icon">▮</div><div><strong id="mOrders">0</strong><span>Orders Today</span><span id="mUpdate">Last update -</span></div></div>
+          <button class="metric blue" type="button" data-metric="sku"><div class="icon">□</div><div><strong id="mSku">0</strong><span>Total SKU</span><span>All registered products</span></div></button>
+          <button class="metric green" type="button" data-metric="active"><div class="icon">✓</div><div><strong id="mActive">0</strong><span>Active SKU</span><span>Active products</span></div></button>
+          <button class="metric orange" type="button" data-metric="low"><div class="icon">!</div><div><strong id="mLow">0</strong><span>Low Stock</span><span>Running low</span></div></button>
+          <button class="metric red" type="button" data-metric="out"><div class="icon">×</div><div><strong id="mOut">0</strong><span>Out of Stock</span><span>No stock available</span></div></button>
+          <button class="metric violet" type="button" data-metric="orders"><div class="icon">▮</div><div><strong id="mOrders">0</strong><span>Orders Today</span><span id="mUpdate">Last update -</span></div></button>
         </section>
 
         <section class="grid-main">
@@ -852,6 +1163,7 @@
                 <h2>Upload File</h2>
                 <p class="muted">Upload files to process data</p>
               </div>
+              <a class="link-button" href="#" data-template="stock">Download Template</a>
             </div>
             <div class="upload-row">
               <label class="drop" data-drop="order">
@@ -884,50 +1196,55 @@
             </div>
             <div class="note-row">
               <span id="uploadStatus">Make sure the file format matches the available template.</span>
-              <a class="link-button" href="#" data-template="stock">View Template</a>
+
             </div>
           </div>
 
           <div class="panel" id="quick">
-            <div class="panel-head">
-              <div>
-                <h2>Quick Action (Multi SKU)</h2>
-                <p class="muted">Fast stock changes without uploading a file</p>
-              </div>
-            </div>
-            <div class="quick-list">
-              <button class="quick green" type="button" data-quick="restock"><span class="mini-icon">+</span><span><strong>Restock (Add Stock)</strong><small>Add stock to multiple SKUs at once</small></span><strong>›</strong></button>
-              <button class="quick orange" type="button" data-quick="sales"><span class="mini-icon">−</span><span><strong>Sales (Offline Sales)</strong><small>Reduce stock for multiple SKUs at once</small></span><strong>›</strong></button>
-              <button class="quick blue" type="button" data-quick="set"><span class="mini-icon">✎</span><span><strong>Set Stock</strong><small>Set stock quantity for multiple SKUs</small></span><strong>›</strong></button>
-              <button class="button light" type="button" data-quick="stock">View Format Example</button>
-            </div>
+  <div class="panel-head">
+    <div>
+      <h2>Quick Action (Multi SKU)</h2>
+      <p class="muted">Fast stock changes without uploading a file</p>
+    </div>
+  </div>
+
+  <button class="quick primary" type="button" data-quick="multi">
+  <span class="mini-icon">⊞</span>
+
+  <strong>Multi SKU Processor</strong>
+
+  <small>
+    Restock • Sales • Set Stock<br>
+    Update Status • Check Stock
+  </small>
+</button>
           </div>
+
+          <div class="panel" id="download">
+    <div class="panel-head">
+      <div>
+        <h2>Download Export</h2>
+        <p class="muted">Download stock update files for marketplaces</p>
+      </div>
+    </div>
+    <div class="cards">
+      <div class="export-card">
+        <div class="icon">S</div>
+        <h3>Shopee Export</h3>
+        <p class="muted">Stock update for Shopee</p>
+        <a class="button light" href="#" data-export="shopee">Download</a>
+      </div>
+      <div class="export-card tiktok">
+        <div class="icon">T</div>
+        <h3>TikTok Export</h3>
+        <p class="muted">Stock update for TikTok Shop</p>
+        <a class="button light" href="#" data-export="tiktok">Download</a>
+      </div>
+    </div>
+  </div>
         </section>
 
         <section class="grid-bottom">
-          <div class="panel" id="download">
-            <div class="panel-head">
-              <div>
-                <h2>Download Export</h2>
-                <p class="muted">Download stock update files for marketplaces</p>
-              </div>
-            </div>
-            <div class="cards">
-              <div class="export-card">
-                <div class="icon">S</div>
-                <h3>Shopee Export</h3>
-                <p class="muted">Stock update for Shopee</p>
-                <a class="button light" href="#" data-export="shopee">Download</a>
-              </div>
-              <div class="export-card tiktok">
-                <div class="icon">T</div>
-                <h3>TikTok Export</h3>
-                <p class="muted">Stock update for TikTok Shop</p>
-                <a class="button light" href="#" data-export="tiktok">Download</a>
-              </div>
-            </div>
-          </div>
-
           <div class="panel" id="activity">
             <div class="panel-head">
               <h2>Recent Activity</h2>
@@ -970,8 +1287,7 @@
             <option value="set">Set stock</option>
             <option value="status">Update status</option>
           </select>
-          <input id="exampleText" readonly>
-        </div>
+          </div>
         <textarea id="manualText" spellcheck="false"></textarea>
         <div class="note-row">
           <span class="status" id="manualStatus"></span>
@@ -981,52 +1297,276 @@
       </div>
     </div>
 
+    <div class="drawer" id="activityModal" aria-hidden="true">
+      <div class="modal activity-modal" role="dialog" aria-modal="true" aria-labelledby="activityModalTitle">
+        <div class="panel-head">
+          <div>
+            <h2 id="activityModalTitle">All Activities</h2>
+            <p class="muted">Complete activity history</p>
+          </div>
+          <button class="button light" type="button" data-close-activities>Close</button>
+        </div>
+        <div class="activity-list" id="allActivityList"></div>
+      </div>
+    </div>
+
+    <div class="drawer" id="metricModal" aria-hidden="true">
+      <div class="modal metric-modal" role="dialog" aria-modal="true" aria-labelledby="metricModalTitle">
+        <div class="panel-head">
+          <div>
+            <h2 id="metricModalTitle">Stock Details</h2>
+            <p class="muted" id="metricModalHint">SKU and quantity</p>
+          </div>
+          <button class="button light" type="button" data-close-metric>Close</button>
+        </div>
+        <div class="metric-list" id="metricList"></div>
+      </div>
+    </div>
+
     <script>
       const state = {
         accessKey: localStorage.getItem("stockHubAccessKey") || "",
         user: localStorage.getItem("stockHubUser") || ""
       };
+      const SESSION_STORAGE_KEY = "stockHubSession";
+      const DASHBOARD_CACHE_PREFIX = "stockHubDashboard";
+      const SESSION_IDLE_MS = 30 * 60 * 1000;
+      let sessionTimer;
+      let lastSessionWrite = 0;
+
+      function setPageRoute(route = "") {
+        const url = route ? `/${route.replace(/^\/+|\/+$/g, "")}/` : "/";
+        window.history.replaceState(null, "", url);
+      }
+
+      if (window.location.hash === "#login") {
+        setPageRoute();
+      } else if (window.location.hash === "#dashboard") {
+        setPageRoute("dashboard");
+      }
 
       const examples = {
-        stock: "SKU-A\nSKU-B",
-        restock: "SKU-A 10\nSKU-B 5",
-        sales: "SKU-A 2\nSKU-B 1",
-        set: "SKU-A 25\nSKU-B 40",
-        status: "SKU-A ACTIVE\nSKU-B NON-ACTIVE"
-      };
+  stock:
+`ABC001
+ABC002
+ABC003`,
+
+  restock:
+`ABC001 100
+ABC002 100`,
+
+  sales:
+`ABC001 100
+ABC002 100`,
+
+  set:
+`ABC001 100
+ABC002 100`,
+
+  status:
+`ABC001 ACTIVE
+ABC002 INACTIVE`
+};
 
       const labels = {
-        stock: ["Check Stock", "Format: one SKU per line."],
-        restock: ["Restock (Add Stock)", "Format: SKU QTY per line."],
-        sales: ["Sales (Offline Sales)", "Format: SKU QTY per line."],
-        set: ["Set Stock", "Format: SKU QTY per line."],
-        status: ["Update Product Status", "Format: SKU STATUS per line."]
-      };
+  stock: [
+    "Check Stock",
+    "Enter one SKU per line to check the current stock."
+  ],
 
-      const accessKeyInput = document.querySelector("#accessKey");
+  restock: [
+    "Restock",
+    "Enter SKU and quantity to add stock."
+  ],
+
+  sales: [
+    "Offline Sales",
+    "Enter SKU and quantity to reduce stock."
+  ],
+
+  set: [
+    "Set Stock",
+    "Enter SKU and the new stock quantity."
+  ],
+
+  status: [
+    "Update Status",
+    "Enter SKU and status (ACTIVE / INACTIVE)."
+  ]
+};
+
       const loginUsernameInput = document.querySelector("#loginUsername");
       const loginPasswordInput = document.querySelector("#loginPassword");
       const loginStatus = document.querySelector("#loginStatus");
+      const profileMenu = document.querySelector("#profileMenu");
+      const profileButton = document.querySelector("#profileButton");
+      const logoutButton = document.querySelector("#logoutButton");
       const manualAction = document.querySelector("#manualAction");
       const manualText = document.querySelector("#manualText");
       const exampleText = document.querySelector("#exampleText");
       const manualStatus = document.querySelector("#manualStatus");
       const manualResult = document.querySelector("#manualResult");
       const quickModal = document.querySelector("#quickModal");
+      const activityModal = document.querySelector("#activityModal");
+      const allActivityList = document.querySelector("#allActivityList");
+      const metricModal = document.querySelector("#metricModal");
+      const metricModalTitle = document.querySelector("#metricModalTitle");
+      const metricModalHint = document.querySelector("#metricModalHint");
+      const metricList = document.querySelector("#metricList");
       const uploadStatus = document.querySelector("#uploadStatus");
       const searchInput = document.querySelector("#searchInput");
+      const themeToggle = document.querySelector("#themeToggle");
       const searchResults = document.querySelector("#searchResults");
+      const quickTitle = document.querySelector("#quickTitle");
+const quickHint = document.querySelector("#quickHint");
 
-      accessKeyInput.value = state.accessKey;
       loginUsernameInput.value = state.user;
+
+      function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("stockHubTheme", theme);
+}
+
+function toggleTheme() {
+    const current =
+        document.documentElement.dataset.theme === "dark"
+            ? "dark"
+            : "light";
+
+    setTheme(current === "dark" ? "light" : "dark");
+}
 
       function setStatus(element, text, isError = false) {
         element.textContent = text;
         element.classList.toggle("error", isError);
       }
 
+      function getStoredSession() {
+        try {
+          return JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || "null");
+        } catch {
+          return null;
+        }
+      }
+
+      function isSessionExpired(session = getStoredSession()) {
+        return !session || !session.lastActivity || Date.now() - session.lastActivity >= SESSION_IDLE_MS;
+      }
+
+      function saveSessionActivity(force = false) {
+        if (!state.user || !state.accessKey) {
+          return;
+        }
+
+        const now = Date.now();
+        if (!force && now - lastSessionWrite < 30 * 1000) {
+          return;
+        }
+
+        lastSessionWrite = now;
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+          ...getStoredSession(),
+          lastActivity: now,
+          expiresAt: now + SESSION_IDLE_MS
+        }));
+        document.documentElement.classList.add("has-session");
+        scheduleSessionExpiry();
+      }
+
+      function scheduleSessionExpiry() {
+        clearTimeout(sessionTimer);
+        const session = getStoredSession();
+        const remaining = session ? SESSION_IDLE_MS - (Date.now() - session.lastActivity) : 0;
+
+        if (remaining <= 0) {
+          logout("Sesi berakhir karena tidak ada aktivitas selama 30 menit.");
+          return;
+        }
+
+        sessionTimer = window.setTimeout(() => {
+          logout("Sesi berakhir karena tidak ada aktivitas selama 30 menit.");
+        }, remaining);
+      }
+
       function formatNumber(value) {
         return new Intl.NumberFormat("id-ID").format(Number(value || 0));
+      }
+
+      function dashboardCacheKey() {
+        return `${DASHBOARD_CACHE_PREFIX}:${state.user.toLowerCase()}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>'"]/g, character => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+        })[character]);
+      }
+
+      function marketplaceLogo(marketplace) {
+        const name = String(marketplace || "").toLowerCase();
+        if (name.includes("shopee")) return { label: "S", className: "shopee", name: "Shopee" };
+        if (name.includes("tiktok")) return { label: "T", className: "tiktok", name: "TikTok" };
+        return { label: "M", className: "", name: marketplace || "Marketplace" };
+      }
+
+      function formatActivityTitle(command) {
+        return String(command || "Activity").trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ").toUpperCase();
+      }
+
+      function renderActivities(container, activities, showDetails = false) {
+        const rows = activities.length ? activities : [{ command: "No activity yet", sku: "", time: "", count: 0 }];
+        container.innerHTML = rows.map(item => {
+          const logo = marketplaceLogo(item.marketplace);
+          const countLabel = `${item.count || 0} items processed`;
+          const detail = showDetails && item.items?.length ? `
+            <details class="activity-detail">
+              <summary>View ${item.items.length} processed items</summary>
+              <div class="activity-items">${item.items.map(detailItem => `
+                <div class="activity-item">
+                  <span>${escapeHtml(detailItem.sku || "-")}</span>
+                  <span>${escapeHtml(detailItem.qty ? `Qty: ${detailItem.qty}` : "")}</span>
+                </div>`).join("")}</div>
+            </details>` : "";
+          return `
+            <div class="activity">
+              <div class="marketplace-logo ${logo.className}" title="${escapeHtml(logo.name)}">${logo.label}</div>
+              <div>
+                <strong>${escapeHtml(formatActivityTitle(item.command))}</strong>
+                <span class="activity-count">${escapeHtml(countLabel)}</span>
+              </div>
+              <div>
+                <span class="badge">Success</span>
+                <div class="muted">${escapeHtml(item.time || "")}</div>
+              </div>
+              ${detail}
+            </div>`;
+        }).join("");
+      }
+
+      function renderDashboard(data) {
+        document.querySelector("#mSku").textContent = formatNumber(data.totals.sku);
+        document.querySelector("#mActive").textContent = formatNumber(data.totals.activeSku);
+        document.querySelector("#mLow").textContent = formatNumber(data.totals.lowStock);
+        document.querySelector("#mOut").textContent = formatNumber(data.totals.outOfStock);
+        document.querySelector("#mOrders").textContent = formatNumber(data.totals.ordersToday);
+        document.querySelector("#mUpdate").textContent = "Last update " + (data.lastUpdate || "-");
+
+        renderActivities(document.querySelector("#activityList"), data.activities || []);
+      }
+
+      function renderCachedDashboard() {
+        if (!state.user) {
+          return;
+        }
+
+        try {
+          const cache = JSON.parse(localStorage.getItem(dashboardCacheKey()) || "null");
+          if (cache?.dashboard) {
+            renderDashboard(cache.dashboard);
+          }
+        } catch {
+          localStorage.removeItem(dashboardCacheKey());
+        }
       }
 
       function initials(value) {
@@ -1036,6 +1576,26 @@
           .join("")
           .slice(0, 2)
           .toUpperCase();
+      }
+
+      function renderClient(client = {}) {
+        document.querySelector("#clientName").textContent = client.name || client.id || "Store";
+        document.querySelector("#clientPlan").textContent = "Plan: " + (client.plan || "Active");
+        document.querySelector("#clientAvatar").textContent = initials(client.name || client.user);
+      }
+
+      function cacheClient(client) {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+          ...getStoredSession(),
+          client
+        }));
+      }
+
+      function renderCachedClient() {
+        const client = getStoredSession()?.client;
+        if (client) {
+          renderClient(client);
+        }
       }
 
       async function readResponse(response) {
@@ -1050,7 +1610,9 @@
         const payload = await readResponse(response);
 
         if (!response.ok || payload.ok === false) {
-          throw new Error(payload.error || "Request gagal.");
+          const error = new Error(payload.error || "Request gagal.");
+          error.status = response.status;
+          throw error;
         }
 
         return payload;
@@ -1088,22 +1650,24 @@
           });
       }
 
-      function openQuick(action) {
-        manualAction.value = action;
-        refreshQuickCopy(true);
-        quickModal.classList.add("open");
-      }
+     function openQuick() {
+    // Default action saat modal dibuka
+    manualAction.value = "restock";
+
+    refreshQuickCopy(true);
+    quickModal.classList.add("open");
+}
 
       function refreshQuickCopy(replaceText = false) {
-        const action = manualAction.value;
-        document.querySelector("#quickTitle").textContent = labels[action][0];
-        document.querySelector("#quickHint").textContent = labels[action][1];
-        exampleText.value = examples[action].split("\n")[0];
+    const action = manualAction.value;
 
-        if (replaceText || !manualText.value.trim()) {
-          manualText.value = examples[action];
-        }
-      }
+    quickTitle.textContent = labels[action][0];
+    quickHint.textContent = labels[action][1];
+
+    if (replaceText || !manualText.value.trim()) {
+        manualText.value = examples[action];
+    }
+}
 
       async function loadSession() {
         if (!state.accessKey || !state.user) {
@@ -1114,9 +1678,8 @@
           headers: authHeaders()
         });
 
-        document.querySelector("#clientName").textContent = payload.client.name || payload.client.id || "Store";
-        document.querySelector("#clientPlan").textContent = "Plan: " + (payload.client.plan || "Active");
-        document.querySelector("#clientAvatar").textContent = initials(payload.client.name || payload.client.user);
+        renderClient(payload.client);
+        cacheClient(payload.client);
       }
 
       async function signIn(user, password) {
@@ -1124,7 +1687,6 @@
         state.accessKey = String(password || "").trim();
         localStorage.setItem("stockHubUser", state.user);
         localStorage.setItem("stockHubAccessKey", state.accessKey);
-        accessKeyInput.value = state.accessKey;
         loginUsernameInput.value = state.user;
 
         await loadSession();
@@ -1132,6 +1694,8 @@
 
         document.body.classList.remove("is-locked");
         document.body.classList.add("is-authenticated");
+        saveSessionActivity(true);
+        setPageRoute("dashboard");
       }
 
       document.querySelector("#loginForm").addEventListener("submit", async event => {
@@ -1156,30 +1720,11 @@
         });
 
         const data = payload.dashboard;
-        document.querySelector("#mSku").textContent = formatNumber(data.totals.sku);
-        document.querySelector("#mActive").textContent = formatNumber(data.totals.activeSku);
-        document.querySelector("#mLow").textContent = formatNumber(data.totals.lowStock);
-        document.querySelector("#mOut").textContent = formatNumber(data.totals.outOfStock);
-        document.querySelector("#mOrders").textContent = formatNumber(data.totals.ordersToday);
-        document.querySelector("#mUpdate").textContent = "Last update " + (data.lastUpdate || "-");
-
-        const activities = data.activities.length ? data.activities : [
-          { command: "No activity yet", sku: "-", qty: "", time: "" }
-        ];
-
-        document.querySelector("#activityList").innerHTML = activities.map(item => `
-          <div class="activity">
-            <div class="thumb">${String(item.command || "A").slice(0, 1)}</div>
-            <div>
-              <strong>${item.command || "Activity"}</strong>
-              <div class="muted">${item.sku || "-"} ${item.qty ? "- " + item.qty : ""}</div>
-            </div>
-            <div>
-              <span class="badge">Success</span>
-              <div class="muted">${item.time || ""}</div>
-            </div>
-          </div>
-        `).join("");
+        renderDashboard(data);
+        localStorage.setItem(dashboardCacheKey(), JSON.stringify({
+          savedAt: Date.now(),
+          dashboard: data
+        }));
       }
 
       async function uploadFile(action, file) {
@@ -1195,8 +1740,41 @@
           body: form
         });
 
-        setStatus(uploadStatus, "Done: " + JSON.stringify(payload.result));
+        setStatus(uploadStatus, "Done");
         await loadDashboard();
+      }
+
+      async function openAllActivities() {
+        allActivityList.innerHTML = "<p class='muted'>Loading activities...</p>";
+        activityModal.classList.add("open");
+        activityModal.setAttribute("aria-hidden", "false");
+
+        try {
+          const payload = await api("/api/web?route=activities", { headers: authHeaders() });
+          renderActivities(allActivityList, payload.activities || [], true);
+        } catch (error) {
+          allActivityList.innerHTML = `<p class="status error">Gagal: ${escapeHtml(error.message)}</p>`;
+        }
+      }
+
+      async function openMetricDetails(type) {
+        metricList.innerHTML = "<p class='muted'>Loading data...</p>";
+        metricModal.classList.add("open");
+        metricModal.setAttribute("aria-hidden", "false");
+
+        try {
+          const payload = await api(`/api/web?route=metric&type=${encodeURIComponent(type)}`, { headers: authHeaders() });
+          const metric = payload.metric;
+          metricModalTitle.textContent = metric.title;
+          metricModalHint.textContent = `${metric.subtitle} · Sorted by SKU (A–Z)`;
+          metricList.innerHTML = metric.items.length ? metric.items.map(item => `
+            <div class="metric-row">
+              <strong>${escapeHtml(item.sku)}</strong>
+              <span class="metric-qty">Qty: ${formatNumber(item.qty)}</span>
+            </div>`).join("") : "<p class='muted'>No data available.</p>";
+        } catch (error) {
+          metricList.innerHTML = `<p class="status error">Gagal: ${escapeHtml(error.message)}</p>`;
+        }
       }
 
       async function runSearch() {
@@ -1227,37 +1805,82 @@
           : "<p class='muted'>No results found.</p>";
       }
 
-      document.querySelector("#authForm").addEventListener("submit", async event => {
-        event.preventDefault();
-        try {
-          await signIn(state.user || loginUsernameInput.value, accessKeyInput.value);
-        } catch (error) {
-          alert(error.message);
+      function closeProfileMenu() {
+        profileMenu.classList.remove("open");
+        profileButton.setAttribute("aria-expanded", "false");
+      }
+
+      function logout(message = "") {
+        clearTimeout(sessionTimer);
+        if (state.user) {
+          localStorage.removeItem(dashboardCacheKey());
+        }
+        state.user = "";
+        state.accessKey = "";
+        localStorage.removeItem("stockHubUser");
+        localStorage.removeItem("stockHubAccessKey");
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+        document.documentElement.classList.remove("has-session");
+        loginUsernameInput.value = "";
+        loginPasswordInput.value = "";
+        setStatus(loginStatus, message, Boolean(message));
+        closeProfileMenu();
+        document.body.classList.add("is-locked");
+        document.body.classList.remove("is-authenticated");
+        setPageRoute();
+      }
+
+      themeToggle.addEventListener("click", toggleTheme);
+
+      profileButton.addEventListener("click", event => {
+        event.stopPropagation();
+        const isOpen = profileMenu.classList.toggle("open");
+        profileButton.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      logoutButton.addEventListener("click", () => logout());
+
+      document.addEventListener("click", event => {
+        if (!profileMenu.contains(event.target)) {
+          closeProfileMenu();
         }
       });
 
-      document.querySelectorAll("[data-scroll]").forEach(button => {
-        button.addEventListener("click", () => {
-          document.querySelectorAll(".nav button").forEach(item => item.classList.remove("active"));
-          button.classList.add("active");
-          document.querySelector("#" + button.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      });
-
-      document.querySelectorAll("[data-upload-shortcut]").forEach(button => {
-        button.addEventListener("click", () => {
-          document.querySelector("#upload").scrollIntoView({ behavior: "smooth" });
-        });
-      });
-
       document.querySelectorAll("[data-quick]").forEach(button => {
-        button.addEventListener("click", () => openQuick(button.dataset.quick));
-      });
+  button.addEventListener("click", openQuick);
+});
 
       document.querySelector("[data-close-modal]").addEventListener("click", () => quickModal.classList.remove("open"));
       quickModal.addEventListener("click", event => {
         if (event.target === quickModal) {
           quickModal.classList.remove("open");
+        }
+      });
+      document.querySelector("#refreshDashboard").addEventListener("click", event => {
+        event.preventDefault();
+        openAllActivities();
+      });
+      document.querySelector("[data-close-activities]").addEventListener("click", () => {
+        activityModal.classList.remove("open");
+        activityModal.setAttribute("aria-hidden", "true");
+      });
+      activityModal.addEventListener("click", event => {
+        if (event.target === activityModal) {
+          activityModal.classList.remove("open");
+          activityModal.setAttribute("aria-hidden", "true");
+        }
+      });
+      document.querySelectorAll("[data-metric]").forEach(button => {
+        button.addEventListener("click", () => openMetricDetails(button.dataset.metric));
+      });
+      document.querySelector("[data-close-metric]").addEventListener("click", () => {
+        metricModal.classList.remove("open");
+        metricModal.setAttribute("aria-hidden", "true");
+      });
+      metricModal.addEventListener("click", event => {
+        if (event.target === metricModal) {
+          metricModal.classList.remove("open");
+          metricModal.setAttribute("aria-hidden", "true");
         }
       });
       manualAction.addEventListener("change", () => refreshQuickCopy(true));
@@ -1300,7 +1923,32 @@
           try {
             await uploadFile(action, input.files[0]);
           } catch (error) {
-            setStatus(uploadStatus, error.message, true);
+            setStatus(uploadStatus, "Gagal: " + error.message, true);
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-drop]").forEach(dropZone => {
+        const getAction = () => dropZone.dataset.drop === "adjustment"
+          ? document.querySelector("#adjustmentMode").value
+          : dropZone.dataset.drop;
+
+        ["dragenter", "dragover"].forEach(eventName => dropZone.addEventListener(eventName, event => {
+          event.preventDefault();
+          dropZone.classList.add("is-dragging");
+        }));
+        ["dragleave", "drop"].forEach(eventName => dropZone.addEventListener(eventName, event => {
+          event.preventDefault();
+          dropZone.classList.remove("is-dragging");
+        }));
+        dropZone.addEventListener("drop", async event => {
+          const file = event.dataTransfer?.files?.[0];
+          if (!file) return;
+
+          try {
+            await uploadFile(getAction(), file);
+          } catch (error) {
+            setStatus(uploadStatus, "Gagal: " + error.message, true);
           }
         });
       });
@@ -1319,11 +1967,6 @@
         });
       });
 
-      document.querySelector("#refreshDashboard").addEventListener("click", event => {
-        event.preventDefault();
-        loadDashboard().catch(error => alert(error.message));
-      });
-
       let searchTimer;
       searchInput.addEventListener("input", () => {
         clearTimeout(searchTimer);
@@ -1340,6 +1983,46 @@
       });
 
       refreshQuickCopy(true);
+      renderCachedClient();
+      renderCachedDashboard();
+
+      async function restoreSession() {
+        if (!state.user || !state.accessKey || isSessionExpired()) {
+          if (isSessionExpired()) {
+            logout();
+          }
+          return;
+        }
+
+        try {
+          await loadSession();
+          await loadDashboard();
+          document.body.classList.remove("is-locked");
+          document.body.classList.add("is-authenticated");
+          saveSessionActivity(true);
+        } catch (error) {
+          if (error.status === 401) {
+            logout("Sesi tidak lagi valid. Silakan masuk kembali.");
+            return;
+          }
+
+          document.body.classList.remove("is-locked");
+          document.body.classList.add("is-authenticated");
+          scheduleSessionExpiry();
+        }
+      }
+
+      ["pointerdown", "keydown", "touchstart", "scroll"].forEach(eventName => {
+        window.addEventListener(eventName, () => saveSessionActivity(), { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && isSessionExpired()) {
+          logout("Sesi berakhir karena tidak ada aktivitas selama 30 menit.");
+        }
+      });
+
+      restoreSession();
     </script>
   </body>
 </html>
