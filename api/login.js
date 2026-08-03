@@ -8,6 +8,8 @@ from "../services/auth/login.js";
 
 import {
 
+  getWebClientErrorMessage,
+
   reportError
 
 }
@@ -103,7 +105,7 @@ export default async function handler(
 
       error:
 
-        error.message
+        getWebClientErrorMessage(error)
 
     });
 

@@ -327,3 +327,19 @@ Developer telah menerima laporan.`
   );
 
 }
+
+export function getWebClientErrorMessage(error) {
+  if (isUserError(error)) {
+    return error.message;
+  }
+
+  if (error instanceof ConfigurationError) {
+    return "❌ Aplikasi sedang mengalami masalah konfigurasi.\n\nDeveloper telah menerima laporan.";
+  }
+
+  if (error instanceof SystemError) {
+    return "❌ Terjadi gangguan pada sistem.\n\nSilakan coba beberapa saat lagi.";
+  }
+
+  return "❌ Terjadi kesalahan yang tidak diketahui.\n\nDeveloper telah menerima laporan.";
+}

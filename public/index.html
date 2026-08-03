@@ -871,10 +871,30 @@ transition:
         width: min(840px, 100%);
       }
 
+      .guide-modal { width: min(760px, 100%); }
+
+      .guide-content {
+        display: grid;
+        gap: 10px;
+        max-height: min(62vh, 590px);
+        overflow-y: auto;
+        padding-right: 18px;
+      }
+
+      .guide-step {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .guide-step h3 { margin-bottom: 4px; }
+      .guide-step p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+
       .activity-modal .activity-list {
         max-height: min(60vh, 560px);
         overflow-y: auto;
-        padding-right: 6px;
+        padding-right: 28px;
       }
 
       .metric-modal { width: min(680px, 100%); }
@@ -942,6 +962,103 @@ color:var(--badge-text);
         font-size: 24px;
         font-weight: 800;
         text-align: right;
+      }
+
+      .topbar {
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .dashboard-title { min-width: 270px; }
+
+      .last-sync {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .global-search {
+        position: relative;
+        width: min(560px, 38vw);
+        flex: 1 1 360px;
+      }
+
+      .global-search input { min-height: 42px; }
+
+      .global-search #searchResults {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 30;
+        width: 100%;
+        max-height: min(58vh, 520px);
+        overflow-y: auto;
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 18px 48px rgba(10, 17, 36, 0.22);
+      }
+
+      .global-search #searchResults:empty { display: none; }
+
+      .global-search .search-result {
+        min-height: 0;
+        border-radius: 0;
+        border-width: 0 0 1px;
+      }
+
+      .global-search .search-result:last-child { border-bottom: 0; }
+      .global-search .thumb { width: 42px; height: 42px; }
+      .global-search .stock-number { font-size: 18px; }
+
+      #dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #dashboard .topbar { order: 0; }
+      #dashboard .grid-main { order: 1; margin: 0; }
+      #dashboard .metrics { order: 2; margin: 0; }
+      #dashboard .grid-bottom { order: 3; }
+
+      .grid-main {
+        grid-template-columns: minmax(570px, 1.5fr) minmax(270px, 0.62fr) minmax(470px, 0.9fr);
+        gap: 12px;
+      }
+
+      .grid-bottom { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .panel { padding: 14px; }
+      .panel-head { margin-bottom: 10px; }
+      .upload-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+
+      .drop,
+      .quick,
+      .export-card {
+        min-height: 0;
+        height: 250px;
+        padding: 12px;
+      }
+
+      .drop { gap: 6px; }
+      .drop .icon { width: 50px; height: 50px; font-size: 25px; }
+      .drop.status { border-color: #c99547; }
+      .note-row { margin-top: 10px; }
+      #quick .quick { height: 250px; }
+      #download .cards { height: 250px; }
+      .export-card { height: 250px; }
+
+      .metrics { gap: 12px; }
+      .metric { min-height: 80px; padding: 10px 12px; gap: 10px; }
+      .metric .icon { width: 44px; height: 44px; font-size: 21px; }
+      .metric strong { font-size: 18px; }
+      .metric span { margin-top: 2px; font-size: 12px; }
+
+      @media (max-width: 1180px) {
+        .global-search { order: 3; width: 100%; }
+        .topbar { flex-wrap: wrap; }
+        .grid-main { grid-template-columns: 1fr 1fr; }
+        #download { grid-column: 1 / -1; }
       }
 
       .drawer {
@@ -1048,6 +1165,11 @@ color:var(--badge-text);
           display: grid;
         }
 
+        .dashboard-title,
+        .global-search { width: 100%; }
+
+        .upload-row { grid-template-columns: 1fr 1fr; }
+
         #download .cards {
           grid-template-columns: 1fr;
         }
@@ -1100,12 +1222,17 @@ color:var(--badge-text);
     <div class="app">
       <main class="content" id="dashboard">
         <div class="topbar">
-          <div>
+          <div class="dashboard-title">
             <h1>Dashboard</h1>
             <p class="muted">Current activity summary and stock condition</p>
+            <span class="last-sync" id="lastSync">Last Sync: -</span>
+          </div>
+          <div class="global-search">
+            <input id="searchInput" placeholder="Search SKU, product name, or barcode..." aria-label="Search stock">
+            <div id="searchResults"></div>
           </div>
           <div class="account">
-             <button class="button light guide-button" type="button" data-open-settings>View Guide</button>
+             <button class="button light guide-button" type="button" data-open-settings>📖 View Guide</button>
             <button class="bell" id="themeToggle" type="button" title="Toggle Theme">
 
   <svg class="theme-icon theme-icon-moon"
@@ -1137,7 +1264,7 @@ color:var(--badge-text);
               <button class="user-card" id="profileButton" type="button" aria-expanded="false" aria-haspopup="true">
                 <div>
                   <strong id="clientName">Store</strong>
-                  <div class="muted" id="clientPlan">Plan: -</div>
+                  <div class="muted" id="clientPlan">Active until -</div>
                 </div>
                 <div class="avatar" id="clientAvatar">TH</div>
               </button>
@@ -1182,6 +1309,14 @@ color:var(--badge-text);
                 <small>Drop file here<br>or click to choose a file</small>
                 <small>.xlsx / .xls</small>
               </label>
+              <label class="drop status" data-drop="status">
+                <input type="file" data-file="status" accept=".xlsx,.xls">
+                <div class="icon">!</div>
+                <h3>Update Status</h3>
+                <p class="muted">Update product status</p>
+                <small>Drop file here<br>or click to choose a file</small>
+                <small>.xlsx / .xls</small>
+              </label>
               <label class="drop adjustment" data-drop="adjustment">
                 <input type="file" data-file="adjustment" accept=".xlsx,.xls">
                 <div class="icon">↕</div>
@@ -1189,7 +1324,6 @@ color:var(--badge-text);
                 <select id="adjustmentMode">
                   <option value="restock">Restock</option>
                   <option value="set">Set Stock</option>
-                  <option value="status">Status</option>
                 </select>
                 <small>Drop file here<br>or click to choose a file</small>
               </label>
@@ -1253,19 +1387,6 @@ color:var(--badge-text);
             <div class="activity-list" id="activityList"></div>
           </div>
 
-          <div class="panel" id="search">
-            <div class="panel-head">
-              <div>
-                <h2>Search Stock</h2>
-                <p class="muted">Search stock by SKU / Name / Barcode</p>
-              </div>
-            </div>
-            <div class="search-box">
-              <input id="searchInput" placeholder="Search SKU, product name, or barcode...">
-              <div class="muted">Search Results</div>
-              <div id="searchResults"></div>
-            </div>
-          </div>
         </section>
       </main>
     </div>
@@ -1307,6 +1428,27 @@ color:var(--badge-text);
           <button class="button light" type="button" data-close-activities>Close</button>
         </div>
         <div class="activity-list" id="allActivityList"></div>
+      </div>
+    </div>
+
+    <div class="drawer" id="guideModal" aria-hidden="true">
+      <div class="modal guide-modal" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle">
+        <div class="panel-head">
+          <div>
+            <h2 id="guideModalTitle">User Guide</h2>
+            <p class="muted">Panduan singkat menggunakan Stock Hub</p>
+          </div>
+          <button class="button light" type="button" data-close-guide>Close</button>
+        </div>
+        <div class="guide-content">
+          <section class="guide-step"><h3>1. Upload Order</h3><p>Upload file pesanan Shopee atau TikTok untuk memperbarui stok dari transaksi masuk.</p></section>
+          <section class="guide-step"><h3>2. Upload Product</h3><p>Gunakan untuk menambah atau memperbarui data master produk dan SKU.</p></section>
+          <section class="guide-step"><h3>3. Update Status</h3><p>Upload file khusus untuk mengubah status produk, misalnya ACTIVE atau INACTIVE.</p></section>
+          <section class="guide-step"><h3>4. Upload Adjustment</h3><p>Pilih Restock atau Set Stock, lalu upload file untuk menyesuaikan jumlah stok.</p></section>
+          <section class="guide-step"><h3>5. Multi SKU Processor</h3><p>Gunakan untuk cek stok, restock, sales, set stock, atau update status beberapa SKU sekaligus.</p></section>
+          <section class="guide-step"><h3>6. Download Export</h3><p>Unduh file pembaruan stok untuk Shopee atau TikTok Shop.</p></section>
+          <section class="guide-step"><h3>7. Search dan Activity</h3><p>Cari SKU, nama produk, atau barcode dari kolom pencarian. Gunakan View All untuk melihat detail seluruh aktivitas.</p></section>
+        </div>
       </div>
     </div>
 
@@ -1409,12 +1551,14 @@ ABC002 INACTIVE`
       const quickModal = document.querySelector("#quickModal");
       const activityModal = document.querySelector("#activityModal");
       const allActivityList = document.querySelector("#allActivityList");
+      const guideModal = document.querySelector("#guideModal");
       const metricModal = document.querySelector("#metricModal");
       const metricModalTitle = document.querySelector("#metricModalTitle");
       const metricModalHint = document.querySelector("#metricModalHint");
       const metricList = document.querySelector("#metricList");
       const uploadStatus = document.querySelector("#uploadStatus");
       const searchInput = document.querySelector("#searchInput");
+      const globalSearch = document.querySelector(".global-search");
       const themeToggle = document.querySelector("#themeToggle");
       const searchResults = document.querySelector("#searchResults");
       const quickTitle = document.querySelector("#quickTitle");
@@ -1550,6 +1694,7 @@ function toggleTheme() {
         document.querySelector("#mOut").textContent = formatNumber(data.totals.outOfStock);
         document.querySelector("#mOrders").textContent = formatNumber(data.totals.ordersToday);
         document.querySelector("#mUpdate").textContent = "Last update " + (data.lastUpdate || "-");
+        document.querySelector("#lastSync").textContent = "Last Sync: " + (data.lastSync || data.lastUpdate || "-");
 
         renderActivities(document.querySelector("#activityList"), data.activities || []);
       }
@@ -1580,7 +1725,7 @@ function toggleTheme() {
 
       function renderClient(client = {}) {
         document.querySelector("#clientName").textContent = client.name || client.id || "Store";
-        document.querySelector("#clientPlan").textContent = "Plan: " + (client.plan || "Active");
+        document.querySelector("#clientPlan").textContent = "Active until " + (client.endDate || "-");
         document.querySelector("#clientAvatar").textContent = initials(client.name || client.user);
       }
 
@@ -1844,6 +1989,9 @@ function toggleTheme() {
         if (!profileMenu.contains(event.target)) {
           closeProfileMenu();
         }
+        if (!globalSearch.contains(event.target)) {
+          searchResults.innerHTML = "";
+        }
       });
 
       document.querySelectorAll("[data-quick]").forEach(button => {
@@ -1978,8 +2126,19 @@ function toggleTheme() {
       document.querySelectorAll("[data-open-settings]").forEach(link => {
         link.addEventListener("click", event => {
           event.preventDefault();
-          openQuick("stock");
+          guideModal.classList.add("open");
+          guideModal.setAttribute("aria-hidden", "false");
         });
+      });
+      document.querySelector("[data-close-guide]").addEventListener("click", () => {
+        guideModal.classList.remove("open");
+        guideModal.setAttribute("aria-hidden", "true");
+      });
+      guideModal.addEventListener("click", event => {
+        if (event.target === guideModal) {
+          guideModal.classList.remove("open");
+          guideModal.setAttribute("aria-hidden", "true");
+        }
       });
 
       refreshQuickCopy(true);
@@ -2001,14 +2160,7 @@ function toggleTheme() {
           document.body.classList.add("is-authenticated");
           saveSessionActivity(true);
         } catch (error) {
-          if (error.status === 401) {
-            logout("Sesi tidak lagi valid. Silakan masuk kembali.");
-            return;
-          }
-
-          document.body.classList.remove("is-locked");
-          document.body.classList.add("is-authenticated");
-          scheduleSessionExpiry();
+          logout(error.message || "Tidak dapat membuka dashboard. Silakan masuk kembali.");
         }
       }
 

@@ -16,6 +16,8 @@ import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
 import { runTask } from "../services/utils/queue.js";
+import { nowWib } from "../services/utils/datetime.js";
+import { getWebClientErrorMessage, reportError } from "../services/errors/reporter.js";
 
 const JSON_LIMIT = 1024 * 1024;
 const FILE_LIMIT = 12 * 1024 * 1024;
@@ -256,10 +258,13 @@ function buildStockText(command, skus = []) {
 }
 
 async function getAuth(req) {
-  return authorizeWeb({
+  const auth = await authorizeWeb({
     user: requireWebUser(req),
     password: requireWebPassword(req)
   });
+
+  req.webContext = auth.context;
+  return auth;
 }
 
 async function handleSession(req, res) {
@@ -317,7 +322,7 @@ function groupActivities(logs) {
   return Array.from(groups.values()).reverse();
 }
 
-function buildDashboard({ store, logs, activityLimit = 6 }) {
+function buildDashboard({ store, logs, activityLimit = 5, lastSync = "" }) {
   const stockRows = store.stockRows || [];
   const productRows = store.productRows || [];
   const today = new Date().toISOString().slice(0, 10);
@@ -344,6 +349,7 @@ function buildDashboard({ store, logs, activityLimit = 6 }) {
       .map(row => row.LAST_UPDATE)
       .filter(Boolean)
       .slice(-1)[0] || "",
+    lastSync,
     activities: groupActivities(logs).slice(0, activityLimit)
   };
 }
@@ -399,7 +405,7 @@ async function handleDashboard(req, res) {
 
   sendJson(res, 200, {
     ok: true,
-    dashboard: buildDashboard({ store, logs })
+    dashboard: buildDashboard({ store, logs, lastSync: nowWib() })
   });
 }
 
@@ -569,8 +575,10 @@ async function handleExport(req, res) {
 }
 
 export default async function handler(req, res) {
+  let route = "";
+
   try {
-    const route = String(req.query?.route || "").trim();
+    route = String(req.query?.route || "").trim();
 
     if (req.method === "GET" && route === "session") {
       await handleSession(req, res);
@@ -621,9 +629,19 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("WEB ERROR:", error);
 
+    try {
+      await reportError({
+        error,
+        context: error.context || req.webContext,
+        command: `WEB ${req.method || "REQUEST"} ${route || "unknown"}`
+      });
+    } catch (reporterError) {
+      console.error("WEB ERROR REPORTER:", reporterError);
+    }
+
     sendJson(res, error.statusCode || 500, {
       ok: false,
-      error: error.message || "Something went wrong."
+      error: getWebClientErrorMessage(error)
     });
   }
 }
