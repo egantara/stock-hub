@@ -140,6 +140,20 @@ export async function exportTikTok({
 
     };
 
+    sheet[`B${rowNumber}`] = {
+
+      t: "s",
+
+      v: String(
+
+        product["FIELD CATEGORY"] ||
+
+        ""
+
+      )
+
+    };
+
     sheet[`C${rowNumber}`] = {
 
       t: "s",

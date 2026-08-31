@@ -157,7 +157,9 @@ function createProductRow({
 
     product.tiktokVariationId || "",
 
-    null,
+    "",
+
+    "",
 
     now,
 
@@ -477,7 +479,7 @@ export async function processProductImport({
             existing,
 
           column:
-            "N",
+            "O",
 
           value:
             newMarketplace
