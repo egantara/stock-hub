@@ -30,16 +30,38 @@ export async function parseTiktokOrder(
     "Completed"
   ];
 
-  return rows
+  const validStatusLower =
+    validStatus.map(s =>
+      s.toLowerCase()
+    );
+
+  const dataRows = rows
 
     // skip description row
     .filter(
       row =>
         row["Order ID"] !==
         "Platform unique order ID."
-    )
+    );
 
-    .map(row => ({
+  console.log(
+    "TIKTOK DATA ROWS:",
+    dataRows.length
+  );
+
+  if (dataRows.length > 0) {
+    console.log(
+      "TIKTOK SAMPLE ROW:",
+      JSON.stringify(
+        dataRows[0],
+        null,
+        2
+      )
+    );
+  }
+
+  const parsed =
+    dataRows.map(row => ({
 
       orderId:
         String(
@@ -71,16 +93,29 @@ export async function parseTiktokOrder(
           row["Variation"] || ""
         ).trim()
 
-    }))
+    }));
 
-    .filter(item =>
+  console.log(
+    "TIKTOK PARSED ROWS:",
+    parsed.length
+  );
+
+  const result =
+    parsed.filter(item =>
 
       item.orderId &&
       item.sku &&
       item.qty > 0 &&
 
-      validStatus.includes(
-        item.status
+      validStatusLower.includes(
+        item.status.toLowerCase()
       )
     );
+
+  console.log(
+    "TIKTOK VALID ORDERS:",
+    result.length
+  );
+
+  return result;
 }
