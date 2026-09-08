@@ -24,6 +24,8 @@ export async function parseTiktokOrder(
   const validStatus = [
     "Awaiting Collection",
     "Awaiting Shipment",
+    "To ship",
+    "Awaiting collection",
     "Shipped",
     "In Transit",
     "Delivered",
