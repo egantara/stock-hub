@@ -185,15 +185,7 @@ async function notifyDeveloper({
 
       developerChatId,
 
-      report,
-
-      {
-
-        parse_mode:
-
-          "Markdown"
-
-      }
+      report
 
     );
 
