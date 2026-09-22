@@ -559,7 +559,7 @@ async function handleUpload(req, res) {
       google: auth.google,
       type: "UPLOAD",
       fileType: action,
-      marketplace: "-",
+      marketplace: result.marketplace || "-",
       user: auth.context.userName,
       status: "success"
     });

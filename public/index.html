@@ -2123,9 +2123,34 @@ function toggleTheme() {
       });
 
       document.querySelectorAll("[data-export]").forEach(link => {
-        link.addEventListener("click", event => {
+        link.addEventListener("click", async event => {
           event.preventDefault();
-          window.location.href = securePath("export", "&name=" + link.dataset.export);
+          const name = link.dataset.export;
+          const originalText = link.textContent;
+          link.textContent = "Downloading...";
+          link.style.pointerEvents = "none";
+
+          try {
+            const response = await fetch(securePath("export", "&name=" + name));
+            if (!response.ok) throw new Error("Download failed");
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = name === "shopee" ? "shopee-export.xlsx" : "tiktok-export.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            await loadDashboard();
+          } catch (error) {
+            console.error("Export error:", error);
+          } finally {
+            link.textContent = originalText;
+            link.style.pointerEvents = "";
+          }
         });
       });
 
