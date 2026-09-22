@@ -2,7 +2,7 @@ import {
 
   AuthenticationError
 
-} from "../../errors/index.js";
+} from "../errors/index.js";
 
 import {
 
@@ -32,19 +32,13 @@ import {
 
 } from "../google/auth.js";
 
-export async function requireSession(
+export async function requireSession({
 
-  req
+  google,
 
-) {
+  token
 
-  const token =
-
-    getTokenFromRequest(
-
-      req
-
-    );
+}) {
 
   if (
 
@@ -68,6 +62,8 @@ export async function requireSession(
 
     await findSession({
 
+      google,
+
       token
 
     });
@@ -88,6 +84,8 @@ export async function requireSession(
 
   await touchSession({
 
+    google,
+
     token
 
   });
@@ -102,7 +100,7 @@ export async function requireSession(
 
     });
 
-  const google =
+  const clientGoogle =
 
     createGoogleSheets({
 
@@ -128,7 +126,9 @@ export async function requireSession(
 
     token,
 
-    google,
+    google:
+
+      clientGoogle,
 
     clientId:
 

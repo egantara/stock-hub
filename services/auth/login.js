@@ -2,7 +2,7 @@ import {
 
   ValidationError
 
-} from "../../errors/index.js";
+} from "../errors/index.js";
 
 import {
 

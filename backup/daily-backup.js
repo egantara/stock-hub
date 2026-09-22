@@ -21,6 +21,11 @@ import {
 from "./cleanup-processed.js";
 
 import {
+  cleanupFileLog
+}
+from "./cleanup-file-log.js";
+
+import {
   sendDocument
 }
 from "../services/telegram/send-document.js";
@@ -168,6 +173,25 @@ Rows : ${logBackup.totalRows}`
     });
 
     //
+    // MONTHLY CLEANUP FILE_LOG (1st of month)
+    //
+    const today = new Date();
+    const isMonthlyCleanup = today.getDate() === 1;
+    let fileLogMessage = "";
+
+    if (isMonthlyCleanup) {
+
+      await cleanupFileLog({
+
+        google
+
+      });
+
+      fileLogMessage = "\n📄 FILE_LOG : Data >1 bulan dihapus";
+
+    }
+
+    //
     // SUMMARY
     //
     await sendMessage(
@@ -177,7 +201,7 @@ Rows : ${logBackup.totalRows}`
 `✅ Daily Backup Selesai
 
 📄 PROCESSED_ORDERS : Data H-14 dihapus
-📄 LOG : Dibersihkan seluruhnya`
+📄 LOG : Dibersihkan seluruhnya${fileLogMessage}`
 
     );
 

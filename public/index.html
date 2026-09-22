@@ -836,6 +836,8 @@ transition:
 
       .marketplace-logo.shopee { color: #ee4d2d; }
       .marketplace-logo.tiktok { color: #00a6c7; }
+      .marketplace-logo.upload { color: #8159e6; background: var(--icon-violet); }
+      .marketplace-logo.download { color: #2563ff; background: var(--icon-blue); }
 
       .activity-detail {
         grid-column: 2 / -1;
@@ -927,6 +929,11 @@ transition:
 color:var(--badge-text);
         font-size: 12px;
         font-weight: 750;
+      }
+
+      .badge-danger {
+        background: var(--icon-red);
+        color: var(--red);
       }
 
       .search-box {
@@ -1646,7 +1653,10 @@ function toggleTheme() {
         })[character]);
       }
 
-      function marketplaceLogo(marketplace) {
+      function marketplaceLogo(marketplace, activityType) {
+        const type = String(activityType || "").toUpperCase();
+        if (type === "UPLOAD") return { label: "U", className: "upload", name: "Upload" };
+        if (type === "DOWNLOAD") return { label: "D", className: "download", name: "Download" };
         const name = String(marketplace || "").toLowerCase();
         if (name.includes("shopee")) return { label: "S", className: "shopee", name: "Shopee" };
         if (name.includes("tiktok")) return { label: "T", className: "tiktok", name: "TikTok" };
@@ -1660,8 +1670,11 @@ function toggleTheme() {
       function renderActivities(container, activities, showDetails = false) {
         const rows = activities.length ? activities : [{ command: "No activity yet", sku: "", time: "", count: 0 }];
         container.innerHTML = rows.map(item => {
-          const logo = marketplaceLogo(item.marketplace);
-          const countLabel = `${item.count || 0} items processed`;
+          const logo = marketplaceLogo(item.marketplace, item.activityType);
+          const isFileActivity = item.activityType === "UPLOAD" || item.activityType === "DOWNLOAD";
+          const countLabel = isFileActivity
+            ? (item.status === "failed" ? "Failed" : "Success")
+            : `${item.count || 0} items processed`;
           const detail = showDetails && item.items?.length ? `
             <details class="activity-detail">
               <summary>View ${item.items.length} processed items</summary>
@@ -1671,6 +1684,7 @@ function toggleTheme() {
                   <span>${escapeHtml(detailItem.qty ? `Qty: ${detailItem.qty}` : "")}</span>
                 </div>`).join("")}</div>
             </details>` : "";
+          const badgeClass = item.status === "failed" ? "badge-danger" : "";
           return `
             <div class="activity">
               <div class="marketplace-logo ${logo.className}" title="${escapeHtml(logo.name)}">${logo.label}</div>
@@ -1679,7 +1693,7 @@ function toggleTheme() {
                 <span class="activity-count">${escapeHtml(countLabel)}</span>
               </div>
               <div>
-                <span class="badge">Success</span>
+                <span class="badge ${badgeClass}">${escapeHtml(item.status === "failed" ? "Failed" : "Success")}</span>
                 <div class="muted">${escapeHtml(item.time || "")}</div>
               </div>
               ${detail}

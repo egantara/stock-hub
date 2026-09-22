@@ -18,6 +18,7 @@ import { processStockCommand } from "../services/stock/command/stock.js";
 import { runTask } from "../services/utils/queue.js";
 import { nowWib } from "../services/utils/datetime.js";
 import { getWebClientErrorMessage, reportError } from "../services/errors/reporter.js";
+import { addFileLog, getFileLogs } from "../services/utils/file-log.js";
 
 const JSON_LIMIT = 1024 * 1024;
 const FILE_LIMIT = 12 * 1024 * 1024;
@@ -291,38 +292,66 @@ function formatTime(value) {
   return String(value || "").trim();
 }
 
-function groupActivities(logs) {
-  const groups = new Map();
-
-  for (const row of logs) {
-    const activity = {
-      command: row.COMMAND || row.AKSI || row.ACTION || "Activity",
-      sku: row.SKU || "",
-      qty: row.QTY || "",
+function normalizeActivityRow(row) {
+  if (row.TYPE === "UPLOAD" || row.TYPE === "DOWNLOAD") {
+    const label = row.TYPE === "UPLOAD"
+      ? `UPLOAD ${String(row.FILE_TYPE || "").toUpperCase()}`
+      : `DOWNLOAD ${String(row.MARKETPLACE || "").toUpperCase()}`;
+    return {
+      command: label,
+      sku: "",
+      qty: "",
       marketplace: row.MARKETPLACE || "",
       user: row.USER || "",
-      time: formatTime(row.TIMESTAMP || row.DATE || row.CREATED_AT || row.WAKTU),
-      count: 0,
-      items: []
+      time: formatTime(row.TIMESTAMP || ""),
+      activityType: row.TYPE,
+      status: row.STATUS || "success"
     };
+  }
+
+  return {
+    command: row.COMMAND || row.AKSI || row.ACTION || "Activity",
+    sku: row.SKU || "",
+    qty: row.QTY || "",
+    marketplace: row.MARKETPLACE || "",
+    user: row.USER || "",
+    time: formatTime(row.TIMESTAMP || row.DATE || row.CREATED_AT || row.WAKTU),
+    activityType: "STOCK",
+    status: "success"
+  };
+}
+
+function groupActivities(logs, fileLogs = []) {
+  const groups = new Map();
+
+  const allRows = [
+    ...logs.map(row => ({ _source: "LOG", ...row })),
+    ...fileLogs.map(row => ({ _source: "FILE_LOG", ...row }))
+  ];
+
+  for (const row of allRows) {
+    const activity = normalizeActivityRow(row);
     const batchKey = [activity.command, activity.marketplace, activity.user, activity.time].join("\u0000");
-    const group = groups.get(batchKey) || activity;
+    const group = groups.get(batchKey) || { ...activity, count: 0, items: [] };
 
     if (!groups.has(batchKey)) {
       groups.set(batchKey, group);
     }
 
     group.count += 1;
-    group.items.push({
-      sku: activity.sku,
-      qty: activity.qty
-    });
+
+    if (activity.sku) {
+      group.items.push({
+        sku: activity.sku,
+        qty: activity.qty
+      });
+    }
   }
 
   return Array.from(groups.values()).reverse();
 }
 
-function buildDashboard({ store, logs, activityLimit = 5, lastSync = "" }) {
+function buildDashboard({ store, logs, fileLogs = [], activityLimit = 5, lastSync = "" }) {
   const stockRows = store.stockRows || [];
   const productRows = store.productRows || [];
   const today = new Date().toISOString().slice(0, 10);
@@ -350,7 +379,7 @@ function buildDashboard({ store, logs, activityLimit = 5, lastSync = "" }) {
       .filter(Boolean)
       .slice(-1)[0] || "",
     lastSync,
-    activities: groupActivities(logs).slice(0, activityLimit)
+    activities: groupActivities(logs, fileLogs).slice(0, activityLimit)
   };
 }
 
@@ -398,24 +427,28 @@ function buildMetricDetails(store, type) {
 async function handleDashboard(req, res) {
   const auth = await getAuth(req);
 
-  const [store, logs] = await Promise.all([
+  const [store, logs, fileLogs] = await Promise.all([
     loadStore({ google: auth.google }),
-    getRows({ google: auth.google, sheetName: "LOG" }).catch(() => [])
+    getRows({ google: auth.google, sheetName: "LOG" }).catch(() => []),
+    getFileLogs({ google: auth.google })
   ]);
 
   sendJson(res, 200, {
     ok: true,
-    dashboard: buildDashboard({ store, logs, lastSync: nowWib() })
+    dashboard: buildDashboard({ store, logs, fileLogs, lastSync: nowWib() })
   });
 }
 
 async function handleActivities(req, res) {
   const auth = await getAuth(req);
-  const logs = await getRows({ google: auth.google, sheetName: "LOG" }).catch(() => []);
+  const [logs, fileLogs] = await Promise.all([
+    getRows({ google: auth.google, sheetName: "LOG" }).catch(() => []),
+    getFileLogs({ google: auth.google })
+  ]);
 
   sendJson(res, 200, {
     ok: true,
-    activities: groupActivities(logs)
+    activities: groupActivities(logs, fileLogs)
   });
 }
 
@@ -522,7 +555,26 @@ async function handleUpload(req, res) {
       user: auth.context.userName
     }));
 
+    await addFileLog({
+      google: auth.google,
+      type: "UPLOAD",
+      fileType: action,
+      marketplace: "-",
+      user: auth.context.userName,
+      status: "success"
+    });
+
     sendJson(res, 200, { ok: true, result });
+  } catch (error) {
+    await addFileLog({
+      google: auth.google,
+      type: "UPLOAD",
+      fileType: action,
+      marketplace: "-",
+      user: auth.context.userName,
+      status: "failed"
+    });
+    throw error;
   } finally {
     await fs.unlink(filePath).catch(() => {});
   }
@@ -565,10 +617,33 @@ async function handleExport(req, res) {
   }
 
   const auth = await getAuth(req);
-  const filePath = await runTask(() => target.processor({ google: auth.google }));
+
+  let filePath;
+  try {
+    filePath = await runTask(() => target.processor({ google: auth.google }));
+  } catch (error) {
+    await addFileLog({
+      google: auth.google,
+      type: "DOWNLOAD",
+      fileType: "export",
+      marketplace: name,
+      user: auth.context.userName,
+      status: "failed"
+    });
+    throw error;
+  }
 
   try {
     await sendFile(res, filePath, target.fileName);
+
+    await addFileLog({
+      google: auth.google,
+      type: "DOWNLOAD",
+      fileType: "export",
+      marketplace: name,
+      user: auth.context.userName,
+      status: "success"
+    });
   } finally {
     await fs.unlink(filePath).catch(() => {});
   }
