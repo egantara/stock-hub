@@ -17,6 +17,7 @@ import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
 import { uploadProductPhoto, resolvePhotoUrl, loadPhotoMap } from "../services/product/photo.js";
+import { processMediaFile, isMediaFile } from "../services/product/photo-file.js";
 import { runTask } from "../services/utils/queue.js";
 import { nowWib } from "../services/utils/datetime.js";
 import { getWebClientErrorMessage, reportError } from "../services/errors/reporter.js";
@@ -50,7 +51,11 @@ const COMMAND_PROCESSORS = {
 
 const UPLOAD_PROCESSORS = {
   order: ({ google, filePath, user }) => processOrderFile({ google, filePath, user }),
-  product: ({ google, filePath, user }) => processNewFile({ google, filePath, user }),
+  product: async ({ google, filePath, user }) => (
+    isMediaFile(filePath)
+      ? processMediaFile({ google, filePath, user })
+      : processNewFile({ google, filePath, user })
+  ),
   status: ({ google, filePath, user }) => processStatusFile({ google, filePath, user }),
   set: ({ google, filePath, user }) => processStockFile({ google, filePath, mode: "SET", user }),
   restock: ({ google, filePath, user }) => processStockFile({ google, filePath, mode: "RESTOCK", user })

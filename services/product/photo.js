@@ -36,11 +36,11 @@ export const PHOTO_LIMIT = 34 * 1024;
 
 export const PHOTO_SHEET = "PHOTOS";
 
-const SHEET_CELL_LIMIT = 50000;
+export const SHEET_CELL_LIMIT = 50000;
 
 const PHOTO_COLUMNS = ["image/jpeg", "image/png", "image/webp"];
 
-function sniffImageMime(buffer) {
+export function sniffImageMime(buffer) {
   if (buffer.length > 3 && buffer[0] === 0xFF && buffer[1] === 0xD8) {
     return "image/jpeg";
   }
@@ -138,7 +138,7 @@ export async function loadPhotoMap({ google }) {
 // SKU kembar = punya SHOPEE_PRODUCT_ID atau TIKTOK_PRODUCT_ID sama.
 // 1 foto upload berlaku untuk semuanya.
 //
-function findTwinSkus({ store, product, sku }) {
+export function findTwinSkus({ store, product, sku }) {
   const shopeeId = String(product.SHOPEE_PRODUCT_ID || "").trim();
   const tiktokId = String(product.TIKTOK_PRODUCT_ID || "").trim();
 

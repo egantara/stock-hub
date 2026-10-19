@@ -1455,9 +1455,9 @@ color:var(--badge-text);
                 <input type="file" data-file="product" accept=".xlsx,.xls,.csv">
                 <div class="icon">▣</div>
                 <h3>Upload Product</h3>
-                <p class="muted">Product / Master Data</p>
+                <p class="muted">Product / Media (foto dari link)</p>
                 <small>Drop file here<br>or click to choose a file</small>
-                <small>.xlsx / .xls</small>
+                <small>.xlsx / .xls / .csv</small>
               </label>
               <label class="drop status" data-drop="status">
                 <input type="file" data-file="status" accept=".xlsx,.xls">
@@ -2280,7 +2280,8 @@ function toggleTheme() {
           body: form
         });
 
-        setStatus(uploadStatus, "Done");
+        const result = payload.result || {};
+        setStatus(uploadStatus, result.summary || "Done");
         await loadDashboard();
       }
 
