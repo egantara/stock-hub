@@ -392,3 +392,51 @@ export async function getSpreadsheet({
   return result.data;
 
 }
+
+export async function ensureSheet({
+
+  google,
+
+  title
+
+}) {
+
+  const spreadsheet =
+    await getSpreadsheet({
+      google
+    });
+
+  const exists =
+    (spreadsheet.sheets || [])
+      .some(sheet =>
+        sheet.properties?.title === title
+      );
+
+  if (
+    exists
+  ) {
+
+    return;
+
+  }
+
+  await google.sheets
+    .spreadsheets
+    .batchUpdate({
+
+      spreadsheetId:
+        google.spreadsheetId,
+
+      requestBody: {
+        requests: [{
+          addSheet: {
+            properties: {
+              title
+            }
+          }
+        }]
+      }
+
+    });
+
+}

@@ -1,12 +1,6 @@
 import {
-  Readable
-}
-from "stream";
-
-import {
   ValidationError,
-  BusinessError,
-  ConfigurationError
+  BusinessError
 }
 from "../errors/index.js";
 
@@ -16,7 +10,11 @@ import {
 from "../google/store.js";
 
 import {
-  batchUpdate
+  getRows,
+  getRawRows,
+  appendRow,
+  updateRange,
+  ensureSheet
 }
 from "../google/google-sheet.js";
 
@@ -25,15 +23,21 @@ import {
 }
 from "./service.js";
 
-export const PHOTO_LIMIT = 2 * 1024 * 1024;
+//
+// Penyimpanan foto: tab sheet "PHOTOS" (kolom A = SKU, kolom B = data URL).
+// Terpisah dari PRODUCTS agar perintah stok tidak memuat base64 berat.
+//
+// BATAS AMAN: 1 sel Google Sheets = 50.000 karakter.
+// base64 = 4/3 * byte, + prefix "data:image/jpeg;base64," (23 char)
+// 34KB binary -> ~46.5K char -> masih aman di bawah 50K.
+//
+export const PHOTO_LIMIT = 34 * 1024;
+
+export const PHOTO_SHEET = "PHOTOS";
+
+const SHEET_CELL_LIMIT = 50000;
 
 const PHOTO_COLUMNS = ["image/jpeg", "image/png", "image/webp"];
-
-const PHOTO_EXTENSIONS = {
-  "image/jpeg": ".jpg",
-  "image/png": ".png",
-  "image/webp": ".webp"
-};
 
 function sniffImageMime(buffer) {
   if (buffer.length > 3 && buffer[0] === 0xFF && buffer[1] === 0xD8) {
@@ -51,7 +55,7 @@ function sniffImageMime(buffer) {
   return "";
 }
 
-export function extractDriveFileId(value) {
+function extractDriveFileId(value) {
   const raw = String(value || "").trim();
 
   if (/^[A-Za-z0-9_-]{20,}$/.test(raw)) {
@@ -60,25 +64,8 @@ export function extractDriveFileId(value) {
 
   const match =
     raw.match(/[?&]id=([A-Za-z0-9_-]{20,})/) ||
-    raw.match(/\/d\/([A-Za-z0-9_-]{20,})/);
-
-  return match ? match[1] : "";
-}
-
-export function normalizeFolderId(value) {
-  const raw = String(value || "").trim();
-
-  if (!raw) {
-    return "";
-  }
-
-  if (/^[A-Za-z0-9_-]{20,}$/.test(raw)) {
-    return raw;
-  }
-
-  const match =
-    raw.match(/\/folders\/([A-Za-z0-9_-]{20,})/) ||
-    raw.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
+    raw.match(/\/d\/([A-Za-z0-9_-]{20,})/) ||
+    raw.match(/\/folders\/([A-Za-z0-9_-]{20,})/);
 
   return match ? match[1] : "";
 }
@@ -88,6 +75,10 @@ export function resolvePhotoUrl(value) {
 
   if (!raw) {
     return "";
+  }
+
+  if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(raw)) {
+    return raw;
   }
 
   if (/^https?:\/\//i.test(raw)) {
@@ -103,15 +94,43 @@ export function resolvePhotoUrl(value) {
   return "";
 }
 
-async function deleteDriveFile(google, fileId) {
-  try {
-    await google.drive.files.delete({
-      fileId,
-      supportsAllDrives: true
+export async function ensurePhotoSheet({ google }) {
+  await ensureSheet({ google, title: PHOTO_SHEET });
+
+  const rawRows = await getRawRows({
+    google,
+    sheetName: PHOTO_SHEET
+  }).catch(() => []);
+
+  if (!rawRows.length) {
+    await appendRow({
+      google,
+      sheetName: PHOTO_SHEET,
+      values: ["SKU", "FOTO"]
     });
-  } catch (error) {
-    console.error("FAILED DELETE DRIVE PHOTO:", fileId, error.message);
+    return [];
   }
+
+  return getRows({
+    google,
+    sheetName: PHOTO_SHEET
+  }).catch(() => []);
+}
+
+export async function loadPhotoMap({ google }) {
+  const rows = await ensurePhotoSheet({ google });
+  const map = new Map();
+
+  for (const row of rows) {
+    const sku = String(row.SKU || "").trim();
+    const foto = String(row.FOTO || row.PHOTO || "").trim();
+
+    if (sku && foto) {
+      map.set(sku, foto);
+    }
+  }
+
+  return map;
 }
 
 export async function uploadProductPhoto({
@@ -120,13 +139,6 @@ export async function uploadProductPhoto({
   buffer,
   user
 }) {
-  if (!google?.drive) {
-    throw new ConfigurationError({
-      message: "Google Drive belum dikonfigurasi.",
-      field: "GOOGLE_DRIVE"
-    });
-  }
-
   const cleanSku = String(sku || "").trim();
 
   if (!cleanSku) {
@@ -138,7 +150,9 @@ export async function uploadProductPhoto({
   }
 
   if (buffer.length > PHOTO_LIMIT) {
-    throw new ValidationError("Ukuran foto maksimal 2MB. Silakan kecilkan fotonya dulu.");
+    throw new ValidationError(
+      "Foto terlalu besar bahkan setelah kompresi. Coba gunakan foto lain atau kecilkan ukurannya."
+    );
   }
 
   const mimeType = sniffImageMime(buffer);
@@ -154,98 +168,32 @@ export async function uploadProductPhoto({
     throw new BusinessError("SKU tidak ditemukan.");
   }
 
-  const folderId = normalizeFolderId(google.folderId);
+  const dataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
-  console.log("[PHOTO] upload", cleanSku, "folder:", folderId ? "configured" : "MISSING");
-
-  if (!folderId) {
-    throw new ValidationError(
-      "Foto belum bisa diunggah: GOOGLE_DRIVE_FOLDER_ID belum diatur. " +
-      "Isi kolom GOOGLE_DRIVE_FOLDER_ID di sheet LICENSE dengan ID folder Drive " +
-      "(bisa tempel URL folder, kode otomatis diambil), lalu share folder tersebut ke email service account sebagai Editor."
-    );
+  if (dataUrl.length > SHEET_CELL_LIMIT) {
+    throw new ValidationError("Foto terlalu besar untuk disimpan. Coba foto lain yang lebih kecil.");
   }
 
-  const previousFileId = extractDriveFileId(product.FOTO);
-  const fileName = `${cleanSku}-${Date.now()}${PHOTO_EXTENSIONS[mimeType]}`;
+  const rows = await ensurePhotoSheet({ google });
+  const existing = rows.find(row => String(row.SKU || "").trim() === cleanSku);
 
-  let createResponse;
-
-  try {
-    createResponse = await google.drive.files.create({
-      requestBody: {
-        name: fileName,
-        mimeType,
-        parents: [folderId]
-      },
-      media: {
-        mimeType,
-        body: Readable.from([buffer])
-      },
-      fields: "id, name",
-      supportsAllDrives: true
+  if (existing) {
+    await updateRange({
+      google,
+      range: `${PHOTO_SHEET}!B${existing.__rowNumber}`,
+      values: [[dataUrl]]
     });
-  } catch (error) {
-    const message = String(error.message || "");
-
-    if (message.includes("storage quota")) {
-      throw new ValidationError(
-        "Upload foto ditolak Google Drive (service account tidak punya kuota penyimpanan). " +
-        "Pastikan GOOGLE_DRIVE_FOLDER_ID menunjuk folder di Shared Drive " +
-        "(tambahkan email service account sebagai anggota Shared Drive), " +
-        "atau gunakan folder yang sudah di-share ke service account sebagai Editor."
-      );
-    }
-
-    if (error.code === 404 || message.includes("File not found")) {
-      throw new ValidationError(
-        "Folder Google Drive tidak ditemukan atau service account belum diizinkan akses. " +
-        "Periksa GOOGLE_DRIVE_FOLDER_ID dan pastikan folder sudah di-share ke email service account sebagai Editor."
-      );
-    }
-
-    throw error;
-  }
-
-  const fileId = createResponse.data.id;
-
-  if (!fileId) {
-    throw new Error("Drive upload gagal: fileId tidak diterima.");
-  }
-
-  try {
-    await google.drive.permissions.create({
-      fileId,
-      requestBody: {
-        type: "anyone",
-        role: "reader"
-      },
-      supportsAllDrives: true
+  } else {
+    await appendRow({
+      google,
+      sheetName: PHOTO_SHEET,
+      values: [cleanSku, dataUrl]
     });
-  } catch (error) {
-    await deleteDriveFile(google, fileId);
-    throw new ValidationError(
-      "Foto terunggah tetapi gagal diatur bisa dilihat publik. " +
-      "Jika memakai Shared Drive, tambahkan service account sebagai Manager agar bisa mengatur izin berbagi."
-    );
   }
-
-  if (previousFileId && previousFileId !== fileId) {
-    await deleteDriveFile(google, previousFileId);
-  }
-
-  await batchUpdate({
-    google,
-    updates: [{
-      range: `PRODUCTS!Q${product.__rowNumber}`,
-      values: [[fileId]]
-    }]
-  });
 
   return {
     sku: cleanSku,
-    fileId,
-    url: resolvePhotoUrl(fileId),
+    url: dataUrl,
     user: user || ""
   };
 }

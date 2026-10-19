@@ -15,7 +15,7 @@ import { processStockFile } from "../services/stock/file.js";
 import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
-import { uploadProductPhoto, resolvePhotoUrl } from "../services/product/photo.js";
+import { uploadProductPhoto, resolvePhotoUrl, loadPhotoMap } from "../services/product/photo.js";
 import { runTask } from "../services/utils/queue.js";
 import { nowWib } from "../services/utils/datetime.js";
 import { getWebClientErrorMessage, reportError } from "../services/errors/reporter.js";
@@ -468,7 +468,10 @@ async function handleSearch(req, res) {
   }
 
   const auth = await getAuth(req);
-  const store = await loadStore({ google: auth.google });
+  const [store, photoMap] = await Promise.all([
+    loadStore({ google: auth.google }),
+    loadPhotoMap({ google: auth.google }).catch(() => new Map())
+  ]);
   const results = store.productRows
     .map(product => {
       const stock = store.stockMap.get(product.SKU);
@@ -479,7 +482,7 @@ async function handleSearch(req, res) {
         variation: product.VARIASI || "",
         status: product.STATUS || "",
         marketplace: product.MARKETPLACE || "",
-        foto: resolvePhotoUrl(product.FOTO),
+        foto: resolvePhotoUrl(photoMap.get(String(product.SKU || "").trim()) || product.FOTO),
         shopee: product.SHOPEE_PRODUCT_ID ? asNumber(stock?.STOCK) : null,
         tiktok: product.TIKTOK_PRODUCT_ID ? asNumber(stock?.STOCK) : null,
         stock: asNumber(stock?.STOCK),
@@ -499,18 +502,22 @@ async function handleSearch(req, res) {
 
 async function handleProducts(req, res) {
   const auth = await getAuth(req);
-  const store = await loadStore({ google: auth.google });
+  const [store, photoMap] = await Promise.all([
+    loadStore({ google: auth.google }),
+    loadPhotoMap({ google: auth.google }).catch(() => new Map())
+  ]);
 
   const products = store.productRows
     .map(product => {
       const stock = store.stockMap.get(product.SKU);
+      const sku = String(product.SKU || "").trim();
 
       return {
-        sku: String(product.SKU || "").trim(),
+        sku,
         nama: product.NAMA || product.NAME || "",
         variasi: product.VARIASI || "",
         status: product.STATUS || "",
-        foto: resolvePhotoUrl(product.FOTO),
+        foto: resolvePhotoUrl(photoMap.get(sku) || product.FOTO),
         stock: asNumber(stock?.STOCK)
       };
     })
