@@ -12,6 +12,7 @@ import { processStatusCommand } from "../services/product/command/status.js";
 import { loadStore } from "../services/google/store.js";
 import { processSalesCommand } from "../services/stock/command/sales.js";
 import { processStockFile } from "../services/stock/file.js";
+import { buildStockTemplate } from "../services/stock/template.js";
 import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
@@ -663,9 +664,27 @@ async function handleUpload(req, res) {
 }
 
 async function handleTemplate(req, res) {
-  await getAuth(req);
+  const auth = await getAuth(req);
 
   const name = String(req.query?.name || "stock").trim().toLowerCase();
+
+  //
+  // Template stock digenerate dinamis: semua SKU + stok + foto.
+  // Fallback ke file statis jika generate gagal.
+  //
+  if (name === "stock") {
+    try {
+      const buffer = await runTask(() => buildStockTemplate({ google: auth.google }));
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="template-stock.xlsx"`);
+      res.status(200).send(buffer);
+      return;
+    } catch (error) {
+      console.error("STOCK TEMPLATE ERROR:", error);
+    }
+  }
+
   const fileName = TEMPLATES[name];
 
   if (!fileName) {

@@ -13,7 +13,8 @@ import {
   getRows,
   getRawRows,
   appendRow,
-  updateRange,
+  appendRows,
+  batchUpdate,
   ensureSheet
 }
 from "../google/google-sheet.js";
@@ -133,6 +134,41 @@ export async function loadPhotoMap({ google }) {
   return map;
 }
 
+//
+// SKU kembar = punya SHOPEE_PRODUCT_ID atau TIKTOK_PRODUCT_ID sama.
+// 1 foto upload berlaku untuk semuanya.
+//
+function findTwinSkus({ store, product, sku }) {
+  const shopeeId = String(product.SHOPEE_PRODUCT_ID || "").trim();
+  const tiktokId = String(product.TIKTOK_PRODUCT_ID || "").trim();
+
+  const twins = new Set([sku]);
+
+  if (!shopeeId && !tiktokId) {
+    return [...twins];
+  }
+
+  for (const row of store.productRows) {
+    const rowSku = String(row.SKU || "").trim();
+
+    if (!rowSku || twins.has(rowSku)) {
+      continue;
+    }
+
+    const rowShopee = String(row.SHOPEE_PRODUCT_ID || "").trim();
+    const rowTiktok = String(row.TIKTOK_PRODUCT_ID || "").trim();
+
+    if (
+      (shopeeId && rowShopee === shopeeId) ||
+      (tiktokId && rowTiktok === tiktokId)
+    ) {
+      twins.add(rowSku);
+    }
+  }
+
+  return [...twins];
+}
+
 export async function uploadProductPhoto({
   google,
   sku,
@@ -175,25 +211,46 @@ export async function uploadProductPhoto({
   }
 
   const rows = await ensurePhotoSheet({ google });
-  const existing = rows.find(row => String(row.SKU || "").trim() === cleanSku);
+  const rowIndexBySku = new Map();
 
-  if (existing) {
-    await updateRange({
-      google,
-      range: `${PHOTO_SHEET}!B${existing.__rowNumber}`,
-      values: [[dataUrl]]
-    });
-  } else {
-    await appendRow({
-      google,
-      sheetName: PHOTO_SHEET,
-      values: [cleanSku, dataUrl]
-    });
+  for (const row of rows) {
+    const rowSku = String(row.SKU || "").trim();
+
+    if (rowSku && !rowIndexBySku.has(rowSku)) {
+      rowIndexBySku.set(rowSku, row.__rowNumber);
+    }
   }
+
+  const twinSkus = findTwinSkus({ store, product, sku: cleanSku });
+
+  const updates = [];
+  const appended = [];
+
+  for (const targetSku of twinSkus) {
+    const existingRow = rowIndexBySku.get(targetSku);
+
+    if (existingRow) {
+      updates.push({
+        range: `${PHOTO_SHEET}!B${existingRow}`,
+        values: [[dataUrl]]
+      });
+    } else {
+      appended.push([targetSku, dataUrl]);
+    }
+  }
+
+  await batchUpdate({ google, updates });
+
+  await appendRows({
+    google,
+    sheetName: PHOTO_SHEET,
+    rows: appended
+  });
 
   return {
     sku: cleanSku,
     url: dataUrl,
+    twins: twinSkus,
     user: user || ""
   };
 }

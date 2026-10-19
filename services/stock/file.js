@@ -335,7 +335,18 @@ export async function processStockFile({
 
     readRows(
       filePath
+    ).filter(
+      row =>
+        String(row.QTY ?? "").trim() !== ""
     );
+
+  if (
+    !rows.length
+  ) {
+    throw new ValidationError(
+      "Tidak ada baris dengan QTY. Isi kolom QTY pada baris yang akan diproses."
+    );
+  }
 
   validateDuplicateSku(
     rows

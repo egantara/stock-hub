@@ -2052,11 +2052,18 @@ function toggleTheme() {
           body: form
         });
 
-        if (pickerProducts) {
-          const product = pickerProducts.find(item => item.sku === sku);
+        const result = payload.result || {};
+        const appliedSkus = Array.isArray(result.twins) && result.twins.length
+          ? result.twins
+          : [sku];
 
-          if (product) {
-            product.foto = payload.result?.url || "";
+        if (pickerProducts) {
+          const url = result.url || "";
+
+          for (const item of pickerProducts) {
+            if (appliedSkus.includes(item.sku)) {
+              item.foto = url;
+            }
           }
 
           renderPickerGrid();
@@ -2066,7 +2073,7 @@ function toggleTheme() {
           runSearch().catch(() => {});
         }
 
-        return payload.result;
+        return result;
       }
 
       function requestPhotoUpload(sku) {
@@ -2086,8 +2093,11 @@ function toggleTheme() {
         setStatus(pickerStatus, `Mengunggah foto ${sku}...`);
 
         try {
-          await uploadPhotoFor(sku, file);
-          setStatus(pickerStatus, `Foto ${sku} berhasil diperbarui.`);
+          const result = await uploadPhotoFor(sku, file);
+          const count = Array.isArray(result?.twins) ? result.twins.length : 1;
+          setStatus(pickerStatus, count > 1
+            ? `Foto ${sku} diperbarui dan diterapkan ke ${count} SKU (product id sama).`
+            : `Foto ${sku} berhasil diperbarui.`);
         } catch (error) {
           setStatus(pickerStatus, error.message, true);
         }
