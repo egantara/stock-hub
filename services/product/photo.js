@@ -247,10 +247,197 @@ export async function uploadProductPhoto({
     rows: appended
   });
 
+  await syncProductFotoColumn({ google, skus: twinSkus }).catch(error => {
+    console.error("SYNC FOTO GAGAL (upload):", error);
+  });
+
   return {
     sku: cleanSku,
     url: dataUrl,
     twins: twinSkus,
     user: user || ""
   };
+}
+
+//
+// Sinkron indikator foto ke tab PRODUCTS, kolom FOTO.
+// Nilai: "Ada" jika SKU punya foto di PHOTOS, "Tidak ada" jika tidak.
+// Full sync: kolom FOTO sepenuhnya mencerminkan isi PHOTOS.
+//
+
+export const PHOTO_YES = "Ada";
+
+export const PHOTO_NO = "Tidak ada";
+
+const SYNC_CHUNK = 100;
+
+const PRODUCT_SHEET = "PRODUCTS";
+
+function headerIndex(header, name) {
+
+  return String(name || "").trim() === ""
+    ? -1
+    : header.findIndex(
+      cell =>
+        String(cell || "").trim().toUpperCase() === name.toUpperCase()
+    );
+
+}
+
+export function columnLetter(index) {
+
+  let position = index;
+
+  let letters = "";
+
+  do {
+    letters = String.fromCharCode(65 + (position % 26)) + letters;
+    position = Math.floor(position / 26) - 1;
+  } while (position >= 0);
+
+  return letters;
+
+}
+
+export function planFotoUpdates({
+  header,
+  dataRows,
+  photoSkus,
+  skus = null
+}) {
+
+  const skuIndex = headerIndex(header, "SKU");
+
+  if (skuIndex < 0) {
+    throw new ValidationError("Kolom SKU tidak ditemukan di tab PRODUCTS.");
+  }
+
+  let fotoIndex = headerIndex(header, "FOTO");
+
+  const headerUpdate = fotoIndex < 0
+    ? {
+      range: `${PRODUCT_SHEET}!${columnLetter(header.length)}1`,
+      values: [["FOTO"]]
+    }
+    : null;
+
+  if (fotoIndex < 0) {
+    fotoIndex = header.length;
+  }
+
+  const onlySkus = skus
+    ? skus instanceof Set
+      ? skus
+      : new Set(skus)
+    : null;
+
+  const fotoColumn = columnLetter(fotoIndex);
+
+  const updates = [];
+
+  let checked = 0;
+
+  let marked = 0;
+
+  let cleared = 0;
+
+  dataRows.forEach((row, index) => {
+
+    const sku = String(row[skuIndex] ?? "").trim();
+
+    if (!sku || (onlySkus && !onlySkus.has(sku))) {
+      return;
+    }
+
+    checked += 1;
+
+    const desired = photoSkus.has(sku) ? PHOTO_YES : PHOTO_NO;
+    const current = String(row[fotoIndex] ?? "").trim();
+
+    if (current === desired) {
+      return;
+    }
+
+    if (desired === PHOTO_YES) {
+      marked += 1;
+    } else {
+      cleared += 1;
+    }
+
+    updates.push({
+      range: `${PRODUCT_SHEET}!${fotoColumn}${index + 2}`,
+      values: [[desired]]
+    });
+
+  });
+
+  return {
+    headerUpdate,
+    updates,
+    checked,
+    marked,
+    cleared
+  };
+
+}
+
+export async function syncProductFotoColumn({ google, skus = null }) {
+
+  const photoRaw = await getRawRows({
+    google,
+    sheetName: PHOTO_SHEET
+  }).catch(() => []);
+
+  const photoSkus = new Set();
+
+  for (let index = 1; index < photoRaw.length; index++) {
+
+    const sku = String(photoRaw[index]?.[0] ?? "").trim();
+    const foto = String(photoRaw[index]?.[1] ?? "").trim();
+
+    if (sku && foto) {
+      photoSkus.add(sku);
+    }
+
+  }
+
+  const productRaw = await getRawRows({
+    google,
+    sheetName: PRODUCT_SHEET
+  }).catch(() => []);
+
+  if (productRaw.length < 2) {
+    return {
+      checked: 0,
+      updated: 0,
+      marked: 0,
+      cleared: 0
+    };
+  }
+
+  const plan = planFotoUpdates({
+    header: productRaw[0],
+    dataRows: productRaw.slice(1),
+    photoSkus,
+    skus
+  });
+
+  const updates = plan.headerUpdate
+    ? [plan.headerUpdate, ...plan.updates]
+    : plan.updates;
+
+  for (let index = 0; index < updates.length; index += SYNC_CHUNK) {
+    await batchUpdate({
+      google,
+      updates: updates.slice(index, index + SYNC_CHUNK)
+    });
+  }
+
+  return {
+    checked: plan.checked,
+    updated: plan.updates.length,
+    marked: plan.marked,
+    cleared: plan.cleared
+  };
+
 }

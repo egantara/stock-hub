@@ -36,7 +36,8 @@ import {
   sniffImageMime,
   findTwinSkus,
   SHEET_CELL_LIMIT,
-  PHOTO_SHEET
+  PHOTO_SHEET,
+  syncProductFotoColumn
 }
 from "./photo.js";
 
@@ -467,6 +468,10 @@ export async function processMediaFile({
     google,
     sheetName: PHOTO_SHEET,
     rows: appended
+  });
+
+  await syncProductFotoColumn({ google, skus: [...photoBySku.keys()] }).catch(error => {
+    console.error("SYNC FOTO GAGAL (import media):", error);
   });
 
   const imported = downloaded.filter(item => !item.error).length;

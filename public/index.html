@@ -623,6 +623,20 @@ document.documentElement.dataset.theme = theme;
         margin-top: 0;
       }
 
+      .head-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button.link-button {
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
       .upload-row {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1440,7 +1454,10 @@ color:var(--badge-text);
                 <h2>Upload File</h2>
                 <p class="muted">Upload files to process data</p>
               </div>
-              <a class="link-button" href="#" data-template="stock">Download Template</a>
+              <div class="head-actions">
+                <button class="link-button" type="button" id="syncFotoButton">Sinkron FOTO</button>
+                <a class="link-button" href="#" data-template="stock">Download Template</a>
+              </div>
             </div>
             <div class="upload-row">
               <label class="drop" data-drop="order">
@@ -2483,6 +2500,39 @@ function toggleTheme() {
           setStatus(manualStatus, error.message, true);
         }
       });
+
+      const syncFotoButton = document.querySelector("#syncFotoButton");
+
+      if (syncFotoButton) {
+        syncFotoButton.addEventListener("click", async () => {
+          const originalText = syncFotoButton.textContent;
+          syncFotoButton.disabled = true;
+          syncFotoButton.textContent = "Sinkron...";
+          setStatus(uploadStatus, "Menyinkronkan kolom FOTO dari tab PHOTOS...");
+
+          try {
+            const payload = await api("/api/web?route=sync-foto", {
+              method: "POST",
+              headers: authHeaders()
+            });
+            const result = payload.result || {};
+
+            setStatus(uploadStatus,
+              `Sinkron FOTO: ${result.updated || 0} sel diperbarui ` +
+              `(${result.marked || 0} Ada, ${result.cleared || 0} Tidak ada) ` +
+              `dari ${result.checked || 0} SKU dicek.`);
+
+            if (pickerProducts) {
+              await loadPickerProducts(true);
+            }
+          } catch (error) {
+            setStatus(uploadStatus, "Gagal: " + error.message, true);
+          } finally {
+            syncFotoButton.disabled = false;
+            syncFotoButton.textContent = originalText;
+          }
+        });
+      }
 
       document.querySelectorAll("[data-file]").forEach(input => {
         input.addEventListener("change", async () => {

@@ -16,7 +16,7 @@ import { buildStockTemplate } from "../services/stock/template.js";
 import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
-import { uploadProductPhoto, resolvePhotoUrl, loadPhotoMap } from "../services/product/photo.js";
+import { uploadProductPhoto, resolvePhotoUrl, loadPhotoMap, syncProductFotoColumn } from "../services/product/photo.js";
 import { processMediaFile, isMediaFile } from "../services/product/photo-file.js";
 import { runTask } from "../services/utils/queue.js";
 import { nowWib } from "../services/utils/datetime.js";
@@ -583,6 +583,23 @@ async function handlePhoto(req, res) {
   sendJson(res, 200, { ok: true, result });
 }
 
+async function handleSyncFoto(req, res) {
+  const auth = await getAuth(req);
+
+  const result = await runTask(() => syncProductFotoColumn({ google: auth.google }));
+
+  await addFileLog({
+    google: auth.google,
+    type: "SYNC",
+    fileType: "foto",
+    marketplace: "-",
+    user: auth.context.userName,
+    status: "success"
+  }).catch(() => {});
+
+  sendJson(res, 200, { ok: true, result });
+}
+
 async function handleCommand(req, res) {
   const body = await readJson(req);
   const action = String(body.action || "").trim();
@@ -813,6 +830,11 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && route === "photo") {
       await handlePhoto(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && route === "sync-foto") {
+      await handleSyncFoto(req, res);
       return;
     }
 
