@@ -1036,7 +1036,14 @@ function buildContext({
 
       privateKey:
         license.GOOGLE_PRIVATE_KEY
-          .replace(/\\n/g, "\n")
+          .replace(/\\n/g, "\n"),
+
+      folderId:
+        String(
+          license.GOOGLE_DRIVE_FOLDER_ID ||
+          process.env.GOOGLE_DRIVE_FOLDER_ID ||
+          ""
+        ).trim()
 
     },
 

@@ -46,7 +46,9 @@ export function createGoogleSheets({
 
   clientEmail,
 
-  privateKey
+  privateKey,
+
+  folderId
 
 }) {
 
@@ -118,7 +120,9 @@ export function createGoogleSheets({
 
       scopes: [
 
-        "https://www.googleapis.com/auth/spreadsheets"
+        "https://www.googleapis.com/auth/spreadsheets",
+
+        "https://www.googleapis.com/auth/drive.file"
 
       ]
 
@@ -135,6 +139,20 @@ export function createGoogleSheets({
         auth
 
       }),
+
+    drive:
+
+      google.drive({
+
+        version: "v3",
+
+        auth
+
+      }),
+
+    folderId:
+
+      String(folderId || "").trim(),
 
     spreadsheetId:
 

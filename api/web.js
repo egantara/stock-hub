@@ -15,6 +15,7 @@ import { processStockFile } from "../services/stock/file.js";
 import { processRestockCommand } from "../services/stock/command/restock.js";
 import { processSetCommand } from "../services/stock/command/set.js";
 import { processStockCommand } from "../services/stock/command/stock.js";
+import { uploadProductPhoto, resolvePhotoUrl } from "../services/product/photo.js";
 import { runTask } from "../services/utils/queue.js";
 import { nowWib } from "../services/utils/datetime.js";
 import { getWebClientErrorMessage, reportError } from "../services/errors/reporter.js";
@@ -478,6 +479,7 @@ async function handleSearch(req, res) {
         variation: product.VARIASI || "",
         status: product.STATUS || "",
         marketplace: product.MARKETPLACE || "",
+        foto: resolvePhotoUrl(product.FOTO),
         shopee: product.SHOPEE_PRODUCT_ID ? asNumber(stock?.STOCK) : null,
         tiktok: product.TIKTOK_PRODUCT_ID ? asNumber(stock?.STOCK) : null,
         stock: asNumber(stock?.STOCK),
@@ -493,6 +495,79 @@ async function handleSearch(req, res) {
     .slice(0, 10);
 
   sendJson(res, 200, { ok: true, results });
+}
+
+async function handleProducts(req, res) {
+  const auth = await getAuth(req);
+  const store = await loadStore({ google: auth.google });
+
+  const products = store.productRows
+    .map(product => {
+      const stock = store.stockMap.get(product.SKU);
+
+      return {
+        sku: String(product.SKU || "").trim(),
+        nama: product.NAMA || product.NAME || "",
+        variasi: product.VARIASI || "",
+        status: product.STATUS || "",
+        foto: resolvePhotoUrl(product.FOTO),
+        stock: asNumber(stock?.STOCK)
+      };
+    })
+    .filter(item => item.sku && String(item.status || "").toUpperCase() !== "DISCONTINUED")
+    .slice(0, 500);
+
+  sendJson(res, 200, { ok: true, products });
+}
+
+async function handlePhoto(req, res) {
+  const contentType = req.headers["content-type"] || "";
+
+  if (!contentType.includes("multipart/form-data")) {
+    sendJson(res, 400, { ok: false, error: "Use multipart/form-data for photo upload." });
+    return;
+  }
+
+  const body = await readBuffer(req, FILE_LIMIT);
+  const { fields, file } = parseMultipart(body, contentType);
+
+  if (!file?.buffer?.length) {
+    sendJson(res, 400, { ok: false, error: "No photo selected." });
+    return;
+  }
+
+  const auth = await getAuth(req);
+
+  let result;
+  try {
+    result = await runTask(() => uploadProductPhoto({
+      google: auth.google,
+      sku: fields.sku,
+      buffer: file.buffer,
+      user: auth.context.userName
+    }));
+
+    await addFileLog({
+      google: auth.google,
+      type: "UPLOAD",
+      fileType: "photo",
+      marketplace: "-",
+      user: auth.context.userName,
+      status: "success"
+    }).catch(() => {});
+  } catch (error) {
+    await addFileLog({
+      google: auth.google,
+      type: "UPLOAD",
+      fileType: "photo",
+      marketplace: "-",
+      user: auth.context.userName,
+      status: "failed"
+    }).catch(() => {});
+    throw error;
+  }
+
+  sendJson(res, 200, { ok: true, result });
 }
 
 async function handleCommand(req, res) {
@@ -680,6 +755,11 @@ export default async function handler(req, res) {
       return;
     }
 
+    if (req.method === "GET" && route === "products") {
+      await handleProducts(req, res);
+      return;
+    }
+
     if (req.method === "GET" && route === "template") {
       await handleTemplate(req, res);
       return;
@@ -697,6 +777,11 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && route === "upload") {
       await handleUpload(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && route === "photo") {
+      await handlePhoto(req, res);
       return;
     }
 
