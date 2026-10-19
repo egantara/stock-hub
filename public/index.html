@@ -1121,6 +1121,10 @@ color:var(--badge-text);
         display: grid;
       }
 
+      body.drawer-open {
+        overflow: hidden;
+      }
+
       :root[data-theme="dark"] .modal{
     box-shadow:0 24px 80px rgba(0,0,0,.5);
 }
@@ -1140,7 +1144,7 @@ color:var(--badge-text);
       }
 
       .result {
-        min-height: 160px;
+        min-height: 52px;
         padding: 14px;
         overflow: auto;
         border-radius: 8px;
@@ -1162,6 +1166,10 @@ color:var(--badge-text);
         color: #c23333;
       }
 
+      .picker-area {
+        position: relative;
+      }
+
       .picker-toolbar {
         display: flex;
         align-items: center;
@@ -1171,11 +1179,22 @@ color:var(--badge-text);
 
       .picker-panel {
         display: none;
-        margin-top: 10px;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        max-height: min(360px, calc(100vh - 340px));
+        overflow-y: auto;
         padding: 10px;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--surface-soft);
+        box-shadow: 0 18px 50px rgba(10, 17, 36, 0.22);
+      }
+
+      :root[data-theme="dark"] .picker-panel {
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
       }
 
       .picker-panel.open { display: block; }
@@ -1190,8 +1209,6 @@ color:var(--badge-text);
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 10px;
-        max-height: 280px;
-        overflow-y: auto;
       }
 
       .picker-item {
@@ -1576,13 +1593,15 @@ color:var(--badge-text);
             <option value="status">Update status</option>
           </select>
           </div>
-        <div class="picker-toolbar">
-          <button class="button light" id="togglePicker" type="button">📷 Pilih Produk</button>
-          <span class="status" id="pickerStatus"></span>
-        </div>
-        <div class="picker-panel" id="pickerPanel">
-          <input class="picker-filter" id="pickerFilter" type="search" placeholder="Filter nama, SKU, atau variasi..." spellcheck="false">
-          <div class="picker-grid" id="pickerGrid"></div>
+        <div class="picker-area">
+          <div class="picker-toolbar">
+            <button class="button light" id="togglePicker" type="button">📷 Pilih Produk</button>
+            <span class="status" id="pickerStatus"></span>
+          </div>
+          <div class="picker-panel" id="pickerPanel">
+            <input class="picker-filter" id="pickerFilter" type="search" placeholder="Filter nama, SKU, atau variasi..." spellcheck="false">
+            <div class="picker-grid" id="pickerGrid"></div>
+          </div>
         </div>
         <textarea id="manualText" spellcheck="false"></textarea>
         <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" hidden>
@@ -1618,12 +1637,13 @@ color:var(--badge-text);
         </div>
         <div class="guide-content">
           <section class="guide-step"><h3>1. Upload Order</h3><p>Upload file pesanan Shopee atau TikTok untuk memperbarui stok dari transaksi masuk.</p></section>
-          <section class="guide-step"><h3>2. Upload Product</h3><p>Gunakan untuk menambah atau memperbarui data master produk dan SKU.</p></section>
+          <section class="guide-step"><h3>2. Upload Product</h3><p>Tambah atau perbarui data master produk dan SKU. Dropzone ini juga menerima file media/foto (CSV atau XLSX berisi ID produk + link foto): foto diunduh, dikompres, dan disimpan otomatis ke tab PHOTOS untuk semua SKU kembar.</p></section>
           <section class="guide-step"><h3>3. Update Status</h3><p>Upload file khusus untuk mengubah status produk, misalnya ACTIVE atau INACTIVE.</p></section>
           <section class="guide-step"><h3>4. Upload Adjustment</h3><p>Pilih Restock atau Set Stock, lalu upload file untuk menyesuaikan jumlah stok.</p></section>
-          <section class="guide-step"><h3>5. Multi SKU Processor</h3><p>Gunakan untuk cek stok, restock, sales, set stock, atau update status beberapa SKU sekaligus.</p></section>
-          <section class="guide-step"><h3>6. Download Export</h3><p>Unduh file pembaruan stok untuk Shopee atau TikTok Shop.</p></section>
-          <section class="guide-step"><h3>7. Search dan Activity</h3><p>Cari SKU, nama produk, atau barcode dari kolom pencarian. Gunakan View All untuk melihat detail seluruh aktivitas.</p></section>
+          <section class="guide-step"><h3>5. Multi SKU Processor</h3><p>Cek stok, restock, sales, set stock, atau update status beberapa SKU sekaligus. Buka tombol 📷 Pilih Produk untuk memilih SKU dari daftar, dan unggah/ganti foto produk langsung dari kartu produk (berlaku otomatis untuk SKU kembar).</p></section>
+          <section class="guide-step"><h3>6. Sinkron FOTO</h3><p>Kolom FOTO di tab PRODUCTS ditandai "Ada" jika ada fotonya di tab PHOTOS, atau "Tidak ada" jika belum ada. Sinkron berjalan otomatis setiap upload/import foto; tombol Sinkron FOTO dipakai untuk backfill data lama dan membersihkan nilai lama di kolom tersebut.</p></section>
+          <section class="guide-step"><h3>7. Download Export</h3><p>Unduh file pembaruan stok untuk Shopee atau TikTok Shop.</p></section>
+          <section class="guide-step"><h3>8. Search dan Activity</h3><p>Cari SKU, nama produk, atau barcode dari kolom pencarian (foto tampil bila sudah ada). Gunakan View All untuk melihat detail seluruh aktivitas.</p></section>
         </div>
       </div>
     </div>
@@ -1663,29 +1683,6 @@ color:var(--badge-text);
         setPageRoute("dashboard");
       }
 
-      const examples = {
-  stock:
-`ABC001
-ABC002
-ABC003`,
-
-  restock:
-`ABC001 100
-ABC002 100`,
-
-  sales:
-`ABC001 100
-ABC002 100`,
-
-  set:
-`ABC001 100
-ABC002 100`,
-
-  status:
-`ABC001 ACTIVE
-ABC002 INACTIVE`
-};
-
       const labels = {
   stock: [
     "Check Stock",
@@ -1721,7 +1718,6 @@ ABC002 INACTIVE`
       const logoutButton = document.querySelector("#logoutButton");
       const manualAction = document.querySelector("#manualAction");
       const manualText = document.querySelector("#manualText");
-      const exampleText = document.querySelector("#exampleText");
       const manualStatus = document.querySelector("#manualStatus");
       const manualResult = document.querySelector("#manualResult");
       const quickModal = document.querySelector("#quickModal");
@@ -1991,19 +1987,21 @@ function toggleTheme() {
     // Default action saat modal dibuka
     manualAction.value = "restock";
 
-    refreshQuickCopy(true);
+    refreshQuickCopy();
     quickModal.classList.add("open");
 }
 
-      function refreshQuickCopy(replaceText = false) {
+      function refreshQuickCopy() {
     const action = manualAction.value;
 
     quickTitle.textContent = labels[action][0];
     quickHint.textContent = labels[action][1];
 
-    if (replaceText || !manualText.value.trim()) {
-        manualText.value = examples[action];
-    }
+    manualText.placeholder = action === "stock"
+      ? "Tulis SKU, satu per baris"
+      : action === "status"
+        ? "Tulis: SKU STATUS (per baris)"
+        : "Tulis: SKU QTY (per baris)";
 }
 
       function resizeImage(file, maxSize = 160, maxBytes = 15 * 1024) {
@@ -2131,7 +2129,7 @@ function toggleTheme() {
         const needsValue = action !== "stock";
         const current = manualText.value.trim();
 
-        if (!current || current === examples[action]) {
+        if (!current) {
           manualText.value = needsValue ? `${line} ` : line;
         } else {
           manualText.value = `${current}\n${needsValue ? `${line} ` : line}`;
@@ -2216,6 +2214,25 @@ function toggleTheme() {
         if (item?.dataset.sku) {
           appendSkuLine(item.dataset.sku);
         }
+      });
+
+      document.addEventListener("click", event => {
+        if (
+          pickerPanel.classList.contains("open") &&
+          event.target !== photoInput &&
+          !event.target.closest(".picker-area")
+        ) {
+          pickerPanel.classList.remove("open");
+        }
+      });
+
+      // Kunci scroll background saat drawer/modal terbuka (hindari scroll ganda).
+      const drawerLockObserver = new MutationObserver(() => {
+        document.body.classList.toggle("drawer-open", !!document.querySelector(".drawer.open"));
+      });
+
+      document.querySelectorAll(".drawer").forEach(drawer => {
+        drawerLockObserver.observe(drawer, { attributes: true, attributeFilter: ["class"] });
       });
 
       searchResults.addEventListener("click", event => {
@@ -2474,7 +2491,7 @@ function toggleTheme() {
           metricModal.setAttribute("aria-hidden", "true");
         }
       });
-      manualAction.addEventListener("change", () => refreshQuickCopy(true));
+      manualAction.addEventListener("change", () => refreshQuickCopy());
 
       document.querySelector("#runManual").addEventListener("click", async () => {
         const action = manualAction.value;
@@ -2642,7 +2659,7 @@ function toggleTheme() {
         }
       });
 
-      refreshQuickCopy(true);
+      refreshQuickCopy();
       renderCachedClient();
       renderCachedDashboard();
 
