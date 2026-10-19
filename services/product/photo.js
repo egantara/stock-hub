@@ -65,6 +65,24 @@ export function extractDriveFileId(value) {
   return match ? match[1] : "";
 }
 
+export function normalizeFolderId(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (/^[A-Za-z0-9_-]{20,}$/.test(raw)) {
+    return raw;
+  }
+
+  const match =
+    raw.match(/\/folders\/([A-Za-z0-9_-]{20,})/) ||
+    raw.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
+
+  return match ? match[1] : "";
+}
+
 export function resolvePhotoUrl(value) {
   const raw = String(value || "").trim();
 
@@ -88,7 +106,8 @@ export function resolvePhotoUrl(value) {
 async function deleteDriveFile(google, fileId) {
   try {
     await google.drive.files.delete({
-      fileId
+      fileId,
+      supportsAllDrives: true
     });
   } catch (error) {
     console.error("FAILED DELETE DRIVE PHOTO:", fileId, error.message);
@@ -135,21 +154,58 @@ export async function uploadProductPhoto({
     throw new BusinessError("SKU tidak ditemukan.");
   }
 
+  const folderId = normalizeFolderId(google.folderId);
+
+  console.log("[PHOTO] upload", cleanSku, "folder:", folderId ? "configured" : "MISSING");
+
+  if (!folderId) {
+    throw new ValidationError(
+      "Foto belum bisa diunggah: GOOGLE_DRIVE_FOLDER_ID belum diatur. " +
+      "Isi kolom GOOGLE_DRIVE_FOLDER_ID di sheet LICENSE dengan ID folder Drive " +
+      "(bisa tempel URL folder, kode otomatis diambil), lalu share folder tersebut ke email service account sebagai Editor."
+    );
+  }
+
   const previousFileId = extractDriveFileId(product.FOTO);
   const fileName = `${cleanSku}-${Date.now()}${PHOTO_EXTENSIONS[mimeType]}`;
 
-  const createResponse = await google.drive.files.create({
-    requestBody: {
-      name: fileName,
-      mimeType,
-      ...(google.folderId ? { parents: [google.folderId] } : {})
-    },
-    media: {
-      mimeType,
-      body: Readable.from([buffer])
-    },
-    fields: "id, name"
-  });
+  let createResponse;
+
+  try {
+    createResponse = await google.drive.files.create({
+      requestBody: {
+        name: fileName,
+        mimeType,
+        parents: [folderId]
+      },
+      media: {
+        mimeType,
+        body: Readable.from([buffer])
+      },
+      fields: "id, name",
+      supportsAllDrives: true
+    });
+  } catch (error) {
+    const message = String(error.message || "");
+
+    if (message.includes("storage quota")) {
+      throw new ValidationError(
+        "Upload foto ditolak Google Drive (service account tidak punya kuota penyimpanan). " +
+        "Pastikan GOOGLE_DRIVE_FOLDER_ID menunjuk folder di Shared Drive " +
+        "(tambahkan email service account sebagai anggota Shared Drive), " +
+        "atau gunakan folder yang sudah di-share ke service account sebagai Editor."
+      );
+    }
+
+    if (error.code === 404 || message.includes("File not found")) {
+      throw new ValidationError(
+        "Folder Google Drive tidak ditemukan atau service account belum diizinkan akses. " +
+        "Periksa GOOGLE_DRIVE_FOLDER_ID dan pastikan folder sudah di-share ke email service account sebagai Editor."
+      );
+    }
+
+    throw error;
+  }
 
   const fileId = createResponse.data.id;
 
@@ -157,13 +213,22 @@ export async function uploadProductPhoto({
     throw new Error("Drive upload gagal: fileId tidak diterima.");
   }
 
-  await google.drive.permissions.create({
-    fileId,
-    requestBody: {
-      type: "anyone",
-      role: "reader"
-    }
-  });
+  try {
+    await google.drive.permissions.create({
+      fileId,
+      requestBody: {
+        type: "anyone",
+        role: "reader"
+      },
+      supportsAllDrives: true
+    });
+  } catch (error) {
+    await deleteDriveFile(google, fileId);
+    throw new ValidationError(
+      "Foto terunggah tetapi gagal diatur bisa dilihat publik. " +
+      "Jika memakai Shared Drive, tambahkan service account sebagai Manager agar bisa mengatur izin berbagi."
+    );
+  }
 
   if (previousFileId && previousFileId !== fileId) {
     await deleteDriveFile(google, previousFileId);
