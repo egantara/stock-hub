@@ -127,7 +127,8 @@ function scaledSize(buffer, extension) {
 
 //
 // Template stock digenerate dinamis: semua SKU + stok saat ini + foto.
-// Kolom QTY dibiarkan kosong; baris tanpa QTY dilewati saat upload.
+// Kolom STOK BARU dibiarkan kosong; baris tanpa nilai dilewati saat upload.
+// Header lama (QTY / STOK) tetap diterima parser untuk file lama.
 //
 export async function buildStockTemplate({ google }) {
   const [store, photoMap] = await Promise.all([
@@ -142,11 +143,11 @@ export async function buildStockTemplate({ google }) {
   sheet.columns = [
     { header: "FOTO", key: "foto", width: 12 },
     { header: "SKU", key: "sku", width: 30 },
-    { header: "QTY", key: "qty", width: 8 },
-    { header: "STOK", key: "stok", width: 8 },
     { header: "NAMA", key: "nama", width: 44 },
     { header: "VARIASI", key: "variasi", width: 26 },
-    { header: "STATUS", key: "status", width: 14 }
+    { header: "STATUS", key: "status", width: 14 },
+    { header: "STOK LAMA", key: "stokLama", width: 11 },
+    { header: "STOK BARU", key: "stokBaru", width: 11 }
   ];
 
   const headerRow = sheet.getRow(1);
@@ -168,8 +169,8 @@ export async function buildStockTemplate({ google }) {
 
     const row = sheet.addRow({
       sku,
-      qty: "",
-      stok: Number(stock?.STOCK || 0),
+      stokLama: Number(stock?.STOCK || 0),
+      stokBaru: "",
       nama: String(product.NAMA || product.NAME || ""),
       variasi: String(product.VARIASI || ""),
       status: String(product.STATUS || "")
@@ -206,6 +207,17 @@ export async function buildStockTemplate({ google }) {
     imageRow++;
     count++;
   }
+
+  // Warna soft untuk kolom STOK BARU (kolom isian).
+  const softFill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFEAF3FF" }
+  };
+
+  sheet.getColumn(7).eachCell({ includeEmpty: true }, cell => {
+    cell.fill = softFill;
+  });
 
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 

@@ -39,13 +39,22 @@ from "../utils/require-user.js";
 
 const REQUIRED_HEADERS = [
 
-  "SKU",
-
-  "QTY"
+  "SKU"
 
 ];
 
-function readRows(
+//
+// Header nilai qty: "QTY" (template lama) atau "STOK BARU" (template baru).
+//
+const QTY_HEADERS = [
+
+  "QTY",
+
+  "STOK BARU"
+
+];
+
+export function readRows(
   filePath
 ) {
 
@@ -105,6 +114,42 @@ function readRows(
     rows
   );
 
+  //
+  // Samakan header "STOK BARU" ke row.QTY (parsing di bawah tetap sama).
+  //
+  for (
+    const row
+    of rows
+  ) {
+
+    if (
+      String(row.QTY ?? "").trim() !== ""
+    ) {
+
+      continue;
+
+    }
+
+    const key =
+      Object
+        .keys(row)
+        .find(name =>
+          String(name)
+            .trim()
+            .toUpperCase() === "STOK BARU"
+        );
+
+    if (
+      key &&
+      String(row[key] ?? "").trim() !== ""
+    ) {
+
+      row.QTY = row[key];
+
+    }
+
+  }
+
   return rows;
 
 }
@@ -143,9 +188,16 @@ function validateHeaders(
 
     );
 
+  const hasQtyHeader =
+    QTY_HEADERS.some(
+      header =>
+        headers.includes(header)
+    );
+
   if (
 
-    missing.length
+    missing.length ||
+    !hasQtyHeader
 
   ) {
 
@@ -281,7 +333,7 @@ function parseRow(
 
     throw new ValidationError(
 
-      `QTY "${row.QTY}" tidak valid.`
+      `STOK BARU/QTY "${row.QTY}" tidak valid.`
 
     );
 
@@ -344,7 +396,7 @@ export async function processStockFile({
     !rows.length
   ) {
     throw new ValidationError(
-      "Tidak ada baris dengan QTY. Isi kolom QTY pada baris yang akan diproses."
+      "Tidak ada baris dengan nilai. Isi kolom STOK BARU (QTY) pada baris yang akan diproses."
     );
   }
 
