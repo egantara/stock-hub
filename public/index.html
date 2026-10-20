@@ -1166,38 +1166,120 @@ color:var(--badge-text);
         color: #c23333;
       }
 
-      .picker-area {
-        position: relative;
+      .sku-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 12px;
       }
 
-      .picker-toolbar {
+      .sku-col {
         display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .picker-panel {
-        display: none;
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 0;
-        right: 0;
-        z-index: 40;
-        max-height: min(360px, calc(100vh - 340px));
-        overflow-y: auto;
+        flex-direction: column;
+        min-width: 0;
         padding: 10px;
         border: 1px solid var(--line);
         border-radius: 8px;
         background: var(--surface-soft);
-        box-shadow: 0 18px 50px rgba(10, 17, 36, 0.22);
       }
 
-      :root[data-theme="dark"] .picker-panel {
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+      .sku-col-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 22px;
+        margin-bottom: 8px;
+        font-size: 13px;
       }
 
-      .picker-panel.open { display: block; }
+      .sku-col-head .status {
+        min-height: 0;
+        text-align: right;
+      }
+
+      .picker-grid,
+      .sel-list {
+        max-height: min(360px, calc(100vh - 340px));
+        overflow-y: auto;
+      }
+
+      .sel-list {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+        min-height: 140px;
+      }
+
+      .sel-empty {
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+        padding: 30px 8px;
+      }
+
+      .sel-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .sel-item .sel-info {
+        min-width: 0;
+      }
+
+      .sel-item .sel-sku {
+        font-size: 12.5px;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sel-item .sel-meta {
+        color: var(--muted);
+        font-size: 11px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sel-item .sel-stock {
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .sel-value {
+        width: 96px;
+        min-height: 36px;
+        padding: 6px 8px;
+      }
+
+      .sel-remove {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .sel-remove:hover {
+        color: #c23333;
+        border-color: #c23333;
+      }
 
       .picker-filter {
         width: 100%;
@@ -1226,6 +1308,11 @@ color:var(--badge-text);
       .picker-item:hover,
       .picker-item:focus-visible {
         border-color: var(--blue);
+      }
+
+      .picker-item.selected {
+        border-color: var(--blue);
+        box-shadow: inset 0 0 0 1px var(--blue);
       }
 
       .picker-item .picker-thumb {
@@ -1333,7 +1420,8 @@ color:var(--badge-text);
         .grid-bottom,
         .upload-row,
         .cards,
-        .modal-grid {
+        .modal-grid,
+        .sku-columns {
           grid-template-columns: 1fr;
         }
 
@@ -1472,7 +1560,7 @@ color:var(--badge-text);
                 <p class="muted">Upload files to process data</p>
               </div>
               <div class="head-actions">
-                <button class="link-button" type="button" id="syncFotoButton">Sinkron FOTO</button>
+                <button class="link-button" type="button" id="syncFotoButton">Sync</button>
                 <a class="link-button" href="#" data-template="stock">Download Template</a>
               </div>
             </div>
@@ -1580,7 +1668,7 @@ color:var(--badge-text);
         <div class="panel-head">
           <div>
             <h2 id="quickTitle">Quick Action</h2>
-            <p class="muted" id="quickHint">Enter one SKU per line.</p>
+            <p class="muted" id="quickHint">Pilih produk di kolom kiri, lalu isi jumlah di kolom kanan.</p>
           </div>
           <button class="button light" type="button" data-close-modal>Close</button>
         </div>
@@ -1593,17 +1681,22 @@ color:var(--badge-text);
             <option value="status">Update status</option>
           </select>
           </div>
-        <div class="picker-area">
-          <div class="picker-toolbar">
-            <button class="button light" id="togglePicker" type="button">📷 Pilih Produk</button>
-            <span class="status" id="pickerStatus"></span>
-          </div>
-          <div class="picker-panel" id="pickerPanel">
+        <div class="sku-columns">
+          <div class="sku-col">
+            <div class="sku-col-head">
+              <strong>1. Pilih Produk</strong>
+              <span class="status" id="pickerStatus"></span>
+            </div>
             <input class="picker-filter" id="pickerFilter" type="search" placeholder="Filter nama, SKU, atau variasi..." spellcheck="false">
             <div class="picker-grid" id="pickerGrid"></div>
           </div>
+          <div class="sku-col">
+            <div class="sku-col-head">
+              <strong id="selColTitle">2. Isi Jumlah</strong>
+            </div>
+            <div class="sel-list" id="selectedList"></div>
+          </div>
         </div>
-        <textarea id="manualText" spellcheck="false"></textarea>
         <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" hidden>
         <div class="note-row">
           <span class="status" id="manualStatus"></span>
@@ -1637,11 +1730,11 @@ color:var(--badge-text);
         </div>
         <div class="guide-content">
           <section class="guide-step"><h3>1. Upload Order</h3><p>Upload file pesanan Shopee atau TikTok untuk memperbarui stok dari transaksi masuk.</p></section>
-          <section class="guide-step"><h3>2. Upload Product</h3><p>Tambah atau perbarui data master produk dan SKU. Dropzone ini juga menerima file media/foto (CSV atau XLSX berisi ID produk + link foto): foto diunduh, dikompres, dan disimpan otomatis ke tab PHOTOS untuk semua SKU kembar.</p></section>
+          <section class="guide-step"><h3>2. Upload Product</h3><p>Tambah atau perbarui data master produk dan SKU. Dropzone ini juga menerima file media/foto (CSV atau XLSX berisi ID produk + link foto): foto variasi per opsi dipetakan ke SKU yang variasinya cocok (dengan cadangan foto galeri untuk sisanya), lalu disimpan otomatis ke tab PHOTOS dan disync ke kolom FOTO.</p></section>
           <section class="guide-step"><h3>3. Update Status</h3><p>Upload file khusus untuk mengubah status produk, misalnya ACTIVE atau INACTIVE.</p></section>
           <section class="guide-step"><h3>4. Upload Adjustment</h3><p>Pilih Restock atau Set Stock, lalu upload file untuk menyesuaikan jumlah stok.</p></section>
-          <section class="guide-step"><h3>5. Multi SKU Processor</h3><p>Cek stok, restock, sales, set stock, atau update status beberapa SKU sekaligus. Buka tombol 📷 Pilih Produk untuk memilih SKU dari daftar, dan unggah/ganti foto produk langsung dari kartu produk (berlaku otomatis untuk SKU kembar).</p></section>
-          <section class="guide-step"><h3>6. Sinkron FOTO</h3><p>Kolom FOTO di tab PRODUCTS ditandai "Ada" jika ada fotonya di tab PHOTOS, atau "Tidak ada" jika belum ada. Sinkron berjalan otomatis setiap upload/import foto; tombol Sinkron FOTO dipakai untuk backfill data lama dan membersihkan nilai lama di kolom tersebut.</p></section>
+          <section class="guide-step"><h3>5. Multi SKU Processor</h3><p>Cek stok, restock, sales, set stock, atau update status beberapa SKU sekaligus. Kolom 1 memilih produk (klik kartu untuk memasukkan ke daftar, plus unggah/ganti foto langsung dari kartu — berlaku otomatis untuk SKU kembar). Kolom 2 menampilkan SKU terpilih lengkap dengan isian jumlah/status per SKU; tekan Process untuk menjalankan.</p></section>
+          <section class="guide-step"><h3>6. Sync</h3><p>Kolom FOTO di tab PRODUCTS ditandai "Ada" jika ada fotonya di tab PHOTOS, atau "Tidak ada" jika belum ada. Sync berjalan otomatis setiap upload/import foto; tombol Sync dipakai untuk backfill data lama dan membersihkan nilai lama di kolom tersebut.</p></section>
           <section class="guide-step"><h3>7. Download Export</h3><p>Unduh file pembaruan stok untuk Shopee atau TikTok Shop.</p></section>
           <section class="guide-step"><h3>8. Search dan Activity</h3><p>Cari SKU, nama produk, atau barcode dari kolom pencarian (foto tampil bila sudah ada). Gunakan View All untuk melihat detail seluruh aktivitas.</p></section>
         </div>
@@ -1686,27 +1779,27 @@ color:var(--badge-text);
       const labels = {
   stock: [
     "Check Stock",
-    "Enter one SKU per line to check the current stock."
+    "Pilih produk di kolom kiri untuk cek stok terkini."
   ],
 
   restock: [
     "Restock",
-    "Enter SKU and quantity to add stock."
+    "Pilih produk di kolom kiri, lalu isi jumlah penambahan di kolom kanan."
   ],
 
   sales: [
     "Offline Sales",
-    "Enter SKU and quantity to reduce stock."
+    "Pilih produk di kolom kiri, lalu isi jumlah penjualan di kolom kanan."
   ],
 
   set: [
     "Set Stock",
-    "Enter SKU and the new stock quantity."
+    "Pilih produk di kolom kiri, lalu isi stok baru di kolom kanan."
   ],
 
   status: [
     "Update Status",
-    "Enter SKU and status (ACTIVE / INACTIVE)."
+    "Pilih produk di kolom kiri, lalu pilih status di kolom kanan."
   ]
 };
 
@@ -1717,7 +1810,6 @@ color:var(--badge-text);
       const profileButton = document.querySelector("#profileButton");
       const logoutButton = document.querySelector("#logoutButton");
       const manualAction = document.querySelector("#manualAction");
-      const manualText = document.querySelector("#manualText");
       const manualStatus = document.querySelector("#manualStatus");
       const manualResult = document.querySelector("#manualResult");
       const quickModal = document.querySelector("#quickModal");
@@ -1735,8 +1827,8 @@ color:var(--badge-text);
       const searchResults = document.querySelector("#searchResults");
       const quickTitle = document.querySelector("#quickTitle");
 const quickHint = document.querySelector("#quickHint");
-      const togglePicker = document.querySelector("#togglePicker");
-      const pickerPanel = document.querySelector("#pickerPanel");
+      const selColTitle = document.querySelector("#selColTitle");
+      const selectedList = document.querySelector("#selectedList");
       const pickerFilter = document.querySelector("#pickerFilter");
       const pickerGrid = document.querySelector("#pickerGrid");
       const pickerStatus = document.querySelector("#pickerStatus");
@@ -1744,6 +1836,7 @@ const quickHint = document.querySelector("#quickHint");
 
       let pickerProducts = null;
       let photoTargetSku = "";
+      const selectedSkuItems = [];
 
       loginUsernameInput.value = state.user;
 
@@ -1963,24 +2056,99 @@ function toggleTheme() {
         return `/api/web?route=${route}${extra}&key=${encodeURIComponent(state.accessKey)}&user=${encodeURIComponent(state.user)}`;
       }
 
-      function parseManualLines(action) {
-        return manualText.value
-          .split("\n")
-          .map(line => line.trim())
-          .filter(Boolean)
-          .map(line => {
-            if (action === "stock") {
-              return line;
-            }
+      const VALID_STATUSES = ["ACTIVE", "NON-ACTIVE", "DISCONTINUED"];
 
-            const parts = line.split(/\s+/);
-            const value = parts.pop();
+      function findSelectedItem(sku) {
+        return selectedSkuItems.find(item => item.sku === sku);
+      }
 
-            return {
-              sku: parts.join(" "),
-              [action === "status" ? "status" : "qty"]: value
-            };
-          });
+      function itemValueMissing(item, action) {
+        const value = String(item.value ?? "").trim();
+
+        if (action === "status") {
+          return !VALID_STATUSES.includes(value.toUpperCase());
+        }
+
+        return !value || !Number.isFinite(Number(value)) || Number(value) < 0;
+      }
+
+      function renderSelectedList() {
+        const action = manualAction.value;
+
+        if (!selectedSkuItems.length) {
+          selectedList.innerHTML = "<p class='sel-empty'>Belum ada produk dipilih. Klik produk di kolom kiri.</p>";
+          return;
+        }
+
+        selectedList.innerHTML = selectedSkuItems.map(item => {
+          let editor = "";
+
+          if (action === "stock") {
+            editor = `<span class="sel-stock">Stok: ${formatNumber(item.stock)}</span>`;
+          } else if (action === "status") {
+            const current = VALID_STATUSES.includes(String(item.value || "").toUpperCase())
+              ? String(item.value).toUpperCase()
+              : "";
+
+            editor = `<select class="sel-value" data-value-sku="${escapeHtml(item.sku)}">
+              <option value=""${current ? "" : " selected"} disabled>Pilih status</option>
+              ${VALID_STATUSES.map(status => `<option value="${status}"${current === status ? " selected" : ""}>${status}</option>`).join("")}
+            </select>`;
+          } else {
+            editor = `<input class="sel-value" type="number" min="0" step="1" inputmode="numeric" data-value-sku="${escapeHtml(item.sku)}" placeholder="Qty" value="${escapeHtml(item.value ?? "")}">`;
+          }
+
+          return `<div class="sel-item" data-sku="${escapeHtml(item.sku)}">
+            <div class="sel-info">
+              <div class="sel-sku">${escapeHtml(item.sku)}</div>
+              <div class="sel-meta">${escapeHtml(item.nama || "-")}${item.variasi ? " · " + escapeHtml(item.variasi) : ""}</div>
+            </div>
+            ${editor}
+            <button class="sel-remove" type="button" title="Hapus" data-remove-sku="${escapeHtml(item.sku)}">×</button>
+          </div>`;
+        }).join("");
+      }
+
+      function addToSelection(sku) {
+        const line = String(sku || "").trim();
+
+        if (!line) {
+          return;
+        }
+
+        let entry = findSelectedItem(line);
+
+        if (!entry) {
+          const product = (pickerProducts || []).find(item => item.sku === line);
+
+          entry = {
+            sku: line,
+            nama: product?.nama || "",
+            variasi: product?.variasi || "",
+            stock: product?.stock,
+            value: ""
+          };
+
+          selectedSkuItems.push(entry);
+          renderSelectedList();
+          renderPickerGrid();
+        }
+
+        const editor = selectedList.querySelector(`[data-value-sku="${CSS.escape(line)}"]`);
+
+        if (editor) {
+          editor.focus();
+        }
+      }
+
+      function removeFromSelection(sku) {
+        const index = selectedSkuItems.findIndex(item => item.sku === sku);
+
+        if (index >= 0) {
+          selectedSkuItems.splice(index, 1);
+          renderSelectedList();
+          renderPickerGrid();
+        }
       }
 
      function openQuick() {
@@ -1988,7 +2156,9 @@ function toggleTheme() {
     manualAction.value = "restock";
 
     refreshQuickCopy();
+    renderSelectedList();
     quickModal.classList.add("open");
+    loadPickerProducts();
 }
 
       function refreshQuickCopy() {
@@ -1997,11 +2167,11 @@ function toggleTheme() {
     quickTitle.textContent = labels[action][0];
     quickHint.textContent = labels[action][1];
 
-    manualText.placeholder = action === "stock"
-      ? "Tulis SKU, satu per baris"
+    selColTitle.textContent = action === "stock"
+      ? "2. Produk Terpilih"
       : action === "status"
-        ? "Tulis: SKU STATUS (per baris)"
-        : "Tulis: SKU QTY (per baris)";
+        ? "2. Pilih Status"
+        : "2. Isi Jumlah";
 }
 
       function resizeImage(file, maxSize = 160, maxBytes = 15 * 1024) {
@@ -2118,27 +2288,6 @@ function toggleTheme() {
         }
       });
 
-      function appendSkuLine(sku) {
-        const line = String(sku || "").trim();
-
-        if (!line) {
-          return;
-        }
-
-        const action = manualAction.value;
-        const needsValue = action !== "stock";
-        const current = manualText.value.trim();
-
-        if (!current) {
-          manualText.value = needsValue ? `${line} ` : line;
-        } else {
-          manualText.value = `${current}\n${needsValue ? `${line} ` : line}`;
-        }
-
-        manualText.focus();
-        manualText.setSelectionRange(manualText.value.length, manualText.value.length);
-      }
-
       function renderPickerGrid() {
         const query = pickerFilter.value.trim().toLowerCase();
         const products = (pickerProducts || []).filter(item => {
@@ -2157,8 +2306,9 @@ function toggleTheme() {
         pickerGrid.innerHTML = products.map(item => {
           const photo = safePhotoUrl(item.foto);
           const label = initials(item.nama || item.sku);
+          const isSelected = selectedSkuItems.some(sel => sel.sku === item.sku);
 
-          return `<div class="picker-item" data-sku="${escapeHtml(item.sku)}" title="Klik untuk memasukkan SKU">
+          return `<div class="picker-item${isSelected ? " selected" : ""}" data-sku="${escapeHtml(item.sku)}" title="${isSelected ? "Sudah dipilih" : "Klik untuk pilih"}">
             <button class="picker-upload" type="button" title="Upload/ganti foto" data-upload-sku="${escapeHtml(item.sku)}">📷</button>
             <div class="picker-thumb">${photo ? `<img src="${escapeHtml(photo)}" alt="" loading="lazy" onerror="this.remove()">` : label}</div>
             <div class="picker-name">${escapeHtml(item.nama || "-")}</div>
@@ -2189,15 +2339,6 @@ function toggleTheme() {
         }
       }
 
-      togglePicker.addEventListener("click", () => {
-        const isOpen = pickerPanel.classList.toggle("open");
-
-        if (isOpen) {
-          loadPickerProducts();
-          pickerFilter.focus();
-        }
-      });
-
       pickerFilter.addEventListener("input", renderPickerGrid);
 
       pickerGrid.addEventListener("click", event => {
@@ -2212,19 +2353,34 @@ function toggleTheme() {
         const item = event.target.closest(".picker-item");
 
         if (item?.dataset.sku) {
-          appendSkuLine(item.dataset.sku);
+          addToSelection(item.dataset.sku);
         }
       });
 
-      document.addEventListener("click", event => {
-        if (
-          pickerPanel.classList.contains("open") &&
-          event.target !== photoInput &&
-          !event.target.closest(".picker-area")
-        ) {
-          pickerPanel.classList.remove("open");
+      selectedList.addEventListener("click", event => {
+        const removeButton = event.target.closest("[data-remove-sku]");
+
+        if (removeButton) {
+          removeFromSelection(removeButton.dataset.removeSku);
         }
       });
+
+      function syncSelectionValue(target) {
+        const input = target.closest?.("[data-value-sku]");
+
+        if (!input) {
+          return;
+        }
+
+        const entry = findSelectedItem(input.dataset.valueSku);
+
+        if (entry) {
+          entry.value = input.value;
+        }
+      }
+
+      selectedList.addEventListener("input", event => syncSelectionValue(event.target));
+      selectedList.addEventListener("change", event => syncSelectionValue(event.target));
 
       // Kunci scroll background saat drawer/modal terbuka (hindari scroll ganda).
       const drawerLockObserver = new MutationObserver(() => {
@@ -2491,11 +2647,28 @@ function toggleTheme() {
           metricModal.setAttribute("aria-hidden", "true");
         }
       });
-      manualAction.addEventListener("change", () => refreshQuickCopy());
+      manualAction.addEventListener("change", () => {
+        refreshQuickCopy();
+        renderSelectedList();
+      });
 
       document.querySelector("#runManual").addEventListener("click", async () => {
         const action = manualAction.value;
-        const lines = parseManualLines(action);
+        const needsValue = action !== "stock";
+
+        if (!selectedSkuItems.length) {
+          setStatus(manualStatus, "Pilih produk dulu di kolom kiri.", true);
+          return;
+        }
+
+        const missing = selectedSkuItems.filter(item => needsValue && itemValueMissing(item, action));
+
+        if (missing.length) {
+          setStatus(manualStatus, action === "status"
+            ? `Pilih status untuk: ${missing.map(item => item.sku).join(", ")}`
+            : `Isi jumlah angka valid untuk: ${missing.map(item => item.sku).join(", ")}`, true);
+          return;
+        }
 
         setStatus(manualStatus, "Processing...");
 
@@ -2506,8 +2679,13 @@ function toggleTheme() {
               "Content-Type": "application/json"
             }),
             body: JSON.stringify(action === "stock"
-              ? { action, skus: lines }
-              : { action, items: lines })
+              ? { action, skus: selectedSkuItems.map(item => item.sku) }
+              : {
+                  action,
+                  items: selectedSkuItems.map(item => action === "status"
+                    ? { sku: item.sku, status: String(item.value).trim().toUpperCase() }
+                    : { sku: item.sku, qty: String(item.value).trim() })
+                })
           });
 
           manualResult.textContent = JSON.stringify(payload.result, null, 2);
@@ -2524,8 +2702,8 @@ function toggleTheme() {
         syncFotoButton.addEventListener("click", async () => {
           const originalText = syncFotoButton.textContent;
           syncFotoButton.disabled = true;
-          syncFotoButton.textContent = "Sinkron...";
-          setStatus(uploadStatus, "Menyinkronkan kolom FOTO dari tab PHOTOS...");
+          syncFotoButton.textContent = "Sync...";
+          setStatus(uploadStatus, "Menjalankan Sync kolom FOTO dari tab PHOTOS...");
 
           try {
             const payload = await api("/api/web?route=sync-foto", {
@@ -2535,7 +2713,7 @@ function toggleTheme() {
             const result = payload.result || {};
 
             setStatus(uploadStatus,
-              `Sinkron FOTO: ${result.updated || 0} sel diperbarui ` +
+              `Sync: ${result.updated || 0} sel diperbarui ` +
               `(${result.marked || 0} Ada, ${result.cleared || 0} Tidak ada) ` +
               `dari ${result.checked || 0} SKU dicek.`);
 

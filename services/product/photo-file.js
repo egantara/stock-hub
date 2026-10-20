@@ -44,7 +44,10 @@ from "./photo.js";
 //
 // Import foto massal dari file media marketplace (CSV/XLSX Shopee).
 // Kunci file: et_title_product_id (ID Shopee) atau et_title_parent_sku.
-// Foto dipakai: ps_item_cover_image (fallback galeri ps_item_image.N).
+// Foto utama: kolom et_title_option_image.N_for_variation.M (foto per opsi
+// variasi), dipetakan ke SKU kembar yang VARIASI-nya cocok dengan nama opsi.
+// Kalau SKU tidak cocok / baris tidak punya foto variasi, dipakai galeri
+// ps_item_image.N sebagai cadangan. Foto sampul TIDAK dipakai.
 // Foto diunduh lalu dikompres server-side (sharp) menjadi base64 ~<=15KB,
 // lalu ditulis ke PHOTOS untuk semua SKU kembar (satu batch update).
 //
@@ -105,11 +108,6 @@ function columnIndexes(labels) {
     /^sku induk$/i.test(label)
   );
 
-  const cover = find(label =>
-    /^ps_item_cover_image$/i.test(label) ||
-    /^foto sampul$/i.test(label)
-  );
-
   const gallery = [];
 
   labels.forEach((label, index) => {
@@ -125,11 +123,30 @@ function columnIndexes(labels) {
 
   gallery.sort((a, b) => a.order - b.order);
 
+  const variations = [];
+
+  labels.forEach((label, index) => {
+    const match = /^et_title_option_image_(\d+)_for_variation_(\d+)$/i.exec(label);
+
+    if (!match) {
+      return;
+    }
+
+    const nameIndex = labels.findIndex(other =>
+      new RegExp(`^et_title_option_${match[1]}_for_variation_${match[2]}$`, "i").test(other)
+    );
+
+    variations.push({
+      imageIndex: index,
+      nameIndex
+    });
+  });
+
   return {
     id,
     sku,
-    cover,
-    gallery: gallery.map(item => item.index)
+    gallery: gallery.map(item => item.index),
+    variations
   };
 }
 
@@ -189,7 +206,7 @@ export function parseMediaRows(filePath) {
 
   if (!header) {
     throw new ValidationError(
-      "Kolom foto sampul / ID produk tidak ditemukan. Pastikan file adalah export media (CSV/XLSX) dari marketplace."
+      "Kolom ID produk / foto tidak ditemukan. Pastikan file adalah export media (CSV/XLSX) dari marketplace."
     );
   }
 
@@ -212,22 +229,24 @@ export function parseMediaRows(filePath) {
       continue;
     }
 
-    let coverUrl = columns.cover >= 0 ? cellText(line[columns.cover]) : "";
+    const variations = columns.variations
+      .map(column => ({
+        name: column.nameIndex >= 0 ? cellText(line[column.nameIndex]) : "",
+        url: cellText(line[column.imageIndex])
+      }))
+      .filter(item => /^https:\/\//i.test(item.url));
 
-    if (!/^https:\/\//i.test(coverUrl)) {
-      coverUrl = "";
+    const galleryUrls = [];
 
-      for (const galleryIndex of columns.gallery) {
-        const candidate = cellText(line[galleryIndex]);
+    for (const galleryIndex of columns.gallery) {
+      const candidate = cellText(line[galleryIndex]);
 
-        if (/^https:\/\//i.test(candidate)) {
-          coverUrl = candidate;
-          break;
-        }
+      if (/^https:\/\//i.test(candidate)) {
+        galleryUrls.push(candidate);
       }
     }
 
-    if (!/^https:\/\//i.test(coverUrl)) {
+    if (!variations.length && !galleryUrls.length) {
       continue;
     }
 
@@ -242,14 +261,58 @@ export function parseMediaRows(filePath) {
     rows.push({
       productId,
       parentSku,
-      coverUrl
+      variations,
+      galleryUrls
     });
   }
 
   return rows;
 }
 
-async function fetchCoverDataUrl(url) {
+function normalizeVariationText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+//
+// Cocokkan VARIASI SKU (PRODUCTS) dengan nama opsi variasi dari file media.
+// Bandingkan persis dulu, lalu substring (min. 3 karakter) dua arah.
+//
+export function findVariationUrl(variasiValue, variations) {
+  const target = normalizeVariationText(variasiValue);
+
+  if (!target || !variations.length) {
+    return "";
+  }
+
+  let substringHit = "";
+
+  for (const variation of variations) {
+    const option = normalizeVariationText(variation.name);
+
+    if (!option) {
+      continue;
+    }
+
+    if (option === target) {
+      return variation.url;
+    }
+
+    if (
+      !substringHit &&
+      ((option.length >= 3 && target.includes(option)) ||
+        (target.length >= 3 && option.includes(target)))
+    ) {
+      substringHit = variation.url;
+    }
+  }
+
+  return substringHit;
+}
+
+async function fetchImageDataUrl(url) {
   const response = await axios.get(url, {
     responseType: "arraybuffer",
     timeout: DOWNLOAD_TIMEOUT_MS,
@@ -343,7 +406,19 @@ export async function processMediaFile({
   }
 
   const notFound = [];
-  const targets = [];
+  const skuVariation = new Map();
+
+  for (const product of store.productRows) {
+    const sku = cellText(product.SKU);
+
+    if (sku && !skuVariation.has(sku)) {
+      skuVariation.set(sku, cellText(product.VARIASI));
+    }
+  }
+
+  const urlToSkus = new Map();
+  let variationSkus = 0;
+  let fallbackSkus = 0;
 
   for (const media of mediaRows) {
     let products = [];
@@ -372,31 +447,42 @@ export async function processMediaFile({
       }
     }
 
-    targets.push({
-      key: media.productId || media.parentSku,
-      coverUrl: media.coverUrl,
-      skus: [...twinSkus]
-    });
+    const fallbackUrl = media.galleryUrls[0] || "";
+
+    for (const sku of twinSkus) {
+      const url = findVariationUrl(skuVariation.get(sku) || "", media.variations) ||
+        fallbackUrl;
+
+      if (!url) {
+        continue;
+      }
+
+      const bucket = urlToSkus.get(url) || new Set();
+      bucket.add(sku);
+      urlToSkus.set(url, bucket);
+
+      if (media.variations.some(item => item.url === url)) {
+        variationSkus++;
+      } else {
+        fallbackSkus++;
+      }
+    }
   }
 
-  const coverCache = new Map();
+  const urls = [...urlToSkus.keys()];
 
   const downloaded = await mapWithConcurrency(
-    targets,
+    urls,
     DOWNLOAD_CONCURRENCY,
-    async target => {
+    async url => {
       try {
-        if (!coverCache.has(target.coverUrl)) {
-          coverCache.set(target.coverUrl, await fetchCoverDataUrl(target.coverUrl));
-        }
-
         return {
-          target,
-          dataUrl: coverCache.get(target.coverUrl)
+          url,
+          dataUrl: await fetchImageDataUrl(url)
         };
       } catch (error) {
         return {
-          target,
+          url,
           error
         };
       }
@@ -409,13 +495,13 @@ export async function processMediaFile({
   for (const item of downloaded) {
     if (item.error) {
       failed.push({
-        key: item.target.key,
+        key: item.url,
         reason: item.error.message
       });
       continue;
     }
 
-    for (const sku of item.target.skus) {
+    for (const sku of urlToSkus.get(item.url) || []) {
       photoBySku.set(sku, item.dataUrl);
     }
   }
@@ -423,7 +509,7 @@ export async function processMediaFile({
   if (!photoBySku.size) {
     const detail = notFound.length
       ? `Produk tidak ditemukan: ${notFound.slice(0, 5).join(", ")}`
-      : failed.slice(0, 3).map(item => `${item.key}: ${item.reason}`).join("; ");
+      : failed.slice(0, 3).map(item => `${item.key.slice(0, 70)}: ${item.reason}`).join("; ");
 
     throw new BusinessError(
       `Tidak ada foto yang berhasil diproses. ${detail}`
@@ -478,8 +564,10 @@ export async function processMediaFile({
   const skuUpdated = photoBySku.size;
 
   const summary = [
-    `${imported}/${targets.length} foto diimpor`,
+    `${imported}/${urls.length} foto diimpor`,
     `${skuUpdated} SKU diperbarui`,
+    variationSkus ? `${variationSkus} SKU foto variasi` : "",
+    fallbackSkus ? `${fallbackSkus} SKU cadangan galeri` : "",
     notFound.length ? `${notFound.length} produk tidak ditemukan` : "",
     failed.length ? `${failed.length} foto gagal` : ""
   ].filter(Boolean).join(", ");
@@ -490,6 +578,8 @@ export async function processMediaFile({
     total: mediaRows.length,
     imported,
     skuUpdated,
+    variationSkus,
+    fallbackSkus,
     notFound,
     failed,
     user: user || ""
