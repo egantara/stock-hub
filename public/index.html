@@ -2161,6 +2161,22 @@ function toggleTheme() {
     loadPickerProducts();
 }
 
+      function closeQuick() {
+        quickModal.classList.remove("open");
+
+        selectedSkuItems.length = 0;
+        setStatus(manualStatus, "");
+        setStatus(pickerStatus, "");
+        manualResult.textContent = "No result yet.";
+        pickerFilter.value = "";
+
+        renderSelectedList();
+
+        if (pickerProducts) {
+          renderPickerGrid();
+        }
+      }
+
       function refreshQuickCopy() {
     const action = manualAction.value;
 
@@ -2614,10 +2630,10 @@ function toggleTheme() {
   button.addEventListener("click", openQuick);
 });
 
-      document.querySelector("[data-close-modal]").addEventListener("click", () => quickModal.classList.remove("open"));
+      document.querySelector("[data-close-modal]").addEventListener("click", closeQuick);
       quickModal.addEventListener("click", event => {
         if (event.target === quickModal) {
-          quickModal.classList.remove("open");
+          closeQuick();
         }
       });
       document.querySelector("#refreshDashboard").addEventListener("click", event => {
