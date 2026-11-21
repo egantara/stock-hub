@@ -1,5 +1,6 @@
 import { validateSettings, parseSettings } from '../lib/settings.js';
 import { StockhubClient } from '../lib/stockhub-api.js';
+import { addHistoryEntry, formatTimestampWIB } from '../lib/history.js';
 
 const storage = (typeof chrome !== 'undefined' && chrome.storage)
   ? chrome.storage.local
@@ -20,6 +21,7 @@ const saveButton = document.getElementById('saveButton');
 const syncButton = document.getElementById('syncButton');
 const settingsStatus = document.getElementById('settingsStatus');
 const progress = document.getElementById('progress');
+const historyList = document.getElementById('historyList');
 const urlInput = document.getElementById('stockhubUrl');
 const userInput = document.getElementById('stockhubUser');
 const keyInput = document.getElementById('stockhubKey');
@@ -67,6 +69,41 @@ function appendLog(message, status = 'running') {
   progress.appendChild(line);
   progress.scrollTop = progress.scrollHeight;
 }
+
+function getHistory() {
+  if (!storage) return Promise.resolve([]);
+  return new Promise(resolve => {
+    storage.get(['syncHistory'], items => resolve(items.syncHistory || []));
+  });
+}
+
+function saveHistory(list) {
+  if (!storage) return;
+  storage.set({ syncHistory: list });
+}
+
+function renderHistory(list = []) {
+  historyList.innerHTML = '';
+  for (const item of list) {
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    const stamp = document.createElement('span');
+    stamp.textContent = formatTimestampWIB(item.timestamp);
+    const status = document.createElement('span');
+    status.className = `status-tag ${item.success ? 'ok' : 'fail'}`;
+    status.textContent = item.success ? '✅' : '❌';
+    row.appendChild(stamp);
+    row.appendChild(status);
+    historyList.appendChild(row);
+  }
+  if (!list.length) {
+    historyList.textContent = 'Belum ada riwayat.';
+  }
+}
+
+(async () => {
+  renderHistory(await getHistory());
+})();
 
 saveButton.addEventListener('click', async () => {
   const raw = {
@@ -135,6 +172,14 @@ if (runtime && runtime.onMessage) {
     } else if (msg.action === 'SYNC_COMPLETE') {
       appendLog(msg.summary, msg.success ? 'success' : 'error');
       syncButton.disabled = false;
+      getHistory().then(prev => {
+        const updated = addHistoryEntry(prev, {
+          success: msg.success,
+          summary: msg.summary
+        });
+        saveHistory(updated);
+        renderHistory(updated);
+      });
     }
   });
 }

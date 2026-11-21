@@ -91,4 +91,33 @@ input[type="url"], input[type="text"], input[type="password"] {
 .progress .error { color: #b91c1c; }
 .progress .skipped { color: #6b7280; }
 
+.history-section {
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+}
+
+.history-section h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px;
+}
+
+.history-list {
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed #f3f4f6;
+}
+
+.history-item .status-tag.ok { color: #15803d; font-weight: 600; }
+.history-item .status-tag.fail { color: #b91c1c; font-weight: 600; }
+
 .hidden { display: none; }
