@@ -1,4 +1,5 @@
 import { validateSettings, parseSettings } from '../lib/settings.js';
+import { StockhubClient } from '../lib/stockhub-api.js';
 
 const storage = (typeof chrome !== 'undefined' && chrome.storage)
   ? chrome.storage.local
@@ -81,12 +82,26 @@ saveButton.addEventListener('click', async () => {
   }
   const parsed = parseSettings(raw);
   settingsStatus.className = 'status running';
-  settingsStatus.textContent = 'Menyimpan...';
+  settingsStatus.textContent = 'Menghubungkan ke Stock-Hub...';
+
+  try {
+    const client = new StockhubClient(parsed);
+    const result = await client.testConnection();
+    if (!result.ok) {
+      settingsStatus.className = 'status error';
+      settingsStatus.textContent = result.error || 'Gagal terhubung ke Stock-Hub';
+      return;
+    }
+  } catch (err) {
+    settingsStatus.className = 'status error';
+    settingsStatus.textContent = err.message || 'Koneksi gagal';
+    return;
+  }
 
   await saveSettings(parsed);
   settingsStatus.className = 'status success';
-  settingsStatus.textContent = 'Pengaturan disimpan.';
-  setTimeout(() => showView('sync'), 600);
+  settingsStatus.textContent = '✅ Terhubung ke Stock-Hub. Pengaturan disimpan.';
+  setTimeout(() => showView('sync'), 800);
 });
 
 settingsButton.addEventListener('click', () => {
