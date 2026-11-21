@@ -20,6 +20,12 @@ header {
 
 header strong { font-size: 15px; }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .icon-button {
   background: transparent;
   border: 0;

@@ -16,6 +16,7 @@ const runtime = (typeof chrome !== 'undefined' && chrome.runtime)
 
 const settingsView = document.getElementById('settingsView');
 const syncView = document.getElementById('syncView');
+const openTabButton = document.getElementById('openTabButton');
 const settingsButton = document.getElementById('settingsButton');
 const saveButton = document.getElementById('saveButton');
 const syncButton = document.getElementById('syncButton');
@@ -41,13 +42,47 @@ function showView(view) {
 async function loadSettings() {
   if (!storage) return null;
   return new Promise(resolve => {
-    storage.get(['stockhubUrl', 'stockhubUser', 'stockhubKey'], items => {
+    storage.get(['stockhubUrl', 'stockhubUser', 'stockhubKey', 'draftUrl', 'draftUser', 'draftKey'], items => {
       resolve({
-        url: items.stockhubUrl || '',
-        user: items.stockhubUser || '',
-        key: items.stockhubKey || ''
+        url: items.draftUrl !== undefined ? items.draftUrl : (items.stockhubUrl || ''),
+        user: items.draftUser !== undefined ? items.draftUser : (items.stockhubUser || ''),
+        key: items.draftKey !== undefined ? items.draftKey : (items.stockhubKey || ''),
+        isConfigured: !!(items.stockhubUrl && items.stockhubUser && items.stockhubKey)
       });
     });
+  });
+}
+
+function saveDraft() {
+  if (!storage) return;
+  storage.set({
+    draftUrl: urlInput.value,
+    draftUser: userInput.value,
+    draftKey: keyInput.value
+  });
+}
+
+function clearDraft() {
+  if (!storage) return;
+  storage.remove(['draftUrl', 'draftUser', 'draftKey']);
+}
+
+urlInput.addEventListener('input', saveDraft);
+userInput.addEventListener('input', saveDraft);
+keyInput.addEventListener('input', saveDraft);
+
+if (openTabButton) {
+  openTabButton.addEventListener('click', () => {
+    const targetUrl = (runtime && runtime.getURL)
+      ? runtime.getURL('popup/popup.html')
+      : 'popup/popup.html';
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      chrome.tabs.create({ url: targetUrl });
+    } else if (typeof browser !== 'undefined' && browser.tabs) {
+      browser.tabs.create({ url: targetUrl });
+    } else {
+      window.open(targetUrl, '_blank');
+    }
   });
 }
 
@@ -136,6 +171,7 @@ saveButton.addEventListener('click', async () => {
   }
 
   await saveSettings(parsed);
+  clearDraft();
   settingsStatus.className = 'status success';
   settingsStatus.textContent = '✅ Terhubung ke Stock-Hub. Pengaturan disimpan.';
   setTimeout(() => showView('sync'), 800);
@@ -190,7 +226,7 @@ if (runtime && runtime.onMessage) {
     urlInput.value = existing.url;
     userInput.value = existing.user;
     keyInput.value = existing.key;
-    if (existing.url && existing.user && existing.key) {
+    if (existing.isConfigured) {
       showView('sync');
       return;
     }
