@@ -35,6 +35,15 @@
         <label><input id="tokopediaEnabled" type="checkbox" checked> Tokopedia</label>
       </div>
       <button id="syncButton" class="primary sync-button">🔄 Sync Stock</button>
+      <div id="progressWrapper" class="progress-wrapper hidden">
+        <div class="progress-header">
+          <span id="progressStep">Menyiapkan...</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+      </div>
       <div id="progress" class="progress" role="log" aria-live="polite"></div>
       <section class="history-section">
         <h2>Riwayat Terakhir</h2>

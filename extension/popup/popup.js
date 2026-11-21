@@ -22,6 +22,10 @@ const saveButton = document.getElementById('saveButton');
 const syncButton = document.getElementById('syncButton');
 const settingsStatus = document.getElementById('settingsStatus');
 const progress = document.getElementById('progress');
+const progressWrapper = document.getElementById('progressWrapper');
+const progressBar = document.getElementById('progressBar');
+const progressStep = document.getElementById('progressStep');
+const progressPercent = document.getElementById('progressPercent');
 const historyList = document.getElementById('historyList');
 const urlInput = document.getElementById('stockhubUrl');
 const userInput = document.getElementById('stockhubUser');
@@ -185,9 +189,26 @@ settingsButton.addEventListener('click', () => {
   }
 });
 
+function updateProgressBar(percent, stepText, status = 'running') {
+  if (!progressWrapper) return;
+  progressWrapper.classList.remove('hidden');
+  const safePercent = Math.max(0, Math.min(100, Math.round(percent || 0)));
+  progressBar.style.width = `${safePercent}%`;
+  progressPercent.textContent = `${safePercent}%`;
+  progressStep.textContent = stepText || 'Sedang memproses...';
+
+  progressBar.classList.remove('done', 'failed');
+  if (status === 'success' || safePercent >= 100) {
+    progressBar.classList.add('done');
+  } else if (status === 'error') {
+    progressBar.classList.add('failed');
+  }
+}
+
 syncButton.addEventListener('click', async () => {
   syncButton.disabled = true;
   progress.innerHTML = '';
+  updateProgressBar(0, 'Memulai sinkronisasi...', 'running');
   appendLog('Memulai sinkronisasi...', 'running');
 
   if (runtime) {
@@ -205,8 +226,12 @@ if (runtime && runtime.onMessage) {
   runtime.onMessage.addListener(msg => {
     if (msg.action === 'SYNC_PROGRESS') {
       appendLog(msg.message, msg.status || 'running');
+      if (typeof msg.percent === 'number') {
+        updateProgressBar(msg.percent, msg.stepText || msg.message, msg.status);
+      }
     } else if (msg.action === 'SYNC_COMPLETE') {
       appendLog(msg.summary, msg.success ? 'success' : 'error');
+      updateProgressBar(100, msg.success ? 'Selesai' : 'Gagal', msg.success ? 'success' : 'error');
       syncButton.disabled = false;
       getHistory().then(prev => {
         const updated = addHistoryEntry(prev, {
