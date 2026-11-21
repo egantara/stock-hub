@@ -5,6 +5,21 @@ import { blobToBase64 } from '../lib/dom-helpers.js';
 const browserApi = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 const stateManager = new SyncStateManager();
 
+let activeSyncSession = {
+  isSyncing: false,
+  percent: 0,
+  stepText: '',
+  logs: [],
+  success: null,
+  summary: ''
+};
+
+function persistSyncSession() {
+  if (browserApi?.storage?.local) {
+    browserApi.storage.local.set({ activeSyncSession });
+  }
+}
+
 const SHOPEE_ORDER_URL = 'https://seller.shopee.co.id/portal/sale/order';
 const SHOPEE_UPLOAD_URL = 'https://seller.shopee.co.id/portal/product-mass/mass-update/upload';
 const TOKOPEDIA_ORDER_URL = 'https://seller-id.tokopedia.com/order?selected_sort=6&tab=all';
@@ -25,22 +40,34 @@ function safeSendMessage(payload) {
 }
 
 function broadcastProgress(message, status = 'running', percent = null, stepText = '') {
+  if (percent !== null) activeSyncSession.percent = percent;
+  if (stepText) activeSyncSession.stepText = stepText;
+  activeSyncSession.logs.push({ message, status });
+  persistSyncSession();
+
   safeSendMessage({
     action: 'SYNC_PROGRESS',
     message,
     status,
-    percent,
-    stepText
+    percent: activeSyncSession.percent,
+    stepText: activeSyncSession.stepText
   });
 }
 
 function broadcastComplete(success, summary) {
+  activeSyncSession.isSyncing = false;
+  activeSyncSession.percent = 100;
+  activeSyncSession.stepText = success ? 'Selesai' : 'Gagal';
+  activeSyncSession.success = success;
+  activeSyncSession.summary = summary;
+  persistSyncSession();
+
   safeSendMessage({
     action: 'SYNC_COMPLETE',
     success,
     summary,
     percent: 100,
-    stepText: success ? 'Selesai' : 'Gagal'
+    stepText: activeSyncSession.stepText
   });
 }
 
@@ -166,6 +193,16 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
     return;
   }
 
+  activeSyncSession = {
+    isSyncing: true,
+    percent: 0,
+    stepText: 'Memulai...',
+    logs: [],
+    success: null,
+    summary: ''
+  };
+  persistSyncSession();
+
   const results = {
     shopee: { enabled: !!options.shopee, success: false },
     tokopedia: { enabled: !!options.tokopedia, success: false }
@@ -191,6 +228,11 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         shopeeTab = await openTab(SHOPEE_ORDER_URL);
         await new Promise(r => setTimeout(r, 2000));
 
+        const downloadPromise = waitForDownload(60000).catch(err => {
+          broadcastProgress(`Catatan download Shopee: ${err.message}`, 'skipped');
+          return null;
+        });
+
         broadcastProgress('Meminta Shopee mengekspor pesanan 7 hari...', 'running', 22, 'Shopee: Ekspor');
         const exportRes = await sendMessageToTab(shopeeTab.id, {
           action: 'SHOPEE_EXPORT_ORDERS'
@@ -201,10 +243,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         }
 
         broadcastProgress('Menunggu file pesanan Shopee terunduh...', 'running', 28, 'Shopee: Unduh');
-        const downloadInfo = await waitForDownload(45000).catch(err => {
-          broadcastProgress(`Catatan: ${err.message}`, 'skipped');
-          return null;
-        });
+        const downloadInfo = await downloadPromise;
 
         if (downloadInfo) {
           broadcastProgress(`File pesanan Shopee diterima (${downloadInfo.filename}). Mengunggah ke Stock-Hub...`, 'running', 35, 'Shopee: Proses Stok');
@@ -260,6 +299,11 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         tokpedTab = await openTab(TOKOPEDIA_ORDER_URL);
         await new Promise(r => setTimeout(r, 2000));
 
+        const downloadPromise = waitForDownload(60000).catch(err => {
+          broadcastProgress(`Catatan download Tokopedia: ${err.message}`, 'skipped');
+          return null;
+        });
+
         broadcastProgress('Meminta Tokopedia mengekspor pesanan 7 hari...', 'running', 68, 'Tokopedia: Ekspor');
         const exportRes = await sendMessageToTab(tokpedTab.id, {
           action: 'TOKOPEDIA_EXPORT_ORDERS'
@@ -270,10 +314,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         }
 
         broadcastProgress('Menunggu file pesanan Tokopedia terunduh...', 'running', 75, 'Tokopedia: Unduh');
-        const downloadInfo = await waitForDownload(45000).catch(err => {
-          broadcastProgress(`Catatan: ${err.message}`, 'skipped');
-          return null;
-        });
+        const downloadInfo = await downloadPromise;
 
         if (downloadInfo?.url) {
           broadcastProgress(`File Tokopedia diterima. Mengunggah ke Stock-Hub...`, 'running', 80, 'Tokopedia: Proses Stok');

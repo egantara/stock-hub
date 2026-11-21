@@ -245,6 +245,36 @@ if (runtime && runtime.onMessage) {
   });
 }
 
+async function restoreActiveSync() {
+  if (!storage) return;
+  return new Promise(resolve => {
+    storage.get(['activeSyncSession'], items => {
+      const sess = items.activeSyncSession;
+      if (!sess) return resolve();
+
+      if (Array.isArray(sess.logs) && sess.logs.length) {
+        progress.innerHTML = '';
+        for (const log of sess.logs) {
+          appendLog(log.message, log.status);
+        }
+      }
+
+      if (sess.isSyncing) {
+        syncButton.disabled = true;
+        updateProgressBar(sess.percent, sess.stepText || 'Sedang memproses...', 'running');
+      } else if (sess.success !== null) {
+        syncButton.disabled = false;
+        updateProgressBar(
+          sess.percent || 100,
+          sess.stepText || (sess.success ? 'Selesai' : 'Gagal'),
+          sess.success ? 'success' : 'error'
+        );
+      }
+      resolve();
+    });
+  });
+}
+
 (async () => {
   const existing = await loadSettings();
   if (existing) {
@@ -253,6 +283,7 @@ if (runtime && runtime.onMessage) {
     keyInput.value = existing.key;
     if (existing.isConfigured) {
       showView('sync');
+      await restoreActiveSync();
       return;
     }
   }

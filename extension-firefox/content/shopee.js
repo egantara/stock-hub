@@ -1,90 +1,94 @@
 (function() {
-  const runtime = (typeof browser !== 'undefined' && browser.runtime)
-    ? browser.runtime
-    : (typeof chrome !== 'undefined' && chrome.runtime)
-      ? chrome.runtime
-      : null;
+  const runtime = typeof browser !== 'undefined' ? browser.runtime : chrome.runtime;
+  if (!runtime?.onMessage) return;
 
-  if (!runtime || !runtime.onMessage) return;
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const text = el => (el?.textContent || '').trim().toLowerCase();
 
   function isLogin() {
-    const url = window.location.href.toLowerCase();
+    const url = location.href.toLowerCase();
     return url.includes('/account/signin') || url.includes('/login') || url.includes('redirect=login');
   }
 
-  function waitForElement(selector, timeoutMs = 25000) {
-    return new Promise((resolve, reject) => {
-      const el = document.querySelector(selector);
-      if (el) return resolve(el);
+  function buttons() {
+    return [...document.querySelectorAll('button, [role="button"], a')];
+  }
 
-      const start = Date.now();
-      const interval = setInterval(() => {
-        const found = document.querySelector(selector);
-        if (found) {
-          clearInterval(interval);
-          return resolve(found);
-        }
-        if (Date.now() - start >= timeoutMs) {
-          clearInterval(interval);
-          reject(new Error(`Timeout: elemen '${selector}' tidak ditemukan di Shopee`));
-        }
-      }, 400);
+  function findText(value, { exclude = [] } = {}) {
+    const target = value.toLowerCase();
+    return buttons().find(el => text(el).includes(target) && !exclude.some(item => text(el).includes(item)));
+  }
+
+  function waitFor(fn, timeout = 60000) {
+    return new Promise((resolve, reject) => {
+      const started = Date.now();
+      const tick = () => {
+        const result = fn();
+        if (result) return resolve(result);
+        if (Date.now() - started >= timeout) return reject(new Error('Timeout menunggu elemen Shopee.'));
+        setTimeout(tick, 500);
+      };
+      tick();
     });
   }
 
-  function findButtonByText(text, root = document) {
-    const target = text.trim().toLowerCase();
-    const buttons = root.querySelectorAll('button, a, .shopee-button, [role="button"]');
-    for (const b of buttons) {
-      if ((b.textContent || '').trim().toLowerCase().includes(target)) {
-        return b;
-      }
+  function setInput(input, value) {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    setter?.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function findDateInputs() {
+    return [...document.querySelectorAll('input')].filter(input => {
+      const hint = `${input.placeholder} ${input.getAttribute('aria-label')} ${input.name}`.toLowerCase();
+      return input.type === 'date' || hint.includes('tanggal') || hint.includes('date');
+    });
+  }
+
+  async function selectLast7Days() {
+    const shortcut = findText('7 hari terakhir');
+    if (shortcut) {
+      shortcut.click();
+      return;
     }
-    return null;
+    const inputs = findDateInputs();
+    if (inputs.length >= 2) {
+      const now = new Date();
+      const start = new Date(now);
+      start.setDate(start.getDate() - 6);
+      const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      setInput(inputs[0], fmt(start));
+      setInput(inputs[1], fmt(now));
+      return;
+    }
+    throw new Error('Filter periode 7 hari terakhir Shopee tidak ditemukan.');
   }
 
   async function triggerShopeeExport() {
-    if (isLogin()) {
-      throw new Error('Sesi Shopee belum login. Silakan login ke seller.shopee.co.id terlebih dahulu.');
-    }
+    if (isLogin()) throw new Error('Sesi Shopee belum login.');
 
-    // 1. Cari tombol Export di halaman pesanan Shopee
-    // Selektor umum Shopee seller center: .order-list-header button, button dengan teks 'Export' atau 'Ekspor'
-    let exportBtn = findButtonByText('ekspor') || findButtonByText('export');
-    if (!exportBtn) {
-      exportBtn = await waitForElement('.shopee-button--primary, [data-testid="export-btn"], .order-export-btn', 10000).catch(() => null);
-    }
+    const exportButton = await waitFor(() => findText('export') || findText('ekspor'));
+    exportButton.click();
+    await sleep(700);
 
-    if (!exportBtn) {
-      throw new Error('Tombol Ekspor tidak ditemukan di halaman pesanan Shopee. Pastikan halaman sudah selesai memuat.');
-    }
+    await waitFor(() => document.body.innerText.toLowerCase().includes('periode tanggal'));
+    await selectLast7Days();
 
-    exportBtn.click();
-    await new Promise(r => setTimeout(r, 1200));
+    const modalExport = await waitFor(() => findText('export', { exclude: ['laporan terakhir'] }) || findText('ekspor'));
+    modalExport.click();
 
-    // 2. Shopee memunculkan modal konfigurasi ekspor
-    // Klik tombol konfirmasi ekspor di modal bila ada
-    const modalConfirm = findButtonByText('ekspor pesanan') ||
-      findButtonByText('konfirmasi') ||
-      findButtonByText('download') ||
-      findButtonByText('ekspor');
+    // Tunggu modal laporan terbaru muncul.
+    await waitFor(() => document.body.innerText.toLowerCase().includes('laporan terakhir'));
+    const latestDownload = await waitFor(() => findText('download'));
+    latestDownload.click();
 
-    if (modalConfirm && modalConfirm !== exportBtn) {
-      modalConfirm.click();
-    }
-
-    return {
-      success: true,
-      message: 'Permintaan ekspor Shopee terkirim. Menunggu download file...'
-    };
+    return { success: true, message: 'Pesanan Shopee 7 hari terakhir sedang diunduh.' };
   }
 
   runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'SHOPEE_EXPORT_ORDERS') {
-      triggerShopeeExport()
-        .then(res => sendResponse(res))
-        .catch(err => sendResponse({ success: false, error: err.message }));
-      return true; // async sendResponse
-    }
+    if (message.action !== 'SHOPEE_EXPORT_ORDERS') return;
+    triggerShopeeExport().then(sendResponse).catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
   });
 })();
