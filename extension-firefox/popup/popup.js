@@ -2,16 +2,16 @@ import { validateSettings, parseSettings } from '../lib/settings.js';
 import { StockhubClient } from '../lib/stockhub-api.js';
 import { addHistoryEntry, formatTimestampWIB } from '../lib/history.js';
 
-const storage = (typeof chrome !== 'undefined' && chrome.storage)
-  ? chrome.storage.local
-  : (typeof browser !== 'undefined' && browser.storage)
-    ? browser.storage.local
+const storage = (typeof browser !== 'undefined' && browser.storage)
+  ? browser.storage.local
+  : (typeof chrome !== 'undefined' && chrome.storage)
+    ? chrome.storage.local
     : null;
 
-const runtime = (typeof chrome !== 'undefined' && chrome.runtime)
-  ? chrome.runtime
-  : (typeof browser !== 'undefined' && browser.runtime)
-    ? browser.runtime
+const runtime = (typeof browser !== 'undefined' && browser.runtime)
+  ? browser.runtime
+  : (typeof chrome !== 'undefined' && chrome.runtime)
+    ? chrome.runtime
     : null;
 
 const settingsView = document.getElementById('settingsView');

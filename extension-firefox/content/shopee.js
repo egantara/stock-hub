@@ -1,8 +1,8 @@
 (function() {
-  const runtime = (typeof chrome !== 'undefined' && chrome.runtime)
-    ? chrome.runtime
-    : (typeof browser !== 'undefined' && browser.runtime)
-      ? browser.runtime
+  const runtime = (typeof browser !== 'undefined' && browser.runtime)
+    ? browser.runtime
+    : (typeof chrome !== 'undefined' && chrome.runtime)
+      ? chrome.runtime
       : null;
 
   if (!runtime || !runtime.onMessage) return;

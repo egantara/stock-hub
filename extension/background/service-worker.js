@@ -2,7 +2,7 @@ import { StockhubClient, getSettings } from '../lib/stockhub-api.js';
 import { SyncStateManager, formatSummary } from './orchestrator-state.js';
 import { blobToBase64 } from '../lib/dom-helpers.js';
 
-const browserApi = typeof chrome !== 'undefined' ? chrome : (typeof browser !== 'undefined' ? browser : null);
+const browserApi = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 const stateManager = new SyncStateManager();
 
 const SHOPEE_ORDER_URL = 'https://seller.shopee.co.id/portal/sale/order';
@@ -10,26 +10,34 @@ const SHOPEE_UPLOAD_URL = 'https://seller.shopee.co.id/portal/product-mass/mass-
 const TOKOPEDIA_ORDER_URL = 'https://seller-id.tokopedia.com/order?selected_sort=6&tab=all';
 const TOKOPEDIA_UPLOAD_URL = 'https://seller-id.tokopedia.com/product/batch/edit-prods?entry-from=manage&shop_region=ID';
 
-function broadcastProgress(message, status = 'running') {
-  if (browserApi?.runtime?.sendMessage) {
-    browserApi.runtime.sendMessage({
-      action: 'SYNC_PROGRESS',
-      message,
-      status
-    }).catch(() => {
-      // Popup might be closed, ignore
+function safeSendMessage(payload) {
+  if (!browserApi?.runtime?.sendMessage) return;
+  try {
+    const res = browserApi.runtime.sendMessage(payload, () => {
+      const _ = browserApi.runtime?.lastError;
     });
+    if (res && typeof res.catch === 'function') {
+      res.catch(() => {});
+    }
+  } catch {
+    // Popup might be closed, ignore
   }
 }
 
+function broadcastProgress(message, status = 'running') {
+  safeSendMessage({
+    action: 'SYNC_PROGRESS',
+    message,
+    status
+  });
+}
+
 function broadcastComplete(success, summary) {
-  if (browserApi?.runtime?.sendMessage) {
-    browserApi.runtime.sendMessage({
-      action: 'SYNC_COMPLETE',
-      success,
-      summary
-    }).catch(() => {});
-  }
+  safeSendMessage({
+    action: 'SYNC_COMPLETE',
+    success,
+    summary
+  });
 }
 
 function openTab(url) {
@@ -64,18 +72,41 @@ function closeTab(tabId) {
 
 function sendMessageToTab(tabId, message, timeoutMs = 45000) {
   return new Promise((resolve, reject) => {
+    let settled = false;
     const timer = setTimeout(() => {
-      reject(new Error(`Timeout menunggu respon dari tab ${tabId}`));
+      if (!settled) {
+        settled = true;
+        reject(new Error(`Timeout menunggu respon dari tab ${tabId}`));
+      }
     }, timeoutMs);
 
-    browserApi.tabs.sendMessage(tabId, message, response => {
+    const onResult = response => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      const err = browserApi.runtime.lastError;
-      if (err) {
-        return reject(new Error(err.message));
-      }
+      const err = browserApi.runtime?.lastError;
+      if (err) return reject(new Error(err.message));
       resolve(response);
-    });
+    };
+
+    try {
+      const res = browserApi.tabs.sendMessage(tabId, message, onResult);
+      if (res && typeof res.then === 'function') {
+        res.then(onResult).catch(err => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(err);
+          }
+        });
+      }
+    } catch (err) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    }
   });
 }
 

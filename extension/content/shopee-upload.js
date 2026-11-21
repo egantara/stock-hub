@@ -1,7 +1,7 @@
 (function() {
-  const runtime = (typeof chrome !== 'undefined' && chrome.runtime)
-    ? chrome.runtime
-    : (typeof browser !== 'undefined' && browser.runtime)
+  const runtime = (typeof browser !== 'undefined' && browser.runtime)
+    ? browser.runtime
+    : (typeof chrome !== 'undefined' && chrome.runtime)
       ? browser.runtime
       : null;
 
