@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stock-Hub Sync</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <strong>Stock-Hub Sync</strong>
+    <button id="settingsButton" class="icon-button" title="Pengaturan" aria-label="Pengaturan">⚙</button>
+  </header>
+
+  <main>
+    <section id="settingsView" class="view">
+      <h1>Pengaturan</h1>
+      <p class="hint">Masukkan kredensial Stock-Hub yang biasa dipakai di dashboard.</p>
+      <label for="stockhubUrl">URL Stock-Hub</label>
+      <input id="stockhubUrl" type="url" placeholder="https://stock-hub.vercel.app">
+      <label for="stockhubUser">Username</label>
+      <input id="stockhubUser" type="text" autocomplete="username">
+      <label for="stockhubKey">Access Key</label>
+      <input id="stockhubKey" type="password" autocomplete="current-password">
+      <button id="saveButton" class="primary">Simpan dan Tes Koneksi</button>
+      <div id="settingsStatus" class="status" role="status"></div>
+    </section>
+
+    <section id="syncView" class="view hidden">
+      <div class="marketplaces">
+        <label><input id="shopeeEnabled" type="checkbox" checked> Shopee</label>
+        <label><input id="tokopediaEnabled" type="checkbox" checked> Tokopedia</label>
+      </div>
+      <button id="syncButton" class="primary sync-button">🔄 Sync Stock</button>
+      <div id="progress" class="progress" role="log" aria-live="polite"></div>
+    </section>
+  </main>
+  <script src="../lib/settings.js" type="module"></script>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
