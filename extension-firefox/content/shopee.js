@@ -9,6 +9,14 @@
     return url.includes('/account/signin') || url.includes('/login') || url.includes('redirect=login');
   }
 
+  function reportStep(stepText) {
+    runtime.sendMessage({
+      action: 'SYNC_PROGRESS',
+      message: stepText,
+      status: 'running'
+    }).catch(() => {});
+  }
+
   function simulateClick(el) {
     if (!el) return;
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
@@ -17,6 +25,19 @@
     el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
     el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
     el.click();
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   function findClickableByText(targetText, { container = document, exclude = [] } = {}) {
@@ -50,7 +71,6 @@
   }
 
   function findDateRangeTrigger(modal) {
-    // 1. Cari label "Periode Tanggal"
     const all = [...modal.querySelectorAll('*')];
     const label = all.find(el => (el.textContent || '').trim().toLowerCase() === 'periode tanggal');
     if (label) {
@@ -60,7 +80,6 @@
         if (picker) return picker;
       }
     }
-    // 2. Fallback input atau elemen date picker di modal
     return modal.querySelector('input') ||
       modal.querySelector('.shopee-date-picker, .date-picker, [class*="date-picker"], [class*="date-range"]');
   }
@@ -68,27 +87,26 @@
   async function triggerShopeeExport() {
     if (isLogin()) throw new Error('Sesi Shopee belum login.');
 
-    // 1. Klik tombol Export di halaman pesanan
+    reportStep('Shopee: Menemukan tombol Export...');
     const exportButton = await waitFor(() => {
       return findClickableByText('export') || findClickableByText('ekspor');
-    });
+    }, 25000);
     simulateClick(exportButton);
     await sleep(1000);
 
-    // 2. Tunggu modal 'Download Semua Pesanan'
+    reportStep('Shopee: Membuka modal Download Semua Pesanan...');
     const modal = await waitFor(() => {
       const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
       return candidates.find(el => (el.innerText || '').toLowerCase().includes('download semua pesanan'));
-    });
+    }, 25000);
 
-    // 3. Klik input tanggal di bawah 'Periode Tanggal' untuk membuka popover kalender
+    reportStep('Shopee: Mengatur periode 7 hari terakhir...');
     const dateTrigger = findDateRangeTrigger(modal);
     if (dateTrigger) {
       simulateClick(dateTrigger);
       await sleep(800);
     }
 
-    // 4. Pilih opsi '7 hari terakhir' dari popover (jika tersedia)
     const shortcut = findClickableByText('7 hari terakhir') ||
       findClickableByText('7 hari') ||
       findClickableByText('last 7 days');
@@ -100,7 +118,7 @@
       console.warn('Shortcut 7 hari terakhir tidak muncul, melanjutkan dengan rentang tanggal aktif.');
     }
 
-    // 5. Klik tombol Export di dalam modal
+    reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
       return findClickableByText('export', { container: modal }) ||
         findClickableByText('ekspor', { container: modal });
@@ -108,7 +126,7 @@
     simulateClick(confirmExportBtn);
     await sleep(2500);
 
-    // 6. Tunggu pop up / bagian 'Laporan Terakhir' dan klik tombol Download pada laporan teratas
+    reportStep('Shopee: Menunggu laporan selesai dibuat di Laporan Terakhir...');
     const reportModal = await waitFor(() => {
       const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
       return candidates.find(el => {
@@ -131,16 +149,54 @@
       return downloads[0] || null;
     }, 60000);
 
+    reportStep('Shopee: Mengunduh file pesanan...');
+    const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
+    let fileBase64 = null;
+    let fileName = 'shopee-orders.xlsx';
+
+    if (link && link.href && !link.href.startsWith('javascript:')) {
+      try {
+        const res = await fetch(link.href, { credentials: 'include' });
+        if (res.ok) {
+          const blob = await res.blob();
+          fileBase64 = await blobToBase64(blob);
+          fileName = link.getAttribute('download') || 'shopee-orders.xlsx';
+        }
+      } catch (err) {
+        console.warn('Direct fetch Shopee failed, falling back to download listener:', err);
+      }
+    }
+
     simulateClick(latestDownload);
 
-    return { success: true, message: 'File pesanan Shopee berhasil diekspor dan diunduh.' };
+    return {
+      success: true,
+      fileBase64,
+      fileName,
+      message: 'File pesanan Shopee berhasil diekspor.'
+    };
   }
 
   runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action !== 'SHOPEE_EXPORT_ORDERS') return;
-    triggerShopeeExport()
-      .then(sendResponse)
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
+    if (message.action === 'PING') {
+      sendResponse({ pong: true });
+      return true;
+    }
+
+    if (message.action === 'FETCH_BLOB_OR_URL') {
+      fetch(message.url, { credentials: 'include' })
+        .then(r => r.blob())
+        .then(blobToBase64)
+        .then(base64 => sendResponse({ success: true, base64 }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+
+    if (message.action === 'SHOPEE_EXPORT_ORDERS') {
+      triggerShopeeExport()
+        .then(sendResponse)
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+    }
   });
 })();

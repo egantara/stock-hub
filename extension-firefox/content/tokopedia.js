@@ -9,6 +9,14 @@
     return url.includes('/login') || url.includes('accounts.tokopedia.com') || url.includes('passport');
   }
 
+  function reportStep(stepText) {
+    runtime.sendMessage({
+      action: 'SYNC_PROGRESS',
+      message: stepText,
+      status: 'running'
+    }).catch(() => {});
+  }
+
   function simulateClick(el) {
     if (!el) return;
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
@@ -19,17 +27,40 @@
     el.click();
   }
 
-  function findClickableByText(targetText, { container = document, exclude = [] } = {}) {
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function findButtonByText(targetText, { container = document, exclude = [] } = {}) {
     const cleanTarget = targetText.trim().toLowerCase();
-    const candidates = [...container.querySelectorAll('button, [role="button"], [role="menuitem"], a, span, div, li, p')];
-    const matched = candidates.filter(el => {
+    const buttons = [...container.querySelectorAll('button, [role="button"], a, input[type="button"]')];
+    const matched = buttons.filter(el => {
       const txt = (el.textContent || '').trim().toLowerCase();
       const matches = txt === cleanTarget || txt.includes(cleanTarget);
       const notExcluded = !exclude.some(item => txt.includes(item.toLowerCase()));
       return matches && notExcluded;
     });
     matched.sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length);
-    return matched[0] || null;
+    if (matched[0]) return matched[0];
+
+    // Fallback pencarian span / div jika tidak berupa elemen button
+    const fallbacks = [...container.querySelectorAll('span, div')].filter(el => {
+      const txt = (el.textContent || '').trim().toLowerCase();
+      const matches = txt === cleanTarget || txt.includes(cleanTarget);
+      const notExcluded = !exclude.some(item => txt.includes(item.toLowerCase()));
+      return matches && notExcluded && el.children.length === 0;
+    });
+    fallbacks.sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length);
+    return fallbacks[0] || null;
   }
 
   function waitFor(fn, timeout = 45000) {
@@ -60,30 +91,38 @@
   async function triggerTokopediaExport() {
     if (isLogin()) throw new Error('Sesi Tokopedia/TikTok belum login.');
 
+    reportStep('Tokopedia: Membuka filter pesanan...');
     // 1. Klik tombol Filter
     const filterBtn = await waitFor(() => {
-      return findClickableByText('filter') || document.querySelector('[data-testid="filter-btn"]');
-    });
-    simulateClick(filterBtn);
-    await sleep(800);
+      return findButtonByText('filter') ||
+        document.querySelector('[data-testid*="filter"]') ||
+        document.querySelector('[class*="filter-btn"]');
+    }, 25000).catch(() => null);
+
+    if (filterBtn) {
+      simulateClick(filterBtn);
+      await sleep(1000);
+    }
 
     // 2. Pada popup Filters, cari 'Time created'
+    reportStep('Tokopedia: Mengatur filter rentang tanggal 7 hari...');
     const filterModal = await waitFor(() => {
-      const candidates = [...document.querySelectorAll('[role="dialog"], .filter-modal, div')];
-      return candidates.find(el => (el.innerText || '').toLowerCase().includes('time created'));
-    }).catch(() => null);
+      const candidates = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], div')];
+      return candidates.find(el => {
+        const txt = (el.innerText || '').toLowerCase();
+        return txt.includes('time created') || txt.includes('waktu pesanan') || txt.includes('tanggal pesanan');
+      });
+    }, 15000).catch(() => null);
 
     if (filterModal) {
-      // Cek apakah ada shortcut 7 hari terakhir
-      const quick7 = findClickableByText('7 hari terakhir', { container: filterModal }) ||
-        findClickableByText('7 hari', { container: filterModal }) ||
-        findClickableByText('last 7 days', { container: filterModal });
+      const quick7 = findButtonByText('7 hari terakhir', { container: filterModal }) ||
+        findButtonByText('7 hari', { container: filterModal }) ||
+        findButtonByText('last 7 days', { container: filterModal });
 
       if (quick7) {
         simulateClick(quick7);
-        await sleep(400);
+        await sleep(500);
       } else {
-        // Cari input From dan To
         const inputs = filterModal.querySelectorAll('input');
         if (inputs.length >= 2) {
           const now = new Date();
@@ -92,47 +131,54 @@
           const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           setNativeValue(inputs[0], fmt(start));
           setNativeValue(inputs[1], fmt(now));
-          await sleep(400);
+          await sleep(500);
         }
       }
 
       // Klik Terapkan / Apply pada filter
-      const applyBtn = findClickableByText('terapkan', { container: filterModal }) ||
-        findClickableByText('apply', { container: filterModal }) ||
-        findClickableByText('simpan', { container: filterModal }) ||
-        findClickableByText('konfirmasi', { container: filterModal });
+      const applyBtn = findButtonByText('terapkan', { container: filterModal }) ||
+        findButtonByText('apply', { container: filterModal }) ||
+        findButtonByText('simpan', { container: filterModal }) ||
+        findButtonByText('konfirmasi', { container: filterModal }) ||
+        findButtonByText('filter', { container: filterModal });
 
       if (applyBtn) {
         simulateClick(applyBtn);
-        await sleep(800);
+        await sleep(1000);
       }
     }
 
     // 3. Klik tombol Export
+    reportStep('Tokopedia: Menemukan tombol Export...');
     const exportBtn = await waitFor(() => {
-      return findClickableByText('export') || findClickableByText('ekspor');
-    });
+      return findButtonByText('export') || findButtonByText('ekspor');
+    }, 25000);
     simulateClick(exportBtn);
-    await sleep(1000);
+    await sleep(1500);
 
     // 4. Pada pop up 'Export orders', klik tombol Export
+    reportStep('Tokopedia: Mengonfirmasi pada modal Export Orders...');
     const exportModal = await waitFor(() => {
-      const candidates = [...document.querySelectorAll('[role="dialog"], div')];
-      return candidates.find(el => (el.innerText || '').toLowerCase().includes('export orders'));
-    }).catch(() => null);
+      const candidates = [...document.querySelectorAll('[role="dialog"], [class*="modal"], div')];
+      return candidates.find(el => {
+        const txt = (el.innerText || '').toLowerCase();
+        return txt.includes('export orders') || txt.includes('ekspor pesanan');
+      });
+    }, 20000).catch(() => null);
 
     if (exportModal) {
-      const confirmExport = findClickableByText('export', { container: exportModal, exclude: ['export orders'] }) ||
-        findClickableByText('ekspor', { container: exportModal });
+      const confirmExport = findButtonByText('export', { container: exportModal, exclude: ['export orders'] }) ||
+        findButtonByText('ekspor', { container: exportModal });
       if (confirmExport) {
         simulateClick(confirmExport);
-        await sleep(2000);
+        await sleep(2500);
       }
     }
 
-    // 5. Pada pop up / halaman Export history, tunggu dan klik Download pada laporan teratas
-    const downloadBtn = await waitFor(() => {
-      const downloads = [...document.querySelectorAll('button, a, [role="button"], span')].filter(el => {
+    // 5. Pada pop up / riwayat Export history, tunggu laporan selesai dan tombol Download aktif
+    reportStep('Tokopedia: Menunggu laporan dibuat di Export History...');
+    const latestDownload = await waitFor(() => {
+      const downloads = [...document.querySelectorAll('button, a, [role="button"]')].filter(el => {
         const t = (el.textContent || '').trim().toLowerCase();
         const isDownloadText = t === 'download' || t === 'unduh';
         const isNotDisabled = !el.disabled &&
@@ -142,18 +188,56 @@
         return isDownloadText && isNotDisabled;
       });
       return downloads[0] || null;
-    }, 60000);
+    }, 90000);
 
-    simulateClick(downloadBtn);
+    reportStep('Tokopedia: Mengunduh file pesanan...');
+    const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
+    let fileBase64 = null;
+    let fileName = 'tiktok-orders.xlsx';
 
-    return { success: true, message: 'File pesanan Tokopedia berhasil diekspor dan diunduh.' };
+    if (link && link.href && !link.href.startsWith('javascript:')) {
+      try {
+        const res = await fetch(link.href, { credentials: 'include' });
+        if (res.ok) {
+          const blob = await res.blob();
+          fileBase64 = await blobToBase64(blob);
+          fileName = link.getAttribute('download') || 'tiktok-orders.xlsx';
+        }
+      } catch (err) {
+        console.warn('Direct fetch Tokopedia failed, falling back to download listener:', err);
+      }
+    }
+
+    simulateClick(latestDownload);
+
+    return {
+      success: true,
+      fileBase64,
+      fileName,
+      message: 'File pesanan Tokopedia berhasil diekspor.'
+    };
   }
 
   runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action !== 'TOKOPEDIA_EXPORT_ORDERS') return;
-    triggerTokopediaExport()
-      .then(sendResponse)
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
+    if (message.action === 'PING') {
+      sendResponse({ pong: true });
+      return true;
+    }
+
+    if (message.action === 'FETCH_BLOB_OR_URL') {
+      fetch(message.url, { credentials: 'include' })
+        .then(r => r.blob())
+        .then(blobToBase64)
+        .then(base64 => sendResponse({ success: true, base64 }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+
+    if (message.action === 'TOKOPEDIA_EXPORT_ORDERS') {
+      triggerTokopediaExport()
+        .then(sendResponse)
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+    }
   });
 })();

@@ -54,6 +54,10 @@
   }
 
   runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'PING') {
+      sendResponse({ pong: true });
+      return true;
+    }
     if (message.action !== 'SHOPEE_UPLOAD_STOCK') return;
     handleShopeeUpload(message).then(sendResponse).catch(error => sendResponse({ success: false, error: error.message }));
     return true;

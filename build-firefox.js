@@ -34,6 +34,7 @@ const firefoxManifest = {
     }
   },
   permissions: [
+    "<all_urls>",
     "storage",
     "downloads",
     "tabs",

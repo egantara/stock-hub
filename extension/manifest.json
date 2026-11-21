@@ -10,6 +10,7 @@
     "scripting"
   ],
   "host_permissions": [
+    "<all_urls>",
     "https://seller.shopee.co.id/*",
     "https://seller-id.tokopedia.com/*",
     "http://*/*",

@@ -76,6 +76,10 @@
   }
 
   runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'PING') {
+      sendResponse({ pong: true });
+      return true;
+    }
     if (message.action !== 'TOKOPEDIA_UPLOAD_STOCK') return;
     handleTokopediaUpload(message).then(sendResponse).catch(error => sendResponse({ success: false, error: error.message }));
     return true;

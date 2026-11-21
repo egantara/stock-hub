@@ -101,7 +101,7 @@ function closeTab(tabId) {
   });
 }
 
-function sendMessageToTab(tabId, message, timeoutMs = 45000) {
+function sendMessageToTab(tabId, message, timeoutMs = 180000) {
   return new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -139,6 +139,67 @@ function sendMessageToTab(tabId, message, timeoutMs = 45000) {
       }
     }
   });
+}
+
+async function waitForTabReady(tabId, maxAttempts = 15) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const ping = await new Promise(resolve => {
+        browserApi.tabs.sendMessage(tabId, { action: 'PING' }, res => {
+          const err = browserApi.runtime?.lastError;
+          if (err || !res?.pong) resolve(null);
+          else resolve(res);
+        });
+      });
+      if (ping?.pong) return true;
+    } catch {
+      // Belum siap
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  return false;
+}
+
+function base64ToBlob(base64, mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+  const byteChars = atob(base64);
+  const byteNumbers = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  return new Blob([byteNumbers], { type: mimeType });
+}
+
+async function obtainFileBlob(tabId, downloadInfo, exportRes) {
+  if (exportRes?.fileBase64) {
+    return base64ToBlob(exportRes.fileBase64);
+  }
+
+  if (downloadInfo?.url) {
+    if (tabId) {
+      try {
+        const fetchRes = await sendMessageToTab(tabId, {
+          action: 'FETCH_BLOB_OR_URL',
+          url: downloadInfo.url
+        }, 30000);
+        if (fetchRes?.success && fetchRes.base64) {
+          return base64ToBlob(fetchRes.base64);
+        }
+      } catch (err) {
+        console.warn('Tab fetch fallback gagal:', err);
+      }
+    }
+
+    try {
+      const res = await fetch(downloadInfo.url);
+      if (res.ok) {
+        return await res.blob();
+      }
+    } catch (err) {
+      console.warn('Background fetch fallback gagal:', err);
+    }
+  }
+
+  throw new Error('Tidak dapat mengambil file pesanan dari tab atau unduhan.');
 }
 
 function waitForDownload(timeoutMs = 60000) {
@@ -226,9 +287,12 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
       try {
         broadcastProgress('Membuka tab Pesanan Shopee...', 'running', 15, 'Shopee: Buka Tab');
         shopeeTab = await openTab(SHOPEE_ORDER_URL);
-        await new Promise(r => setTimeout(r, 2000));
+        const shopeeReady = await waitForTabReady(shopeeTab.id, 15);
+        if (!shopeeReady) {
+          throw new Error('Tab Shopee tidak merespon / content script belum siap.');
+        }
 
-        const downloadPromise = waitForDownload(60000).catch(err => {
+        const downloadPromise = waitForDownload(90000).catch(err => {
           broadcastProgress(`Catatan download Shopee: ${err.message}`, 'skipped');
           return null;
         });
@@ -242,21 +306,16 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
           throw new Error(exportRes?.error || 'Gagal trigger ekspor Shopee');
         }
 
-        broadcastProgress('Menunggu file pesanan Shopee terunduh...', 'running', 28, 'Shopee: Unduh');
+        broadcastProgress('Menunggu file pesanan Shopee...', 'running', 28, 'Shopee: Unduh');
         const downloadInfo = await downloadPromise;
 
-        if (downloadInfo) {
-          broadcastProgress(`File pesanan Shopee diterima (${downloadInfo.filename}). Mengunggah ke Stock-Hub...`, 'running', 35, 'Shopee: Proses Stok');
-          if (downloadInfo.url) {
-            const blobRes = await fetch(downloadInfo.url);
-            const blob = await blobRes.blob();
-            const uploadRes = await client.uploadOrderFile(blob, 'shopee-order.xlsx');
-            if (!uploadRes?.ok) {
-              throw new Error(`Upload pesanan ke Stock-Hub gagal: ${uploadRes?.error}`);
-            }
-            broadcastProgress('Pesanan Shopee berhasil diproses Stock-Hub.', 'running', 40, 'Shopee: Stok Terpotong');
-          }
+        const fileBlob = await obtainFileBlob(shopeeTab.id, downloadInfo, exportRes);
+        broadcastProgress('File pesanan Shopee diterima. Mengunggah ke Stock-Hub...', 'running', 35, 'Shopee: Proses Stok');
+        const uploadRes = await client.uploadOrderFile(fileBlob, 'shopee-order.xlsx');
+        if (!uploadRes?.ok) {
+          throw new Error(`Upload pesanan ke Stock-Hub gagal: ${uploadRes?.error}`);
         }
+        broadcastProgress('Pesanan Shopee berhasil diproses Stock-Hub.', 'running', 40, 'Shopee: Stok Terpotong');
 
         // Ambil stok terbaru format Shopee
         broadcastProgress('Mengambil file pembaruan stok Shopee dari Stock-Hub...', 'running', 44, 'Shopee: Ambil Stok');
@@ -267,7 +326,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Membuka halaman Mass Update Shopee...', 'running', 48, 'Shopee: Buka Upload');
         await closeTab(shopeeTab.id);
         shopeeTab = await openTab(SHOPEE_UPLOAD_URL);
-        await new Promise(r => setTimeout(r, 3000));
+        await waitForTabReady(shopeeTab.id, 15);
 
         broadcastProgress('Mengunggah stok terbaru ke Shopee...', 'running', 52, 'Shopee: Upload Stok');
         const uploadStockRes = await sendMessageToTab(shopeeTab.id, {
@@ -297,9 +356,12 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
       try {
         broadcastProgress('Membuka tab Pesanan Tokopedia/TikTok...', 'running', 60, 'Tokopedia: Buka Tab');
         tokpedTab = await openTab(TOKOPEDIA_ORDER_URL);
-        await new Promise(r => setTimeout(r, 2000));
+        const tokpedReady = await waitForTabReady(tokpedTab.id, 20);
+        if (!tokpedReady) {
+          throw new Error('Tab Tokopedia tidak merespon / content script belum siap.');
+        }
 
-        const downloadPromise = waitForDownload(60000).catch(err => {
+        const downloadPromise = waitForDownload(120000).catch(err => {
           broadcastProgress(`Catatan download Tokopedia: ${err.message}`, 'skipped');
           return null;
         });
@@ -313,19 +375,16 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
           throw new Error(exportRes?.error || 'Gagal trigger ekspor Tokopedia');
         }
 
-        broadcastProgress('Menunggu file pesanan Tokopedia terunduh...', 'running', 75, 'Tokopedia: Unduh');
+        broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-        if (downloadInfo?.url) {
-          broadcastProgress(`File Tokopedia diterima. Mengunggah ke Stock-Hub...`, 'running', 80, 'Tokopedia: Proses Stok');
-          const blobRes = await fetch(downloadInfo.url);
-          const blob = await blobRes.blob();
-          const uploadRes = await client.uploadOrderFile(blob, 'tiktok-order.xlsx');
-          if (!uploadRes?.ok) {
-            throw new Error(`Upload pesanan Tokopedia ke Stock-Hub gagal: ${uploadRes?.error}`);
-          }
-          broadcastProgress('Pesanan Tokopedia berhasil diproses Stock-Hub.', 'running', 85, 'Tokopedia: Stok Terpotong');
+        const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes);
+        broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
+        const uploadRes = await client.uploadOrderFile(fileBlob, 'tiktok-order.xlsx');
+        if (!uploadRes?.ok) {
+          throw new Error(`Upload pesanan Tokopedia ke Stock-Hub gagal: ${uploadRes?.error}`);
         }
+        broadcastProgress('Pesanan Tokopedia berhasil diproses Stock-Hub.', 'running', 85, 'Tokopedia: Stok Terpotong');
 
         // Ambil stok terbaru format TikTok/Tokopedia
         broadcastProgress('Mengambil file pembaruan stok Tokopedia dari Stock-Hub...', 'running', 88, 'Tokopedia: Ambil Stok');
@@ -336,7 +395,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Membuka halaman Batch Edit Tokopedia...', 'running', 92, 'Tokopedia: Buka Upload');
         await closeTab(tokpedTab.id);
         tokpedTab = await openTab(TOKOPEDIA_UPLOAD_URL);
-        await new Promise(r => setTimeout(r, 3000));
+        await waitForTabReady(tokpedTab.id, 15);
 
         broadcastProgress('Mengunggah stok terbaru ke Tokopedia...', 'running', 96, 'Tokopedia: Upload Stok');
         const uploadStockRes = await sendMessageToTab(tokpedTab.id, {
@@ -375,6 +434,10 @@ if (browserApi?.runtime?.onMessage) {
     if (message.action === 'START_SYNC') {
       runSync(message.options || {});
       sendResponse({ started: true });
+      return true;
+    }
+    if (message.action === 'SYNC_PROGRESS') {
+      broadcastProgress(message.message, message.status || 'running');
       return true;
     }
   });
