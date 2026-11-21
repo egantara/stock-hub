@@ -96,54 +96,71 @@
     };
   }
 
-  const MONTH_NAMES_ID = ['januari', 'februari', 'maret', 'april', 'mei', 'juni',
-    'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
-  const MONTH_NAMES_EN = ['january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'];
+  function findCalendarMonthContainers() {
+    // Cari semua elemen container yang memuat deretan angka kalender (1..28)
+    const all = [...document.querySelectorAll('table, tbody, [class*="calendar"], [class*="table"], [class*="content"], div')];
+    const matched = all.filter(container => {
+      const rect = container.getBoundingClientRect();
+      // Ukuran 1 panel bulan biasanya berkisar 140-550px lebar, 100-450px tinggi
+      if (rect.width < 140 || rect.width > 550) return false;
+      if (rect.height < 100 || rect.height > 450) return false;
 
-  function dumpCalendarDiagnostic() {
-    const popovers = [...document.querySelectorAll(
-      '[class*="popper"], [class*="eds-"], [class*="picker"], [role="tooltip"], div'
-    )].filter(el => el.offsetWidth > 250 && el.offsetHeight > 150);
-
-    return popovers.slice(0, 3).map(el => {
-      const cls = typeof el.className === 'string' ? el.className : '';
-      const textPreview = (el.innerText || '').slice(0, 150).replace(/\s+/g, ' ');
-      return `<${el.tagName} class="${cls}" size="${el.offsetWidth}x${el.offsetHeight}">: "${textPreview}"`;
-    }).join(' --- ') || 'Tidak ada elemen popover >250x150.';
-  }
-
-  function findOpenCalendarPopup() {
-    const all = [...document.querySelectorAll(
-      '.eds-popper, .eds-picker-panel, .eds-date-range-picker, [class*="eds-date"], [class*="eds-picker"], [class*="picker-panel"], [class*="popper"], [role="tooltip"], div'
-    )];
-
-    const popovers = all.filter(el => {
-      if (el.offsetWidth < 300 || el.offsetWidth > 950) return false;
-      if (el.offsetHeight < 180 || el.offsetHeight > 650) return false;
-
-      const style = window.getComputedStyle(el);
-      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-
-      const text = (el.innerText || '').toLowerCase();
-      const hasMonth = text.includes('oktober') || text.includes('november') ||
-        MONTH_NAMES_ID.some(m => text.includes(m)) ||
-        MONTH_NAMES_EN.some(m => text.includes(m));
-      const hasNumbers = text.includes('15') && text.includes('21');
-      return hasMonth && hasNumbers;
+      const text = container.textContent || '';
+      // Harus memiliki angka-angka hari khas kalender
+      const hasDays = [1, 5, 10, 15, 20, 25].every(d => new RegExp(`\\b${d}\\b`).test(text));
+      return hasDays;
     });
 
-    if (popovers.length === 0) return null;
-    popovers.sort((a, b) => (a.offsetWidth * a.offsetHeight) - (b.offsetWidth * b.offsetHeight));
-    return popovers[0];
+    // Ambil innermost (child container yang tidak punya matching child lain)
+    const innermost = matched.filter(el => !matched.some(other => other !== el && el.contains(other)));
+    return innermost;
   }
 
-  function findCalendarDayElement(calendarPopup, targetDay, isRightMonth) {
-    const rect = calendarPopup.getBoundingClientRect();
-    const midX = rect.left + rect.width / 2;
+  function dumpModalDiagnostic(modal) {
+    const inputs = [...modal.querySelectorAll('input, [class*="picker"], [class*="selector"]')].map(el => {
+      const cls = typeof el.className === 'string' ? el.className : '';
+      return `<${el.tagName} class="${cls}">: "${el.value || el.innerText || ''}"`;
+    }).join(' | ');
 
-    const all = [...calendarPopup.querySelectorAll('*')];
-    const targetText = String(targetDay);
+    const popovers = [...document.querySelectorAll('[class*="popper"], [class*="picker"], [class*="dropdown"]')].filter(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 100 && rect.height > 100;
+    }).map(el => {
+      const cls = typeof el.className === 'string' ? el.className : '';
+      return `<${el.tagName} class="${cls}" rect="${Math.round(el.offsetWidth)}x${Math.round(el.offsetHeight)}">`;
+    }).join(' | ');
+
+    return `Inputs: [${inputs}] --- Popovers: [${popovers}]`;
+  }
+
+  async function ensureCalendarTablesOpen(modal) {
+    let tables = findCalendarMonthContainers();
+    if (tables.length >= 2) {
+      reportStep('Shopee: Kalender sudah terbuka...');
+      return tables;
+    }
+
+    reportStep('Shopee: Membuka kalender Periode Tanggal...');
+    const trigger = findDateRangeTrigger(modal);
+    if (!trigger) {
+      throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
+    }
+    simulateClick(trigger);
+    await sleep(2000);
+
+    tables = await waitFor(() => {
+      const res = findCalendarMonthContainers();
+      return res.length >= 2 ? res : null;
+    }, 20000).catch(() => {
+      throw new Error(`Kalender popover tidak terdeteksi. DIAGNOSTIK: ${dumpModalDiagnostic(modal)}`);
+    });
+
+    return tables;
+  }
+
+  function findDayInMonthContainer(container, dayNumber) {
+    const targetText = String(dayNumber);
+    const all = [...container.querySelectorAll('*')];
 
     const candidates = all.filter(el => {
       const txt = (el.textContent || '').trim();
@@ -151,31 +168,23 @@
       if (el.children.length > 1) return false;
       if (el.children.length === 1 && (el.firstElementChild.textContent || '').trim() !== targetText) return false;
 
-      const elRect = el.getBoundingClientRect();
-      if (elRect.width === 0 || elRect.height === 0) return false;
-
-      const onRight = elRect.left >= midX;
-      if (isRightMonth && !onRight) return false;
-      if (!isRightMonth && onRight) return false;
-
       const cell = el.closest('td, [class*="cell"]') || el;
       const cls = `${el.className || ''} ${cell.className || ''} ${el.parentElement?.className || ''}`.toLowerCase();
-      const isDisabled = /disabled|prev|next|other|outside/.test(cls) ||
-        el.hasAttribute('disabled') || cell.hasAttribute('disabled') ||
-        el.getAttribute('aria-disabled') === 'true' || cell.getAttribute('aria-disabled') === 'true';
+      if (/disabled|prev|next|other|outside/.test(cls)) return false;
+      if (el.hasAttribute('disabled') || cell.hasAttribute('disabled')) return false;
+      if (el.getAttribute('aria-disabled') === 'true' || cell.getAttribute('aria-disabled') === 'true') return false;
 
-      return !isDisabled;
+      return true;
     });
 
     if (candidates.length === 0) return null;
-
     candidates.sort((a, b) => a.children.length - b.children.length);
     const leaf = candidates[0];
     const cell = leaf.closest('td, [class*="cell"]') || leaf;
     return { leaf, cell };
   }
 
-  function clickDateElement(match) {
+  function clickDayTarget(match) {
     if (!match) return;
     const { leaf, cell } = match;
     if (leaf) simulateClick(leaf);
@@ -189,41 +198,38 @@
     start.setDate(start.getDate() - 6);
     const startDay = start.getDate();
 
-    const isStartOnRight = (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear());
+    const isStartInCurrentMonth = (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear());
 
-    // Cek apakah kalender sudah terbuka di layar
-    let cal = findOpenCalendarPopup();
-    if (!cal) {
-      reportStep('Shopee: Membuka kalender Periode Tanggal...');
-      const dateTrigger = findDateRangeTrigger(modal);
-      if (!dateTrigger) {
-        throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
-      }
-      simulateClick(dateTrigger);
-      await sleep(2500);
-      cal = await waitFor(() => findOpenCalendarPopup(), 20000).catch(() => {
-        throw new Error(`Kalender popover tidak terdeteksi. DIAGNOSTIK: ${dumpCalendarDiagnostic()}`);
-      });
-    }
+    // 1. Pastikan kedua panel bulan terbuka
+    const tables = await ensureCalendarTablesOpen(modal);
+    tables.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
 
-    await sleep(1500);
+    const startTable = isStartInCurrentMonth ? tables[1] : tables[0];
+    const endTable = tables[1]; // Hari ini selalu di panel bulan kanan
 
-    reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
-    const startMatch = await waitFor(() => findCalendarDayElement(cal, startDay, isStartOnRight), 15000).catch(() => {
-      throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
-    });
-    clickDateElement(startMatch);
-    await sleep(2500);
-
-    reportStep('Shopee: Menunggu kalender diperbarui...');
-    const calFresh = (await waitFor(() => findOpenCalendarPopup(), 10000).catch(() => null)) || cal;
     await sleep(1000);
 
+    // 2. Klik tanggal mulai
+    reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
+    const startMatch = await waitFor(() => findDayInMonthContainer(startTable, startDay), 15000).catch(() => {
+      throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
+    });
+    clickDayTarget(startMatch);
+    await sleep(2500);
+
+    // 3. Kalender render ulang: segarkan referensi container
+    reportStep('Shopee: Menunggu kalender diperbarui...');
+    const tablesFresh = findCalendarMonthContainers();
+    tablesFresh.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    const endTableFresh = tablesFresh[1] || endTable;
+    await sleep(1000);
+
+    // 4. Klik tanggal selesai
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
-    const todayMatch = await waitFor(() => findCalendarDayElement(calFresh, todayDay, true), 15000).catch(() => {
+    const endMatch = await waitFor(() => findDayInMonthContainer(endTableFresh, todayDay), 15000).catch(() => {
       throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan di panel kalender.`);
     });
-    clickDateElement(todayMatch);
+    clickDayTarget(endMatch);
     await sleep(2500);
   }
 
