@@ -53,7 +53,7 @@
     return matched[0] || null;
   }
 
-  function waitFor(fn, timeout = 45000) {
+  function waitFor(fn, timeout = 45000, desc = 'elemen') {
     return new Promise((resolve, reject) => {
       const started = Date.now();
       const tick = () => {
@@ -63,7 +63,7 @@
         } catch (err) {
           return reject(err);
         }
-        if (Date.now() - started >= timeout) return reject(new Error('Timeout menunggu elemen di Shopee.'));
+        if (Date.now() - started >= timeout) return reject(new Error(`Timeout menunggu ${desc} di Shopee.`));
         setTimeout(tick, 500);
       };
       tick();
@@ -211,7 +211,7 @@
     reportStep('Shopee: Menemukan tombol Export...');
     const exportButton = await waitFor(() => {
       return findClickableByText('export') || findClickableByText('ekspor');
-    }, 25000);
+    }, 25000, 'tombol Export awal');
     simulateClick(exportButton);
     await sleep(2000);
 
@@ -219,7 +219,7 @@
     const modal = await waitFor(() => {
       const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
       return candidates.find(el => (el.innerText || '').toLowerCase().includes('download semua pesanan'));
-    }, 25000);
+    }, 25000, 'modal Download Semua Pesanan');
     await sleep(1500);
 
     reportStep('Shopee: Mengatur tanggal di kalender...');
@@ -230,7 +230,7 @@
     const confirmExportBtn = await waitFor(() => {
       return findClickableByText('export', { container: modal }) ||
         findClickableByText('ekspor', { container: modal });
-    }, 15000);
+    }, 15000, 'tombol konfirmasi Export di modal');
     simulateClick(confirmExportBtn);
     await sleep(4000);
 
@@ -241,7 +241,7 @@
         const txt = (el.innerText || '').toLowerCase();
         return txt.includes('laporan terakhir') || txt.includes('riwayat download') || txt.includes('download center');
       });
-    }, 30000).catch(() => null);
+    }, 30000, 'modal Laporan Terakhir').catch(() => null);
 
     const downloadContainer = reportModal || document;
     const latestDownload = await waitFor(() => {
@@ -273,7 +273,7 @@
         return isDownloadText && isNotDisabled;
       });
       return downloads[0] || null;
-    }, 90000);
+    }, 90000, 'tombol Download di Laporan Terakhir');
 
     reportStep('Shopee: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
@@ -294,7 +294,6 @@
     }
 
     simulateClick(latestDownload);
-    await sleep(2000);
 
     return {
       success: true,
@@ -312,10 +311,7 @@
 
     if (message.action === 'FETCH_BLOB_OR_URL') {
       fetch(message.url, { credentials: 'include' })
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.blob();
-        })
+        .then(r => r.blob())
         .then(blobToBase64)
         .then(base64 => sendResponse({ success: true, base64 }))
         .catch(err => sendResponse({ success: false, error: err.message }));
