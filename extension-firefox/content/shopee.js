@@ -84,6 +84,75 @@
       modal.querySelector('.shopee-date-picker, .date-picker, [class*="date-picker"], [class*="date-range"]');
   }
 
+  function dateParts(date) {
+    return {
+      year: String(date.getFullYear()),
+      month: String(date.getMonth() + 1).padStart(2, '0'),
+      day: String(date.getDate()).padStart(2, '0'),
+      dayNumber: String(date.getDate())
+    };
+  }
+
+  function visible(el) {
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+  }
+
+  function findCalendarDay(date) {
+    const parts = dateParts(date);
+    const iso = `${parts.year}-${parts.month}-${parts.day}`;
+    const candidates = [...document.querySelectorAll(
+      '[role="gridcell"], [role="option"], button, [aria-label], [data-date], [data-testid]'
+    )].filter(visible);
+
+    // Prefer machine-readable date attributes. This avoids clicking the same day
+    // number from the previous/next month shown in the calendar grid.
+    const exact = candidates.find(el => {
+      const attrs = [
+        el.getAttribute('data-date'),
+        el.getAttribute('data-value'),
+        el.getAttribute('datetime'),
+        el.getAttribute('aria-label')
+      ].filter(Boolean).map(value => value.toLowerCase());
+      return attrs.some(value => value.includes(iso) || (
+        value.includes(parts.year) && value.includes(parts.month) && value.includes(parts.day)
+      ));
+    });
+    if (exact) return exact;
+
+    // Fallback for Shopee's calendar: identify a visible calendar panel and
+    // click the exact day number only when it is not disabled/outside-month.
+    const dayCandidates = candidates.filter(el => {
+      const value = (el.textContent || '').trim();
+      const label = `${el.getAttribute('aria-label') || ''} ${el.title || ''}`.toLowerCase();
+      return value === parts.dayNumber &&
+        !el.hasAttribute('disabled') &&
+        el.getAttribute('aria-disabled') !== 'true' &&
+        !/previous|next|prev|selanjutnya|sebelumnya|outside|disabled/.test(label) &&
+        !el.classList.contains('disabled');
+    });
+    return dayCandidates[0] || null;
+  }
+
+  async function selectCalendarDate(date, label) {
+    const day = await waitFor(() => findCalendarDay(date), 15000);
+    reportStep(`Shopee: Memilih ${label} ${dateParts(date).day}/${dateParts(date).month}/${dateParts(date).year}...`);
+    simulateClick(day);
+    await sleep(700);
+  }
+
+  async function selectManualSevenDayRange() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(start.getDate() - 6);
+
+    // Shopee closes the calendar after the second date is clicked.
+    await selectCalendarDate(start, 'tanggal mulai');
+    await selectCalendarDate(today, 'tanggal selesai');
+  }
+
   async function triggerShopeeExport() {
     if (isLogin()) throw new Error('Sesi Shopee belum login.');
 
@@ -100,23 +169,16 @@
       return candidates.find(el => (el.innerText || '').toLowerCase().includes('download semua pesanan'));
     }, 25000);
 
-    reportStep('Shopee: Mengatur periode 7 hari terakhir...');
+    reportStep('Shopee: Membuka kalender Periode Tanggal...');
     const dateTrigger = findDateRangeTrigger(modal);
     if (dateTrigger) {
       simulateClick(dateTrigger);
-      await sleep(800);
+      await sleep(1000);
     }
 
-    const shortcut = findClickableByText('7 hari terakhir') ||
-      findClickableByText('7 hari') ||
-      findClickableByText('last 7 days');
-
-    if (shortcut) {
-      simulateClick(shortcut);
-      await sleep(600);
-    } else {
-      console.warn('Shortcut 7 hari terakhir tidak muncul, melanjutkan dengan rentang tanggal aktif.');
-    }
+    reportStep('Shopee: Memilih tanggal mulai dan selesai di kalender...');
+    await selectManualSevenDayRange();
+    await sleep(800);
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
@@ -137,6 +199,24 @@
 
     const downloadContainer = reportModal || document;
     const latestDownload = await waitFor(() => {
+      const rows = [...downloadContainer.querySelectorAll('tr, .shopee-table-row, [role="row"]')].filter(r => {
+        return r.offsetParent !== null && (r.innerText || '').toLowerCase().includes('pesanan');
+      });
+      if (rows.length > 0) {
+        const topRow = rows[0];
+        const btn = [...topRow.querySelectorAll('button, a, [role="button"], span')].find(el => {
+          const t = (el.textContent || '').trim().toLowerCase();
+          const isDownload = t === 'download' || t === 'unduh';
+          const isNotDisabled = !el.disabled &&
+            !el.classList.contains('disabled') &&
+            !el.hasAttribute('disabled') &&
+            el.getAttribute('aria-disabled') !== 'true';
+          return isDownload && isNotDisabled;
+        });
+        if (btn) return btn;
+        return null;
+      }
+
       const downloads = [...downloadContainer.querySelectorAll('button, a, [role="button"], span')].filter(el => {
         const t = (el.textContent || '').trim().toLowerCase();
         const isDownloadText = t === 'download' || t === 'unduh';
@@ -147,7 +227,7 @@
         return isDownloadText && isNotDisabled;
       });
       return downloads[0] || null;
-    }, 60000);
+    }, 90000);
 
     reportStep('Shopee: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
