@@ -88,3 +88,26 @@ test('StockhubClient.downloadExport calls export route with marketplace name', a
   assert.ok(calledUrl.includes('route=export&name=shopee'));
   assert.ok(blob);
 });
+
+test('StockhubClient binds fetch context safely without illegal invocation', async () => {
+  function strictFetch() {
+    if (this instanceof StockhubClient) {
+      throw new TypeError("'fetch' called on an object that does not implement interface Window.");
+    }
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true })
+    });
+  }
+
+  const client = new StockhubClient({
+    url: 'https://stock-hub.vercel.app',
+    user: 'udin',
+    key: 'benar',
+    fetchImpl: strictFetch
+  });
+
+  const result = await client.testConnection();
+  assert.strictEqual(result.ok, true);
+});

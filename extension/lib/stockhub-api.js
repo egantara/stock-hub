@@ -41,7 +41,8 @@ export class StockhubClient {
     this.url = normalizeUrl(url);
     this.user = user;
     this.key = key;
-    this.fetch = fetchImpl;
+    const fetchContext = typeof window !== 'undefined' ? window : globalThis;
+    this.fetch = fetchImpl.bind(fetchContext);
   }
 
   headers() {
