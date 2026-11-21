@@ -236,44 +236,39 @@
 
     reportStep('Shopee: Menunggu laporan selesai dibuat di Laporan Terakhir...');
     const reportModal = await waitFor(() => {
-      const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
+      const candidates = [...document.querySelectorAll(
+        '[role="dialog"], .shopee-modal, .eds-modal, [class*="download"], [class*="report"], [class*="history"]'
+      )].filter(isVisible);
       return candidates.find(el => {
         const txt = (el.innerText || '').toLowerCase();
-        return txt.includes('laporan terakhir') || txt.includes('riwayat download') || txt.includes('download center');
-      });
+        return txt.includes('laporan terakhir') || txt.includes('riwayat download') ||
+          txt.includes('download center') || txt.includes('unduh');
+      }) || null;
     }, 30000).catch(() => null);
 
     const downloadContainer = reportModal || document;
-    const latestDownload = await waitFor(() => {
-      const rows = [...downloadContainer.querySelectorAll('tr, .shopee-table-row, [role="row"]')].filter(r => {
-        return r.offsetParent !== null && (r.innerText || '').toLowerCase().includes('pesanan');
-      });
-      if (rows.length > 0) {
-        const topRow = rows[0];
-        const btn = [...topRow.querySelectorAll('button, a, [role="button"], span')].find(el => {
-          const t = (el.textContent || '').trim().toLowerCase();
-          const isDownload = t === 'download' || t === 'unduh';
-          const isNotDisabled = !el.disabled &&
-            !el.classList.contains('disabled') &&
-            !el.hasAttribute('disabled') &&
-            el.getAttribute('aria-disabled') !== 'true';
-          return isDownload && isNotDisabled;
-        });
-        if (btn) return btn;
-        return null;
-      }
+    const isDownloadButton = el => {
+      const text = (el.textContent || '').trim().toLowerCase();
+      const title = `${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''}`.toLowerCase();
+      const enabled = !el.disabled && !el.classList.contains('disabled') &&
+        !el.hasAttribute('disabled') && el.getAttribute('aria-disabled') !== 'true';
+      return enabled && (text === 'download' || text === 'unduh' ||
+        title.includes('download') || title.includes('unduh'));
+    };
 
-      const downloads = [...downloadContainer.querySelectorAll('button, a, [role="button"], span')].filter(el => {
-        const t = (el.textContent || '').trim().toLowerCase();
-        const isDownloadText = t === 'download' || t === 'unduh';
-        const isNotDisabled = !el.disabled &&
-          !el.classList.contains('disabled') &&
-          !el.hasAttribute('disabled') &&
-          el.getAttribute('aria-disabled') !== 'true';
-        return isDownloadText && isNotDisabled;
-      });
-      return downloads[0] || null;
-    }, 90000);
+    const findDownloadButton = () => {
+      const all = [...downloadContainer.querySelectorAll('button, a, [role="button"], span, i')]
+        .filter(isVisible)
+        .filter(isDownloadButton);
+      if (all.length === 0 && downloadContainer !== document) {
+        return [...document.querySelectorAll('button, a, [role="button"], span, i')]
+          .filter(isVisible)
+          .filter(isDownloadButton)[0] || null;
+      }
+      return all[0] || null;
+    };
+
+    const latestDownload = await waitFor(findDownloadButton, 45000);
 
     reportStep('Shopee: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
