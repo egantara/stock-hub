@@ -71,12 +71,15 @@
   }
 
   function findDateRangeTrigger(modal) {
+    const eds = modal.querySelector('.eds-date-picker, .eds-selector, .eds-date-picker__input');
+    if (eds) return eds;
+
     const all = [...modal.querySelectorAll('*')];
     const label = all.find(el => (el.textContent || '').trim().toLowerCase() === 'periode tanggal');
     if (label) {
       const container = label.parentElement;
       if (container) {
-        const picker = container.querySelector('input, [class*="picker"], [class*="date"], [class*="range"]');
+        const picker = container.querySelector('input, [class*="picker"], [class*="date"], [class*="range"], [class*="selector"]');
         if (picker) return picker;
       }
     }
@@ -98,89 +101,130 @@
   const MONTH_NAMES_EN = ['january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'];
 
-  function findMonthPanel(monthIndex, year) {
-    // Cari header bulan (mis. "November 2026") lalu naik ke kontainer
-    // yang benar-benar berisi angka-angka tanggal.
-    const headerCandidates = [...document.querySelectorAll('div, span, th, p, [class*="header"]')].filter(el => {
-      if (el.offsetWidth === 0 && el.offsetHeight === 0) return false;
-      const t = (el.textContent || '').trim().toLowerCase();
-      const hasMonth = t.includes(MONTH_NAMES_ID[monthIndex]) || t.includes(MONTH_NAMES_EN[monthIndex]);
-      const hasYear = String(year).length ? t.includes(String(year)) : true;
-      return hasMonth && hasYear && t.length < 40;
-    });
-    headerCandidates.sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
+  function dumpCalendarDiagnostic() {
+    const popovers = [...document.querySelectorAll(
+      '[class*="popper"], [class*="eds-"], [class*="picker"], [role="tooltip"], div'
+    )].filter(el => el.offsetWidth > 250 && el.offsetHeight > 150);
 
-    for (const header of headerCandidates) {
-      let node = header;
-      for (let level = 0; level < 5 && node; level++) {
-        const numericLeaves = [...node.querySelectorAll('*')].filter(el => {
-          const t = (el.textContent || '').trim();
-          return /^\d{1,2}$/.test(t) && el.children.length === 0;
-        });
-        if (numericLeaves.length >= 28) {
-          return { panel: node, numericLeaves, header: header.textContent.trim() };
-        }
-        node = node.parentElement;
-      }
-    }
-    return null;
+    return popovers.slice(0, 3).map(el => {
+      const cls = typeof el.className === 'string' ? el.className : '';
+      const textPreview = (el.innerText || '').slice(0, 150).replace(/\s+/g, ' ');
+      return `<${el.tagName} class="${cls}" size="${el.offsetWidth}x${el.offsetHeight}">: "${textPreview}"`;
+    }).join(' --- ') || 'Tidak ada elemen popover >250x150.';
   }
 
-  function findDayLeaf(panel, dayNumber) {
-    const targetText = String(dayNumber);
-    const leaves = [...panel.querySelectorAll('*')].filter(el => {
+  function findOpenCalendarPopup() {
+    const all = [...document.querySelectorAll(
+      '.eds-popper, .eds-picker-panel, .eds-date-range-picker, [class*="eds-date"], [class*="eds-picker"], [class*="picker-panel"], [class*="popper"], [role="tooltip"], div'
+    )];
+
+    const popovers = all.filter(el => {
+      if (el.offsetWidth < 300 || el.offsetWidth > 950) return false;
+      if (el.offsetHeight < 180 || el.offsetHeight > 650) return false;
+
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+
+      const text = (el.innerText || '').toLowerCase();
+      const hasMonth = text.includes('oktober') || text.includes('november') ||
+        MONTH_NAMES_ID.some(m => text.includes(m)) ||
+        MONTH_NAMES_EN.some(m => text.includes(m));
+      const hasNumbers = text.includes('15') && text.includes('21');
+      return hasMonth && hasNumbers;
+    });
+
+    if (popovers.length === 0) return null;
+    popovers.sort((a, b) => (a.offsetWidth * a.offsetHeight) - (b.offsetWidth * b.offsetHeight));
+    return popovers[0];
+  }
+
+  function findCalendarDayElement(calendarPopup, targetDay, isRightMonth) {
+    const rect = calendarPopup.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+
+    const all = [...calendarPopup.querySelectorAll('*')];
+    const targetText = String(targetDay);
+
+    const candidates = all.filter(el => {
       const txt = (el.textContent || '').trim();
-      if (txt !== targetText || el.children.length > 0) return false;
-      const cls = `${el.className || ''} ${el.parentElement?.className || ''}`.toLowerCase();
-      return !/prev|next|other|disabled|outside/.test(cls) &&
-        el.getAttribute('aria-disabled') !== 'true' &&
-        !el.hasAttribute('disabled');
+      if (txt !== targetText) return false;
+      if (el.children.length > 1) return false;
+      if (el.children.length === 1 && (el.firstElementChild.textContent || '').trim() !== targetText) return false;
+
+      const elRect = el.getBoundingClientRect();
+      if (elRect.width === 0 || elRect.height === 0) return false;
+
+      const onRight = elRect.left >= midX;
+      if (isRightMonth && !onRight) return false;
+      if (!isRightMonth && onRight) return false;
+
+      const cell = el.closest('td, [class*="cell"]') || el;
+      const cls = `${el.className || ''} ${cell.className || ''} ${el.parentElement?.className || ''}`.toLowerCase();
+      const isDisabled = /disabled|prev|next|other|outside/.test(cls) ||
+        el.hasAttribute('disabled') || cell.hasAttribute('disabled') ||
+        el.getAttribute('aria-disabled') === 'true' || cell.getAttribute('aria-disabled') === 'true';
+
+      return !isDisabled;
     });
-    return leaves[leaves.length - 1] || null;
+
+    if (candidates.length === 0) return null;
+
+    candidates.sort((a, b) => a.children.length - b.children.length);
+    const leaf = candidates[0];
+    const cell = leaf.closest('td, [class*="cell"]') || leaf;
+    return { leaf, cell };
   }
 
-  function calendarDiagnostic() {
-    const popovers = [...document.querySelectorAll('[class*="picker"], [class*="calendar"], [class*="popper"]')]
-      .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0)
-      .sort((a, b) => (a.innerText || '').length - (b.innerText || '').length);
-    const cal = popovers[0];
-    if (!cal) return 'Tidak ada popover kalender visible.';
-    const html = cal.outerHTML || '';
-    return html.slice(0, 1200).replace(/\s+/g, ' ');
+  function clickDateElement(match) {
+    if (!match) return;
+    const { leaf, cell } = match;
+    if (leaf) simulateClick(leaf);
+    if (cell && cell !== leaf) simulateClick(cell);
   }
 
-  async function selectManualSevenDayRange() {
+  async function selectManualSevenDayRange(modal) {
     const now = new Date();
     const todayDay = now.getDate();
     const start = new Date(now);
     start.setDate(start.getDate() - 6);
     const startDay = start.getDate();
 
-    const startMonth = findMonthPanel(start.getMonth(), start.getFullYear());
-    const endMonth = findMonthPanel(now.getMonth(), now.getFullYear());
+    const isStartOnRight = (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear());
 
-    if (!startMonth || !endMonth) {
-      throw new Error(`Panel kalender tidak terdeteksi. DIAGNOSTIK: ${calendarDiagnostic()}`);
+    // Cek apakah kalender sudah terbuka di layar
+    let cal = findOpenCalendarPopup();
+    if (!cal) {
+      reportStep('Shopee: Membuka kalender Periode Tanggal...');
+      const dateTrigger = findDateRangeTrigger(modal);
+      if (!dateTrigger) {
+        throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
+      }
+      simulateClick(dateTrigger);
+      await sleep(2500);
+      cal = await waitFor(() => findOpenCalendarPopup(), 20000).catch(() => {
+        throw new Error(`Kalender popover tidak terdeteksi. DIAGNOSTIK: ${dumpCalendarDiagnostic()}`);
+      });
     }
 
-    reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
-    const startEl = await waitFor(() => findDayLeaf(startMonth.panel, startDay), 10000).catch(() => {
-      throw new Error(`Tanggal mulai ${startDay} tidak ditemukan. DIAGNOSTIK: ${calendarDiagnostic()}`);
-    });
-    simulateClick(startEl);
-    await sleep(1800);
+    await sleep(1500);
 
-    // Kalender di-render ulang setelah klik pertama — ambil panel ULANG.
+    reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
+    const startMatch = await waitFor(() => findCalendarDayElement(cal, startDay, isStartOnRight), 15000).catch(() => {
+      throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
+    });
+    clickDateElement(startMatch);
+    await sleep(2500);
+
     reportStep('Shopee: Menunggu kalender diperbarui...');
-    await sleep(1200);
-    const endMonthFresh = findMonthPanel(now.getMonth(), now.getFullYear()) || endMonth;
+    const calFresh = (await waitFor(() => findOpenCalendarPopup(), 10000).catch(() => null)) || cal;
+    await sleep(1000);
 
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
-    const todayEl = await waitFor(() => findDayLeaf(endMonthFresh.panel, todayDay), 10000).catch(() => {
-      throw new Error(`Tanggal selesai ${todayDay} tidak ditemukan. DIAGNOSTIK: ${calendarDiagnostic()}`);
+    const todayMatch = await waitFor(() => findCalendarDayElement(calFresh, todayDay, true), 15000).catch(() => {
+      throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan di panel kalender.`);
     });
-    simulateClick(todayEl);
-    await sleep(1800);
+    clickDateElement(todayMatch);
+    await sleep(2500);
   }
 
   async function triggerShopeeExport() {
@@ -200,16 +244,8 @@
     }, 25000);
     await sleep(1500);
 
-    reportStep('Shopee: Membuka kalender Periode Tanggal...');
-    const dateTrigger = findDateRangeTrigger(modal);
-    if (!dateTrigger) {
-      throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
-    }
-    simulateClick(dateTrigger);
-    await sleep(2500);
-
-    reportStep('Shopee: Memilih tanggal mulai dan selesai di kalender...');
-    await selectManualSevenDayRange();
+    reportStep('Shopee: Mengatur tanggal di kalender...');
+    await selectManualSevenDayRange(modal);
     await sleep(2000);
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
