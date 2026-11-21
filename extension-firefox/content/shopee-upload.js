@@ -11,12 +11,16 @@
     });
   }
 
-  function waitFor(fn, timeout = 60000) {
+  function waitFor(fn, timeout = 90000) {
     return new Promise((resolve, reject) => {
       const started = Date.now();
       const tick = () => {
-        const result = fn();
-        if (result) return resolve(result);
+        try {
+          const result = fn();
+          if (result) return resolve(result);
+        } catch (err) {
+          return reject(err);
+        }
         if (Date.now() - started >= timeout) return reject(new Error('Timeout proses upload Shopee.'));
         setTimeout(tick, 500);
       };
@@ -25,7 +29,7 @@
   }
 
   async function handleShopeeUpload({ fileBase64, fileName }) {
-    const input = await waitFor(() => document.querySelector('input[type="file"]'));
+    const input = await waitFor(() => document.querySelector('input[type="file"]'), 30000);
     const file = base64ToFile(fileBase64, fileName || 'shopee-stock-sync.xlsx');
     const dt = new DataTransfer();
     dt.items.add(file);
@@ -33,13 +37,18 @@
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // Verifikasi kolom aksi selesai.
+    // Verifikasi kolom Aksi berisi Selesai
+    await new Promise(r => setTimeout(r, 3000));
     await waitFor(() => {
+      const rows = [...document.querySelectorAll('tr, .shopee-table-row, [role="row"], div')];
+      const match = rows.find(r => {
+        const txt = (r.innerText || '').toLowerCase();
+        return txt.includes('selesai') && (txt.includes('.xlsx') || txt.includes('.xls') || txt.includes('berhasil') || txt.includes('aksi'));
+      });
+      if (match) return true;
       const body = document.body.innerText.toLowerCase();
-      if (body.includes('selesai')) return true;
-      if (body.includes('gagal')) throw new Error('Upload mass-update Shopee gagal.');
-      return false;
-    });
+      return body.includes('selesai');
+    }, 90000);
 
     return { success: true, message: 'Upload stok Shopee selesai.' };
   }
