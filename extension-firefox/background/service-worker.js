@@ -342,10 +342,6 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
         broadcastProgress('Menunggu file pesanan Shopee...', 'running', 28, 'Shopee: Unduh');
         const downloadInfo = await downloadPromise;
-        if (!downloadInfo) {
-          broadcastProgress('Download Shopee terdeteksi, tetapi metadata tidak tersedia.', 'skipped');
-        }
-
         const fileBlob = await obtainFileBlob(shopeeTab.id, downloadInfo, exportRes);
         broadcastProgress('File pesanan Shopee diterima. Mengunggah ke Stock-Hub...', 'running', 35, 'Shopee: Proses Stok');
         const uploadRes = await client.uploadOrderFile(fileBlob, 'shopee-order.xlsx');
