@@ -93,96 +93,94 @@
     };
   }
 
-  function getMonthPanels() {
-    const popovers = [...document.querySelectorAll('[class*="picker"], [class*="calendar"], [class*="popper"], [class*="dropdown"], [role="tooltip"], div')].filter(el => {
-      const t = (el.innerText || '').toLowerCase();
-      return (t.includes('oktober') || t.includes('november')) && (el.offsetWidth > 0 || el.offsetHeight > 0);
+  const MONTH_NAMES_ID = ['januari', 'februari', 'maret', 'april', 'mei', 'juni',
+    'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+  const MONTH_NAMES_EN = ['january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'];
+
+  function findMonthPanel(monthIndex, year) {
+    // Cari header bulan (mis. "November 2026") lalu naik ke kontainer
+    // yang benar-benar berisi angka-angka tanggal.
+    const headerCandidates = [...document.querySelectorAll('div, span, th, p, [class*="header"]')].filter(el => {
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) return false;
+      const t = (el.textContent || '').trim().toLowerCase();
+      const hasMonth = t.includes(MONTH_NAMES_ID[monthIndex]) || t.includes(MONTH_NAMES_EN[monthIndex]);
+      const hasYear = String(year).length ? t.includes(String(year)) : true;
+      return hasMonth && hasYear && t.length < 40;
     });
+    headerCandidates.sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
 
-    popovers.sort((a, b) => a.innerText.length - b.innerText.length);
-    const container = popovers[0] || document.body;
-
-    const tables = [...container.querySelectorAll('table, [class*="date-table"], [class*="calendar-table"]')].filter(t => t.offsetHeight > 0 || t.offsetWidth > 0);
-    if (tables.length >= 2) {
-      return {
-        prevMonthPanel: tables[0],
-        currMonthPanel: tables[1]
-      };
+    for (const header of headerCandidates) {
+      let node = header;
+      for (let level = 0; level < 5 && node; level++) {
+        const numericLeaves = [...node.querySelectorAll('*')].filter(el => {
+          const t = (el.textContent || '').trim();
+          return /^\d{1,2}$/.test(t) && el.children.length === 0;
+        });
+        if (numericLeaves.length >= 28) {
+          return { panel: node, numericLeaves, header: header.textContent.trim() };
+        }
+        node = node.parentElement;
+      }
     }
-
-    const allDivs = [...container.querySelectorAll('div, section')].filter(d => d.offsetHeight > 0);
-    const prevDiv = allDivs.find(d => {
-      const t = (d.innerText || '').toLowerCase();
-      return t.includes('oktober') && !t.includes('november');
-    });
-    const currDiv = allDivs.find(d => {
-      const t = (d.innerText || '').toLowerCase();
-      return t.includes('november') && !t.includes('oktober');
-    });
-
-    return {
-      prevMonthPanel: prevDiv || container,
-      currMonthPanel: currDiv || container
-    };
+    return null;
   }
 
   function findDayLeaf(panel, dayNumber) {
     const targetText = String(dayNumber);
-    const all = [...panel.querySelectorAll('*')];
-    const leaves = all.filter(el => {
+    const leaves = [...panel.querySelectorAll('*')].filter(el => {
       const txt = (el.textContent || '').trim();
-      if (txt !== targetText) return false;
-
-      const cls = (el.className || '').toLowerCase();
-      const parentCls = (el.parentElement?.className || '').toLowerCase();
-      const isOther = cls.includes('prev') || cls.includes('next') || cls.includes('other') ||
-        parentCls.includes('prev') || parentCls.includes('next') || parentCls.includes('other');
-      const isDisabled = cls.includes('disabled') || el.hasAttribute('disabled') ||
-        parentCls.includes('disabled');
-
-      if (isOther || isDisabled) return false;
-      return el.children.length === 0;
+      if (txt !== targetText || el.children.length > 0) return false;
+      const cls = `${el.className || ''} ${el.parentElement?.className || ''}`.toLowerCase();
+      return !/prev|next|other|disabled|outside/.test(cls) &&
+        el.getAttribute('aria-disabled') !== 'true' &&
+        !el.hasAttribute('disabled');
     });
+    return leaves[leaves.length - 1] || null;
+  }
 
-    if (leaves.length > 0) return leaves[0];
-
-    const fallback = all.find(el => {
-      const txt = (el.textContent || '').trim();
-      return txt === targetText && !el.classList.contains('disabled');
-    });
-    return fallback || null;
+  function calendarDiagnostic() {
+    const popovers = [...document.querySelectorAll('[class*="picker"], [class*="calendar"], [class*="popper"]')]
+      .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0)
+      .sort((a, b) => (a.innerText || '').length - (b.innerText || '').length);
+    const cal = popovers[0];
+    if (!cal) return 'Tidak ada popover kalender visible.';
+    const html = cal.outerHTML || '';
+    return html.slice(0, 1200).replace(/\s+/g, ' ');
   }
 
   async function selectManualSevenDayRange() {
     const now = new Date();
     const todayDay = now.getDate();
-
     const start = new Date(now);
     start.setDate(start.getDate() - 6);
     const startDay = start.getDate();
-    const isSameMonth = start.getMonth() === now.getMonth();
 
-    const panels = await waitFor(() => {
-      const res = getMonthPanels();
-      if (res.currMonthPanel) return res;
-      return null;
-    }, 15000);
+    const startMonth = findMonthPanel(start.getMonth(), start.getFullYear());
+    const endMonth = findMonthPanel(now.getMonth(), now.getFullYear());
 
-    const startPanel = isSameMonth ? panels.currMonthPanel : panels.prevMonthPanel;
+    if (!startMonth || !endMonth) {
+      throw new Error(`Panel kalender tidak terdeteksi. DIAGNOSTIK: ${calendarDiagnostic()}`);
+    }
 
     reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
-    const startEl = await waitFor(() => findDayLeaf(startPanel, startDay), 10000).catch(() => {
-      throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
+    const startEl = await waitFor(() => findDayLeaf(startMonth.panel, startDay), 10000).catch(() => {
+      throw new Error(`Tanggal mulai ${startDay} tidak ditemukan. DIAGNOSTIK: ${calendarDiagnostic()}`);
     });
     simulateClick(startEl);
-    await sleep(700);
+    await sleep(1800);
+
+    // Kalender di-render ulang setelah klik pertama — ambil panel ULANG.
+    reportStep('Shopee: Menunggu kalender diperbarui...');
+    await sleep(1200);
+    const endMonthFresh = findMonthPanel(now.getMonth(), now.getFullYear()) || endMonth;
 
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
-    const todayEl = await waitFor(() => findDayLeaf(panels.currMonthPanel, todayDay), 10000).catch(() => {
-      throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan di panel kalender.`);
+    const todayEl = await waitFor(() => findDayLeaf(endMonthFresh.panel, todayDay), 10000).catch(() => {
+      throw new Error(`Tanggal selesai ${todayDay} tidak ditemukan. DIAGNOSTIK: ${calendarDiagnostic()}`);
     });
     simulateClick(todayEl);
-    await sleep(1000);
+    await sleep(1800);
   }
 
   async function triggerShopeeExport() {
@@ -193,13 +191,14 @@
       return findClickableByText('export') || findClickableByText('ekspor');
     }, 25000);
     simulateClick(exportButton);
-    await sleep(1000);
+    await sleep(2000);
 
     reportStep('Shopee: Membuka modal Download Semua Pesanan...');
     const modal = await waitFor(() => {
       const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
       return candidates.find(el => (el.innerText || '').toLowerCase().includes('download semua pesanan'));
     }, 25000);
+    await sleep(1500);
 
     reportStep('Shopee: Membuka kalender Periode Tanggal...');
     const dateTrigger = findDateRangeTrigger(modal);
@@ -207,11 +206,11 @@
       throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
     }
     simulateClick(dateTrigger);
-    await sleep(1000);
+    await sleep(2500);
 
     reportStep('Shopee: Memilih tanggal mulai dan selesai di kalender...');
     await selectManualSevenDayRange();
-    await sleep(800);
+    await sleep(2000);
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
@@ -219,7 +218,7 @@
         findClickableByText('ekspor', { container: modal });
     }, 15000);
     simulateClick(confirmExportBtn);
-    await sleep(2500);
+    await sleep(4000);
 
     reportStep('Shopee: Menunggu laporan selesai dibuat di Laporan Terakhir...');
     const reportModal = await waitFor(() => {
