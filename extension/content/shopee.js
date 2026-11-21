@@ -102,31 +102,41 @@
   function findCalendarDay(date) {
     const parts = dateParts(date);
     const iso = `${parts.year}-${parts.month}-${parts.day}`;
-    const candidates = [...document.querySelectorAll(
-      '[role="gridcell"], [role="option"], button, [aria-label], [data-date], [data-testid]'
+    const allCalendars = [...document.querySelectorAll(
+      '[role="dialog"], [role="grid"], [class*="calendar"], [class*="picker"], table'
+    )].filter(visible);
+    const calendar = allCalendars.sort((a, b) => {
+      const aText = (a.innerText || '').toLowerCase();
+      const bText = (b.innerText || '').toLowerCase();
+      return (bText.includes('oktober') || bText.includes('november') ? 1 : 0) -
+        (aText.includes('oktober') || aText.includes('november') ? 1 : 0);
+    })[0] || document;
+    const candidates = [...calendar.querySelectorAll(
+      '[role="gridcell"], [role="option"], button, td, [aria-label], [data-date], [data-testid]'
     )].filter(visible);
 
-    // Prefer machine-readable date attributes. This avoids clicking the same day
-    // number from the previous/next month shown in the calendar grid.
+    // Prefer machine-readable date attributes when Shopee provides them.
     const exact = candidates.find(el => {
       const attrs = [
         el.getAttribute('data-date'),
         el.getAttribute('data-value'),
         el.getAttribute('datetime'),
-        el.getAttribute('aria-label')
+        el.getAttribute('aria-label'),
+        el.title
       ].filter(Boolean).map(value => value.toLowerCase());
       return attrs.some(value => value.includes(iso) || (
         value.includes(parts.year) && value.includes(parts.month) && value.includes(parts.day)
       ));
     });
-    if (exact) return exact;
+    if (exact) return exact.closest('button, [role="gridcell"], td') || exact;
 
-    // Fallback for Shopee's calendar: identify a visible calendar panel and
-    // click the exact day number only when it is not disabled/outside-month.
+    // Shopee renders each day as a table cell/div without a stable date
+    // attribute. Use the exact day text and reject disabled/outside-month cells.
     const dayCandidates = candidates.filter(el => {
       const value = (el.textContent || '').trim();
-      const label = `${el.getAttribute('aria-label') || ''} ${el.title || ''}`.toLowerCase();
-      return value === parts.dayNumber &&
+      const label = `${el.getAttribute('aria-label') || ''} ${el.title || ''} ${el.className || ''}`.toLowerCase();
+      const parentText = (el.parentElement?.textContent || '').trim();
+      return value === parts.dayNumber && parentText.length < 40 &&
         !el.hasAttribute('disabled') &&
         el.getAttribute('aria-disabled') !== 'true' &&
         !/previous|next|prev|selanjutnya|sebelumnya|outside|disabled/.test(label) &&
@@ -136,7 +146,12 @@
   }
 
   async function selectCalendarDate(date, label) {
-    const day = await waitFor(() => findCalendarDay(date), 15000);
+    const day = await waitFor(
+      () => findCalendarDay(date),
+      15000
+    ).catch(() => {
+      throw new Error(`Tanggal ${label} ${dateParts(date).day}/${dateParts(date).month}/${dateParts(date).year} tidak ditemukan di kalender Shopee.`);
+    });
     reportStep(`Shopee: Memilih ${label} ${dateParts(date).day}/${dateParts(date).month}/${dateParts(date).year}...`);
     simulateClick(day);
     await sleep(700);
@@ -171,10 +186,11 @@
 
     reportStep('Shopee: Membuka kalender Periode Tanggal...');
     const dateTrigger = findDateRangeTrigger(modal);
-    if (dateTrigger) {
-      simulateClick(dateTrigger);
-      await sleep(1000);
+    if (!dateTrigger) {
+      throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
     }
+    simulateClick(dateTrigger);
+    await sleep(1000);
 
     reportStep('Shopee: Memilih tanggal mulai dan selesai di kalender...');
     await selectManualSevenDayRange();
