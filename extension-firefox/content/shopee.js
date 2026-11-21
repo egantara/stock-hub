@@ -294,6 +294,7 @@
     }
 
     simulateClick(latestDownload);
+    await sleep(3000);
 
     return {
       success: true,
@@ -311,7 +312,10 @@
 
     if (message.action === 'FETCH_BLOB_OR_URL') {
       fetch(message.url, { credentials: 'include' })
-        .then(r => r.blob())
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.blob();
+        })
         .then(blobToBase64)
         .then(base64 => sendResponse({ success: true, base64 }))
         .catch(err => sendResponse({ success: false, error: err.message }));

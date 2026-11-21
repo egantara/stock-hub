@@ -169,17 +169,46 @@ function base64ToBlob(base64, mimeType = 'application/vnd.openxmlformats-officed
   return new Blob([byteNumbers], { type: mimeType });
 }
 
+function findLatestDownload() {
+  return new Promise((resolve) => {
+    if (!browserApi?.downloads) return resolve(null);
+    browserApi.downloads.search({ limit: 10, orderBy: ['-startTime'] }, items => {
+      if (!items || items.length === 0) return resolve(null);
+      const now = Date.now();
+      const recent = items.find(it => {
+        const isComplete = it.state === 'complete';
+        const start = it.startTime ? new Date(it.startTime).getTime() : 0;
+        const isRecent = (now - start) < 300000;
+        const isRelevant = !it.filename || it.filename.endsWith('.xlsx') || it.filename.endsWith('.csv') ||
+          (it.url && (it.url.includes('shopee') || it.url.includes('tokopedia') || it.url.includes('order') || it.url.includes('export')));
+        return isComplete && isRecent && isRelevant;
+      });
+      resolve(recent || (items[0]?.state === 'complete' ? items[0] : null));
+    });
+  });
+}
+
 async function obtainFileBlob(tabId, downloadInfo, exportRes) {
   if (exportRes?.fileBase64) {
     return base64ToBlob(exportRes.fileBase64);
   }
 
-  if (downloadInfo?.url) {
+  // Jika downloadInfo null, cari dari unduhan terbaru di browser
+  if (!downloadInfo) {
+    downloadInfo = await findLatestDownload();
+  }
+
+  const downloadUrls = [...new Set([
+    downloadInfo?.url,
+    downloadInfo?.finalUrl
+  ].filter(Boolean))];
+
+  for (const url of downloadUrls) {
     if (tabId) {
       try {
         const fetchRes = await sendMessageToTab(tabId, {
           action: 'FETCH_BLOB_OR_URL',
-          url: downloadInfo.url
+          url
         }, 30000);
         if (fetchRes?.success && fetchRes.base64) {
           return base64ToBlob(fetchRes.base64);
@@ -190,7 +219,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
     }
 
     try {
-      const res = await fetch(downloadInfo.url);
+      const res = await fetch(url);
       if (res.ok) {
         return await res.blob();
       }
@@ -199,7 +228,8 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
     }
   }
 
-  throw new Error('Tidak dapat mengambil file pesanan dari tab atau unduhan.');
+  const name = downloadInfo?.filename || 'nama file tidak tersedia';
+  throw new Error(`Download selesai (${name}), tetapi URL file tidak dapat dibaca.`);
 }
 
 function waitForDownload(timeoutMs = 60000) {
@@ -209,29 +239,33 @@ function waitForDownload(timeoutMs = 60000) {
     }
 
     let downloadId = null;
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       cleanup();
+      // Saat timeout, coba cari download terbaru yang mungkin sudah selesai
+      const latest = await findLatestDownload();
+      if (latest) {
+        return resolve(latest);
+      }
       reject(new Error('Timeout menunggu file unduhan marketplace (60 detik)'));
     }, timeoutMs);
 
     function onCreated(item) {
-      // Tangkap download file Excel (.xlsx / .csv)
-      if (item.filename?.endsWith('.xlsx') || item.filename?.endsWith('.csv') || !item.filename) {
-        downloadId = item.id;
-      }
+      // Tangkap download apa pun yang terjadi selama periode ekspor
+      downloadId = item.id;
     }
 
     function onChanged(delta) {
-      if (downloadId && delta.id === downloadId && delta.state?.current === 'complete') {
+      if (delta.state?.current === 'complete') {
+        const targetId = downloadId || delta.id;
         cleanup();
-        browserApi.downloads.search({ id: downloadId }, items => {
+        browserApi.downloads.search({ id: targetId }, items => {
           if (items && items[0]) {
             resolve(items[0]);
           } else {
-            reject(new Error('File unduhan tidak ditemukan'));
+            findLatestDownload().then(res => resolve(res || null));
           }
         });
-      } else if (delta.state?.current === 'interrupted') {
+      } else if (downloadId && delta.id === downloadId && delta.state?.current === 'interrupted') {
         cleanup();
         reject(new Error('Unduhan dibatalkan atau gagal'));
       }
@@ -308,6 +342,9 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
         broadcastProgress('Menunggu file pesanan Shopee...', 'running', 28, 'Shopee: Unduh');
         const downloadInfo = await downloadPromise;
+        if (!downloadInfo) {
+          broadcastProgress('Download Shopee terdeteksi, tetapi metadata tidak tersedia.', 'skipped');
+        }
 
         const fileBlob = await obtainFileBlob(shopeeTab.id, downloadInfo, exportRes);
         broadcastProgress('File pesanan Shopee diterima. Mengunggah ke Stock-Hub...', 'running', 35, 'Shopee: Proses Stok');
