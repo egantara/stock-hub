@@ -70,21 +70,35 @@
     });
   }
 
-  function findDateRangeTrigger(modal) {
-    const eds = modal.querySelector('.eds-date-picker, .eds-selector, .eds-date-picker__input');
-    if (eds) return eds;
-
+  function clickDateRangeInput(modal) {
     const all = [...modal.querySelectorAll('*')];
     const label = all.find(el => (el.textContent || '').trim().toLowerCase() === 'periode tanggal');
+
+    let target = null;
     if (label) {
-      const container = label.parentElement;
-      if (container) {
-        const picker = container.querySelector('input, [class*="picker"], [class*="date"], [class*="range"], [class*="selector"]');
-        if (picker) return picker;
+      let parent = label.parentElement;
+      for (let i = 0; i < 4 && parent && parent !== modal; i++) {
+        const found = parent.querySelector('.eds-selector, .eds-date-picker__input, .eds-date-picker, input');
+        if (found) {
+          target = found;
+          break;
+        }
+        parent = parent.parentElement;
       }
     }
-    return modal.querySelector('input') ||
-      modal.querySelector('.shopee-date-picker, .date-picker, [class*="date-picker"], [class*="date-range"]');
+
+    if (!target) {
+      target = modal.querySelector('.eds-selector, .eds-date-picker__input, .eds-date-picker, input');
+    }
+
+    if (!target) {
+      throw new Error('Kolom input di bawah tulisan Periode Tanggal tidak ditemukan di modal.');
+    }
+
+    const inner = target.querySelector('.eds-selector__inner, input') || target;
+    simulateClick(inner);
+    simulateClick(target);
+    return target;
   }
 
   function dateParts(date) {
@@ -101,34 +115,6 @@
     const style = window.getComputedStyle(el);
     return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' &&
       (el.offsetWidth > 0 || el.offsetHeight > 0);
-  }
-
-  function getEdsCalendarPanel(modal) {
-    const cal = (modal && modal.querySelector('.eds-daterange-picker-panel')) ||
-      document.querySelector('.eds-daterange-picker-panel');
-    return (cal && isVisible(cal)) ? cal : null;
-  }
-
-  async function ensureCalendarOpen(modal) {
-    let cal = getEdsCalendarPanel(modal);
-    if (cal) {
-      reportStep('Shopee: Kalender sudah terbuka...');
-      return cal;
-    }
-
-    reportStep('Shopee: Membuka kalender Periode Tanggal...');
-    const trigger = modal.querySelector('.eds-selector, .eds-date-picker__input, .eds-date-picker, input');
-    if (!trigger) {
-      throw new Error('Input Periode Tanggal tidak ditemukan di modal Shopee.');
-    }
-    simulateClick(trigger);
-    await sleep(2000);
-
-    cal = await waitFor(() => getEdsCalendarPanel(modal), 20000).catch(() => {
-      throw new Error('Panel kalender EDS tidak muncul setelah trigger diklik.');
-    });
-
-    return cal;
   }
 
   function findDayInEdsPanel(panel, dayNumber) {
@@ -173,16 +159,29 @@
 
     const isStartInCurrentMonth = (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear());
 
-    // 1. Pastikan kalender EDS terbuka
-    const cal = await ensureCalendarOpen(modal);
-    await sleep(1000);
+    // Langsung klik kolom input di bawah Periode Tanggal sesuai instruksi
+    reportStep('Shopee: Mengklik kolom input di bawah Periode Tanggal...');
+    clickDateRangeInput(modal);
+    await sleep(2000);
+
+    // Tunggu panel kalender EDS terbuka dan visible
+    reportStep('Shopee: Menunggu kalender terbuka...');
+    const cal = await waitFor(() => {
+      const panel = document.querySelector('.eds-daterange-picker-panel') ||
+        (modal && modal.querySelector('.eds-daterange-picker-panel'));
+      return (panel && isVisible(panel)) ? panel : null;
+    }, 20000).catch(() => {
+      throw new Error('Panel kalender EDS tidak muncul setelah kolom input diklik.');
+    });
+
+    await sleep(1500);
 
     const leftPanel = cal.querySelector('.eds-daterange-picker-panel__body-left') || cal;
     const rightPanel = cal.querySelector('.eds-daterange-picker-panel__body-right') || cal;
 
     const startPanel = isStartInCurrentMonth ? rightPanel : leftPanel;
 
-    // 2. Klik tanggal mulai
+    // Klik tanggal mulai
     reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
     const startMatch = await waitFor(() => findDayInEdsPanel(startPanel, startDay), 15000).catch(() => {
       throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
@@ -190,13 +189,14 @@
     clickDayTarget(startMatch);
     await sleep(2500);
 
-    // 3. Kalender render ulang: segarkan referensi panel
+    // Kalender render ulang: segarkan referensi panel
     reportStep('Shopee: Menunggu kalender diperbarui...');
-    const calFresh = getEdsCalendarPanel(modal) || cal;
+    const calFresh = document.querySelector('.eds-daterange-picker-panel') ||
+      (modal && modal.querySelector('.eds-daterange-picker-panel')) || cal;
     const rightPanelFresh = calFresh.querySelector('.eds-daterange-picker-panel__body-right') || calFresh;
     await sleep(1000);
 
-    // 4. Klik tanggal selesai (hari ini selalu di panel kanan)
+    // Klik tanggal selesai (hari ini selalu di panel kanan)
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
     const endMatch = await waitFor(() => findDayInEdsPanel(rightPanelFresh, todayDay), 15000).catch(() => {
       throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan di panel kalender.`);
