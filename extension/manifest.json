@@ -31,5 +31,27 @@
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://seller.shopee.co.id/portal/sale/order*"],
+      "js": ["content/shopee.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://seller.shopee.co.id/portal/product-mass/mass-update/upload*"],
+      "js": ["content/shopee-upload.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://seller-id.tokopedia.com/order*"],
+      "js": ["content/tokopedia.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://seller-id.tokopedia.com/product/batch/edit-prods*"],
+      "js": ["content/tokopedia-upload.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }
