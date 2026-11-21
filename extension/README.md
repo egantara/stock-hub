@@ -31,7 +31,7 @@ Ekstensi browser (Google Chrome & Mozilla Firefox) untuk sinkronisasi stok 1-kli
 
 1. Buka browser Firefox, ketik `about:debugging#/runtime/this-firefox` di address bar lalu tekan Enter.
 2. Klik tombol **Load Temporary Add-on...** (Muat Pengaya Sementara).
-3. Pilih file: `D:\Projects\stock-hub\extension\manifest.v2.json`.
+3. Pilih file: `D:\Projects\stock-hub\extension-firefox\manifest.json`.
 4. Ekstensi aktif untuk sesi Firefox tersebut.
 
 ---
