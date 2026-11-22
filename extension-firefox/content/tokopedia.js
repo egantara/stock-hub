@@ -122,8 +122,18 @@
     }, 15000).catch(() => null);
 
     if (filterModal) {
-      // Date picker sudah terbuka setelah Filter dibuka. Jangan klik
-      // Time created karena klik itu menutup picker.
+      // Setelah Filter terbuka, klik field From untuk membuka date picker.
+      const fromField = await waitFor(() => {
+        const candidates = [...filterModal.querySelectorAll('input, button, [role="button"], span, div')]
+          .filter(isVisible)
+          .filter(el => (el.textContent || '').trim().toLowerCase() === 'from' ||
+            (el.getAttribute('placeholder') || '').trim().toLowerCase() === 'from');
+        return candidates[candidates.length - 1] || null;
+      }, 10000).catch(() => null);
+      if (!fromField) throw new Error('Field From tidak ditemukan pada Filter.');
+      simulateClick(fromField);
+      await sleep(700);
+
       const quick7 = await waitFor(() => [...document.querySelectorAll('button')]
         .find(button => {
           const text = (button.textContent || '').trim().toLowerCase();
