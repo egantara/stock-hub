@@ -215,6 +215,23 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
     downloadInfo = await findLatestDownload();
   }
 
+  // Firefox dapat membaca file lokal selesai lewat downloads.getFile().
+  // Ini dipakai hanya sebagai fallback; alur Shopee dan proses klik tetap sama.
+  if (downloadInfo?.id && typeof browserApi.downloads.getFile === 'function') {
+    try {
+      const file = await new Promise((resolve, reject) => {
+        browserApi.downloads.getFile(downloadInfo.id, result => {
+          const error = browserApi.runtime?.lastError;
+          if (error) reject(new Error(error.message));
+          else resolve(result);
+        });
+      });
+      if (file) return file;
+    } catch (err) {
+      console.warn('Firefox downloads.getFile gagal:', err);
+    }
+  }
+
   const downloadUrls = [...new Set([
     downloadInfo?.url,
     downloadInfo?.finalUrl
