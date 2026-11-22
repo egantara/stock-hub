@@ -355,8 +355,9 @@ function waitForDownload(timeoutMs = 60000) {
     }, timeoutMs);
 
     function onCreated(item) {
-      // Tangkap download apa pun yang terjadi selama periode ekspor
-      downloadId = item.id;
+      // Tangkap hanya satu download baru; jangan mengganti id dengan event
+      // lain yang muncul setelah tombol report diklik.
+      if (downloadId === null) downloadId = item.id;
     }
 
     function onChanged(delta) {

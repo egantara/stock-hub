@@ -289,7 +289,12 @@
     const beforeResources = new Set(performance.getEntriesByType('resource').map(entry => entry.name));
     // The visible Download label may be a span/div. Click the nearest actual
     // interactive ancestor so Tokopedia's handler receives the event.
-    const clickable = latestDownload.closest('button, a, [role="button"], [onclick]') || latestDownload;
+    const label = (latestDownload.textContent || '').trim().toLowerCase();
+    // Use the exact visible Download control when it is the action element.
+    // Only climb to an ancestor when the matched node is a text wrapper.
+    const clickable = /^(download|unduh)$/.test(label)
+      ? latestDownload
+      : (latestDownload.closest('button, a, [role="button"], [onclick]') || latestDownload);
     simulateClick(clickable);
 
     // Tombol Download Tokopedia/TikTok sering berupa handler SPA tanpa href.
