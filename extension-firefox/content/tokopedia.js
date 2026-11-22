@@ -196,19 +196,27 @@
       }
     }
 
-    // 5. Pada pop up / riwayat Export history, tunggu laporan selesai dan tombol Download aktif
+    // 5. Cari report terbaru di panel Export history, bukan tombol Download
+    // lain di halaman yang mungkin berasal dari report lama.
     reportStep('Tokopedia: Menunggu laporan dibuat di Export History...');
     const latestDownload = await waitFor(() => {
-      const downloads = [...document.querySelectorAll('button, a, [role="button"]')].filter(el => {
-        const t = (el.textContent || '').trim().toLowerCase();
-        const isDownloadText = t === 'download' || t === 'unduh';
-        const isNotDisabled = !el.disabled &&
-          !el.classList.contains('disabled') &&
-          !el.hasAttribute('disabled') &&
-          el.getAttribute('aria-disabled') !== 'true';
-        return isDownloadText && isNotDisabled;
-      });
-      return downloads[0] || null;
+      const panels = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
+        .filter(isVisible)
+        .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
+      for (const panel of panels.sort((a, b) => b.innerText.length - a.innerText.length)) {
+        const rows = [...panel.querySelectorAll('tr, [role="row"], [class*="row"], li')]
+          .filter(isVisible);
+        const candidates = (rows.length ? rows : [panel]).flatMap(row =>
+          [...row.querySelectorAll('button, a, [role="button"]')].filter(el => {
+            const text = (el.textContent || '').trim().toLowerCase();
+            return (text === 'download' || text === 'unduh') &&
+              !el.disabled && !el.hasAttribute('disabled') &&
+              el.getAttribute('aria-disabled') !== 'true';
+          })
+        );
+        if (candidates[0]) return candidates[0];
+      }
+      return null;
     }, 90000);
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
