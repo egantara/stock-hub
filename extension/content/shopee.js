@@ -201,10 +201,12 @@
     const leftPanel = cal.querySelector('.eds-daterange-picker-panel__body-left') || cal;
     const rightPanel = cal.querySelector('.eds-daterange-picker-panel__body-right') || cal;
 
-    const startPanel = findPanelForDate(
-      cal, start.getFullYear(), start.getMonth(),
-      isStartInCurrentMonth ? rightPanel : leftPanel
-    );
+    // Jika kedua tanggal berada di bulan yang sama, Shopee menampilkan
+    // keduanya pada panel kanan. Jangan menebak dari innerText panel karena
+    // struktur EDS dapat memuat header bulan lain di parent.
+    const startPanel = isStartInCurrentMonth
+      ? rightPanel
+      : leftPanel;
 
     // Klik tanggal mulai
     reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
@@ -229,8 +231,10 @@
       if (!currentCal || !isVisible(currentCal)) return null;
       const left = currentCal.querySelector('.eds-daterange-picker-panel__body-left') || currentCal;
       const right = currentCal.querySelector('.eds-daterange-picker-panel__body-right') || currentCal;
-      const endPanel = findPanelForDate(currentCal, now.getFullYear(), now.getMonth(), right);
-      return findDayInEdsPanel(endPanel, todayDay) || findDayInEdsPanel(left, todayDay);
+      const endPanel = isStartInCurrentMonth
+        ? right
+        : findPanelForDate(currentCal, now.getFullYear(), now.getMonth(), right);
+      return findDayInEdsPanel(endPanel, todayDay);
     }, 15000).catch(() => null);
 
     if (endMatch) {
