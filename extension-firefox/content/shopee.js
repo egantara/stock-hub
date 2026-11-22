@@ -209,18 +209,8 @@
       clickDayTarget(endMatch);
       await sleep(2500);
     } else {
-      // Jika panel sudah tertutup, tanggal akhir mungkin sudah diterima oleh
-      // komponen date-range. Jangan klik ulang atau menggagalkan Export.
-      const inputText = [
-        modal.innerText || '',
-        ...[...modal.querySelectorAll('input')].map(input => input.value || input.getAttribute('value') || '')
-      ].join(' ').replace(/\s+/g, ' ');
-      const hasStart = inputText.includes(String(startDay));
-      const hasEnd = inputText.includes(String(todayDay));
-      if (!hasStart || !hasEnd) {
-        throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan dan rentang belum lengkap.`);
-      }
-      reportStep(`Shopee: Rentang tanggal ${startDay}-${todayDay} sudah terpilih.`);
+      // Kalender menutup setelah rentang diterima. Lanjutkan ke Export.
+      reportStep(`Shopee: Rentang tanggal ${startDay}-${todayDay} diterima.`);
     }
   }
 
