@@ -211,7 +211,10 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
     ? 'text/csv'
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   if (exportRes?.fileBase64) {
-    return base64ToBlob(exportRes.fileBase64, mimeType);
+    const reportBlob = base64ToBlob(exportRes.fileBase64, mimeType);
+    // Tokopedia may return a tiny SPA/metadata response through the page.
+    // Never prefer it over the real report download.
+    if (reportBlob.size >= 100) return reportBlob;
   }
 
   // Gunakan URL yang ditemukan content script sebelum klik Download.
@@ -513,7 +516,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
+          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: false });
         if (fileBlob.size < 100) {
           throw new Error(`File Tokopedia terlalu kecil (${fileBlob.size} bytes), download report tidak valid.`);
         }
