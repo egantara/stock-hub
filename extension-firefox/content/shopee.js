@@ -265,10 +265,18 @@
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
-      // Kalender adalah popover terpisah. Tombol Export tetap berada di
-      // popup Download Semua Pesanan yang sama.
-      return findClickableByText('export', { container: modal }) ||
-        findClickableByText('ekspor', { container: modal });
+      // Targetkan kontrol tombol langsung; jangan mengambil div/span
+      // pembungkus yang hanya mewarisi teks Export.
+      const controls = [...modal.querySelectorAll('button, [role="button"], a')]
+        .filter(isVisible)
+        .filter(el => {
+          const text = (el.textContent || '').trim().toLowerCase();
+          return (text === 'export' || text === 'ekspor') &&
+            !el.disabled &&
+            !el.hasAttribute('disabled') &&
+            el.getAttribute('aria-disabled') !== 'true';
+        });
+      return controls[controls.length - 1] || null;
     }, 15000, 'tombol konfirmasi Export di popup Download Semua Pesanan');
     simulateClick(confirmExportBtn);
     await sleep(4000);
