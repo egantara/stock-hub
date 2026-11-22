@@ -207,22 +207,27 @@
       const reports = [];
 
       for (const panel of panels) {
-        const controls = [...panel.querySelectorAll('button, a, [role="button"]')]
-          .filter(isVisible);
-        for (const control of controls) {
-          // Walk upward from the action control. Tokopedia does not expose
-          // stable row selectors, but the report filename is in its ancestor.
-          let ancestor = control;
-          for (let depth = 0; ancestor && depth < 8; depth += 1, ancestor = ancestor.parentElement) {
-            const match = (ancestor.innerText || '').match(filenamePattern);
-            if (!match) continue;
-            reports.push({
-              control,
-              timestamp: match[1],
-              fileName: (ancestor.innerText || '').match(filenamePattern)?.[0] || 'tiktok-orders.csv'
-            });
-            break;
+        // Start from the filename. The action is sometimes an icon/container
+        // with no useful text, so searching buttons first misses it.
+        const filenameNodes = [...panel.querySelectorAll('*')]
+          .filter(isVisible)
+          .filter(node => filenamePattern.test(node.textContent || ''));
+        for (const filenameNode of filenameNodes) {
+          const match = (filenameNode.textContent || '').match(filenamePattern);
+          if (!match) continue;
+
+          let report = filenameNode;
+          let controls = [];
+          for (let depth = 0; report && depth < 8; depth += 1, report = report.parentElement) {
+            controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title]')]
+              .filter(isVisible);
+            if (controls.length) break;
           }
+          const action = controls.find(control => {
+            const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
+            return /download|unduh/.test(text) || control.querySelector('svg, [class*="loading"], [class*="spin"], [class*="loader"]');
+          });
+          if (action) reports.push({ control: action, timestamp: match[1] });
         }
       }
 
@@ -230,11 +235,11 @@
       const newest = reports[0];
       if (!newest) return null;
 
-      const text = (newest.control.textContent || '').trim().toLowerCase();
+      const text = `${newest.control.textContent || ''} ${newest.control.getAttribute('aria-label') || ''} ${newest.control.getAttribute('title') || ''}`.trim().toLowerCase();
       const enabled = !newest.control.disabled &&
         !newest.control.hasAttribute('disabled') &&
         newest.control.getAttribute('aria-disabled') !== 'true';
-      return enabled && (text === 'download' || text === 'unduh') ? newest.control : null;
+      return enabled && /download|unduh/.test(text) ? newest.control : null;
     }, 20000, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
