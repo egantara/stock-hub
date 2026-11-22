@@ -221,7 +221,7 @@
         if (button) return button;
       }
       return null;
-    }, 30000);
+    }, 20000);
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
