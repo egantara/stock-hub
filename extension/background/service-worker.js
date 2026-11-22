@@ -481,6 +481,10 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
 if (browserApi?.runtime?.onMessage) {
   browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'GET_SYNC_SESSION') {
+      sendResponse({ session: activeSyncSession });
+      return true;
+    }
     if (message.action === 'START_SYNC') {
       runSync(message.options || {});
       sendResponse({ started: true });

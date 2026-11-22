@@ -260,8 +260,9 @@ async function restoreActiveSync() {
       }
 
       if (sess.isSyncing) {
-        syncButton.disabled = true;
-        updateProgressBar(sess.percent, sess.stepText || 'Sedang memproses...', 'running');
+        // Sesi lama dapat tertinggal setelah browser atau background restart.
+        syncButton.disabled = false;
+        updateProgressBar(sess.percent, 'Sesi lama dihentikan. Siap mencoba lagi.', 'error');
       } else if (sess.success !== null) {
         syncButton.disabled = false;
         updateProgressBar(
