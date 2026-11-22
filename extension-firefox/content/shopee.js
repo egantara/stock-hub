@@ -272,13 +272,16 @@
 
     reportStep('Shopee: Menunggu laporan selesai dibuat di Laporan Terakhir...');
     const reportModal = await waitFor(() => {
-      const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
+      const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, .eds-modal')]
+        .filter(isVisible);
       return candidates.find(el => {
         const txt = (el.innerText || '').toLowerCase();
         return txt.includes('laporan terakhir') || txt.includes('riwayat download') || txt.includes('download center');
-      });
-    }, 30000, 'modal Laporan Terakhir').catch(() => null);
+      }) || null;
+    }, 15000, 'panel Laporan Terakhir').catch(() => null);
 
+    // Setelah Export Shopee kadang menutup modal dan merender tabel laporan
+    // langsung di halaman. Jangan menunggu modal tersembunyi.
     const downloadContainer = reportModal || document;
     const latestDownload = await waitFor(() => {
       const rows = [...downloadContainer.querySelectorAll('tr, .shopee-table-row, [role="row"]')].filter(r => {
