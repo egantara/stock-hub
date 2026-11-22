@@ -210,7 +210,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
   const mimeType = /\.csv$/i.test(sourceName)
     ? 'text/csv'
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  if (exportRes?.fileBase64 && !preferDownload) {
+  if (exportRes?.fileBase64) {
     return base64ToBlob(exportRes.fileBase64, mimeType);
   }
 

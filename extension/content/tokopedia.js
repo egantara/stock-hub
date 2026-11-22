@@ -211,12 +211,15 @@
       const reports = [];
 
       for (const panel of panels) {
-        // Start from the filename. The action is sometimes an icon/container
-        // with no useful text, so searching buttons first misses it.
+        // Export History is ordered newest-first. Use the first visible report,
+        // not a timestamp heuristic, and keep its action isolated to its row.
         const filenameNodes = [...panel.querySelectorAll('*')]
           .filter(isVisible)
-          .filter(node => filenamePattern.test(node.textContent || ''));
-        for (const filenameNode of filenameNodes) {
+          .filter(node => filenamePattern.test(node.textContent || ''))
+          .filter(node => !node.children.length);
+        const filenameNode = filenameNodes[0];
+        if (!filenameNode) continue;
+        {
           const match = (filenameNode.textContent || '').match(filenamePattern);
           if (!match) continue;
 
@@ -245,7 +248,6 @@
         }
       }
 
-      reports.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
       const newest = reports[0];
       if (!newest) return null;
 
