@@ -206,9 +206,14 @@
       for (const panel of panels.sort((a, b) => b.innerText.length - a.innerText.length)) {
         const rows = [...panel.querySelectorAll('tr, [role="row"], [class*="row"], li')]
           .filter(isVisible)
-          .filter(row => /all\s+order|order.*\d{4}[-/]/i.test(row.innerText || ''));
-        // Abaikan header/container. Report terbaru berada di baris pertama
-        // yang benar-benar memiliki nama file/order.
+          .filter(row => /all\s+order-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.csv/i.test(row.innerText || ''));
+        // Pilih report dengan timestamp terbesar, bukan tombol Download
+        // lama yang sudah aktif di baris bawah.
+        const timestamp = row => {
+          const match = (row.innerText || '').match(/all\s+order-(\d{4}-\d{2}-\d{2}-\d{2}:\d{2})\.csv/i);
+          return match ? match[1] : '';
+        };
+        rows.sort((a, b) => timestamp(b) - timestamp(a));
         const newestRow = rows[0];
         if (!newestRow) continue;
         const button = [...newestRow.querySelectorAll('button, a, [role="button"]')]
