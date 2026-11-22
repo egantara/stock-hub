@@ -200,38 +200,55 @@
     // lain di halaman yang mungkin berasal dari report lama.
     reportStep('Tokopedia: Menunggu laporan dibuat di Export History...');
     const latestDownload = await waitFor(() => {
+      const filenamePattern = /all\s+order-(\d{4}-\d{2}-\d{2}-\d{2}:\d{2})\.csv/i;
       const panels = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
         .filter(isVisible)
         .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
-      for (const panel of panels.sort((a, b) => b.innerText.length - a.innerText.length)) {
-        const rows = [...panel.querySelectorAll('tr, [role="row"], [class*="row"], li')]
-          .filter(isVisible)
-          .filter(row => /all\s+order-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.csv/i.test(row.innerText || ''));
-        // Pilih report dengan timestamp terbesar, bukan tombol Download
-        // lama yang sudah aktif di baris bawah.
-        const timestamp = row => {
-          const match = (row.innerText || '').match(/all\s+order-(\d{4}-\d{2}-\d{2}-\d{2}:\d{2})\.csv/i);
-          return match ? match[1] : '';
-        };
-        rows.sort((a, b) => timestamp(b) - timestamp(a));
-        const newestRow = rows[0];
-        if (!newestRow) continue;
-        const button = [...newestRow.querySelectorAll('button, a, [role="button"]')]
-          .find(el => {
-            const text = (el.textContent || '').trim().toLowerCase();
-            return (text === 'download' || text === 'unduh') &&
-              !el.disabled && !el.hasAttribute('disabled') &&
-              el.getAttribute('aria-disabled') !== 'true';
-          });
-        if (button) return button;
+      const reports = [];
+
+      for (const panel of panels) {
+        const controls = [...panel.querySelectorAll('button, a, [role="button"]')]
+          .filter(isVisible);
+        for (const control of controls) {
+          // Walk upward from the action control. Tokopedia does not expose
+          // stable row selectors, but the report filename is in its ancestor.
+          let ancestor = control;
+          for (let depth = 0; ancestor && depth < 8; depth += 1, ancestor = ancestor.parentElement) {
+            const match = (ancestor.innerText || '').match(filenamePattern);
+            if (!match) continue;
+            reports.push({
+              control,
+              timestamp: match[1],
+              fileName: (ancestor.innerText || '').match(filenamePattern)?.[0] || 'tiktok-orders.csv'
+            });
+            break;
+          }
+        }
       }
-      return null;
+
+      reports.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      const newest = reports[0];
+      if (!newest) return null;
+
+      const text = (newest.control.textContent || '').trim().toLowerCase();
+      const enabled = !newest.control.disabled &&
+        !newest.control.hasAttribute('disabled') &&
+        newest.control.getAttribute('aria-disabled') !== 'true';
+      return enabled && (text === 'download' || text === 'unduh') ? newest.control : null;
     }, 20000, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
     let fileBase64 = null;
-    let fileName = 'tiktok-orders.xlsx';
+    let fileName = 'tiktok-orders.csv';
+    let reportAncestor = latestDownload;
+    for (let depth = 0; reportAncestor && depth < 8; depth += 1, reportAncestor = reportAncestor.parentElement) {
+      const match = (reportAncestor.innerText || '').match(/all\s+order-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.csv/i);
+      if (match) {
+        fileName = match[0];
+        break;
+      }
+    }
 
     if (link && link.href && !link.href.startsWith('javascript:')) {
       try {
