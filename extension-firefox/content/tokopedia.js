@@ -132,14 +132,16 @@
       }
 
       const quick7 = await waitFor(() => {
-        const candidates = [...document.querySelectorAll('button, [role="button"], [role="option"], span, div, li')]
-          .filter(isVisible)
-          .filter(el => {
-            const text = (el.textContent || '').trim().toLowerCase();
-            return text === 'last 7 days' || text === '7 hari terakhir';
-          });
-        candidates.sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
-        return candidates[0] || null;
+        const wanted = new Set(['last 7 days', '7 hari terakhir']);
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (!wanted.has((node.nodeValue || '').trim().toLowerCase())) continue;
+          let element = node.parentElement;
+          while (element && !isVisible(element)) element = element.parentElement;
+          if (element) return element;
+        }
+        return null;
       }, 10000).catch(() => null);
 
       if (!quick7) {
