@@ -652,6 +652,14 @@ async function handleUpload(req, res) {
   const filePath = path.join(os.tmpdir(), `stock-hub-${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}`);
 
   try {
+    console.log(
+      "UPLOAD FILE:",
+      file.filename,
+      "BYTES:",
+      file.buffer.length,
+      "HEAD:",
+      file.buffer.subarray(0, 32).toString('hex')
+    );
     await fs.writeFile(filePath, file.buffer);
 
     const result = await runTask(() => processor({
