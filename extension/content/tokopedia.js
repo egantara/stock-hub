@@ -223,15 +223,22 @@
           let report = filenameNode;
           let controls = [];
           for (let depth = 0; report && depth < 15; depth += 1, report = report.parentElement) {
+            const reportNames = (report.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
+            // Stop at the smallest ancestor containing exactly this report.
+            // Never use a panel that also contains older report buttons.
+            if (reportNames.length === 0) continue;
             controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
               .filter(isVisible);
-            if (controls.some(control => /^(download|unduh)$/i.test((control.textContent || '').trim()) ||
-              /download|unduh/i.test(`${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`))) break;
+            const hasAction = controls.some(control => {
+              const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim();
+              return /^(download|unduh)$/i.test(text) || /download|unduh/i.test(text);
+            });
+            if (hasAction) break;
           }
           const action = controls
             .filter(control => {
               const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
-              return /download|unduh/.test(text);
+              return /^(download|unduh)$/.test(text) || /download|unduh/.test(text);
             })
             .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
           if (action) reports.push({ control: action, timestamp: match[1] });
