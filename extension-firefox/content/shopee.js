@@ -119,28 +119,24 @@
 
   function findDayInEdsPanel(panel, dayNumber) {
     const targetText = String(dayNumber);
-    const all = [...panel.querySelectorAll('*')];
+    const cells = [...panel.querySelectorAll('.eds-date-table__cell')];
 
-    const candidates = all.filter(el => {
-      const txt = (el.textContent || '').trim();
-      if (txt !== targetText) return false;
-      if (el.children.length > 1) return false;
-      if (el.children.length === 1 && (el.firstElementChild.textContent || '').trim() !== targetText) return false;
-
-      const cell = el.closest('td, [class*="cell"], [class*="date"]') || el;
-      const cls = `${el.className || ''} ${cell.className || ''} ${el.parentElement?.className || ''}`.toLowerCase();
-      if (/disabled|prev|next|other|outside/.test(cls)) return false;
-      if (el.hasAttribute('disabled') || cell.hasAttribute('disabled')) return false;
-      if (el.getAttribute('aria-disabled') === 'true' || cell.getAttribute('aria-disabled') === 'true') return false;
-
-      return true;
+    const cell = cells.find(candidate => {
+      const inner = candidate.querySelector('.eds-date-table__cell-inner');
+      if ((inner?.textContent || candidate.textContent || '').trim() !== targetText) return false;
+      // `disabled-prev` / `disabled-next` are range-rendering states in EDS,
+      // not disabled dates. Reject only actual disabled attributes/classes.
+      if (candidate.hasAttribute('disabled') || inner?.hasAttribute('disabled')) return false;
+      if (candidate.getAttribute('aria-disabled') === 'true' || inner?.getAttribute('aria-disabled') === 'true') return false;
+      if (candidate.classList.contains('disabled') || inner?.classList.contains('disabled')) return false;
+      return isVisible(candidate);
     });
 
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => a.children.length - b.children.length);
-    const leaf = candidates[0];
-    const cell = leaf.closest('td, [class*="cell"], [class*="date"]') || leaf;
-    return { leaf, cell };
+    if (!cell) return null;
+    return {
+      leaf: cell.querySelector('.eds-date-table__cell-inner') || cell,
+      cell
+    };
   }
 
   function clickDayTarget(match) {
