@@ -205,39 +205,33 @@
     reportStep('Tokopedia: Menunggu laporan dibuat di Export History...');
     const latestDownload = await waitFor(() => {
       const filenamePattern = /all\s+order-(\d{4})-(\d{2})-(\d{2})-(\d{2}):(\d{2})(?::(\d{2}))?\.csv/i;
-      const panels = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
+      const panel = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
         .filter(isVisible)
-        .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
-      for (const panel of panels) {
-        const reports = [...panel.querySelectorAll('*')]
-          .filter(isVisible)
-          .map(node => ({ node, match: (node.textContent || '').trim().match(filenamePattern) }))
-          .filter(item => item.match)
-          .sort((a, b) => (a.node.textContent || '').trim().length - (b.node.textContent || '').trim().length);
-        if (!reports.length) continue;
+        .find(candidate => /export history|riwayat ekspor|export orders/i.test(candidate.innerText || ''));
+      if (!panel) return null;
 
-        // Select the report whose Report name timestamp is closest to now.
-        const report = reports[0];
-        const [, year, month, day, hour, minute, second = '0'] = report.match;
-        const reportTime = new Date(+year, +month - 1, +day, +hour, +minute, +second).getTime();
-        const now = Date.now();
-        const closest = reports.reduce((best, candidate) => {
-          const m = candidate.match;
+      const reports = [...panel.querySelectorAll('*')]
+        .filter(isVisible)
+        .map(node => ({ node, match: (node.textContent || '').trim().match(filenamePattern) }))
+        .filter(item => item.match)
+        .sort((a, b) => (a.node.textContent || '').trim().length - (b.node.textContent || '').trim().length);
+      if (!reports.length) return null;
+
+      const now = Date.now();
+      const newest = reports
+        .map(report => {
+          const m = report.match;
           const time = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)).getTime();
-          return Math.abs(time - now) < Math.abs(best.time - now) ? { item: candidate, time } : best;
-        }, { item: report, time: reportTime }).item;
+          return { ...report, time };
+        })
+        .sort((a, b) => Math.abs(a.time - now) - Math.abs(b.time - now))[0];
 
-        let row = closest.node;
-        let controls = [];
-        for (let depth = 0; row && depth < 15; depth += 1, row = row.parentElement) {
-          const names = (row.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
-          if (!names.length) continue;
-          controls = [...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
-            .filter(isVisible);
-          const hasDownload = controls.some(control => /download|unduh/i.test((control.textContent || '').trim()));
-          if (hasDownload || depth >= 3) break;
-        }
-        const action = controls
+      let row = newest.node;
+      for (let depth = 0; row && depth < 15; depth += 1, row = row.parentElement) {
+        const names = (row.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
+        if (!names.length) continue;
+        const action = [...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
+          .filter(isVisible)
           .filter(control => /download|unduh/i.test((control.textContent || '').trim()))
           .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
         if (!action) return null;
