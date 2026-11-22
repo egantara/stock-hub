@@ -206,8 +206,12 @@ function findLatestDownload() {
 }
 
 async function obtainFileBlob(tabId, downloadInfo, exportRes) {
+  const sourceName = exportRes?.fileName || downloadInfo?.filename || '';
+  const mimeType = /\.csv$/i.test(sourceName)
+    ? 'text/csv'
+    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   if (exportRes?.fileBase64) {
-    return base64ToBlob(exportRes.fileBase64);
+    return base64ToBlob(exportRes.fileBase64, mimeType);
   }
 
   // Gunakan URL yang ditemukan content script sebelum klik Download.
@@ -221,7 +225,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
         url: exportUrl
       }, 30000);
       if (fetchRes?.success && fetchRes.base64) {
-        return base64ToBlob(fetchRes.base64);
+        return base64ToBlob(fetchRes.base64, mimeType);
       }
     } catch (err) {
       console.warn('Fetch URL dari hasil export gagal:', err);

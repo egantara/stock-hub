@@ -32,8 +32,12 @@
     if (type.includes('html') || type.includes('json')) return false;
     const bytes = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
     const zip = bytes[0] === 0x50 && bytes[1] === 0x4b;
-    const csv = type.includes('csv') || type.includes('text');
-    return zip || csv;
+    if (zip) return true;
+    if (type.includes('csv') || type.includes('text') || type.includes('octet-stream')) {
+      const sample = await blob.slice(0, 65536).text();
+      return /(^|[;,\t])\s*Order ID\s*(?:[;,\t]|$)/im.test(sample);
+    }
+    return false;
   }
 
   function blobToBase64(blob) {
