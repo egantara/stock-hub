@@ -220,13 +220,29 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
   if (downloadInfo?.id && typeof browserApi.downloads.getFile === 'function') {
     try {
       const file = await new Promise((resolve, reject) => {
-        browserApi.downloads.getFile(downloadInfo.id, result => {
-          const error = browserApi.runtime?.lastError;
-          if (error) reject(new Error(error.message));
+        let settled = false;
+        const finish = (result, error) => {
+          if (settled) return;
+          settled = true;
+          if (error) reject(error instanceof Error ? error : new Error(String(error)));
           else resolve(result);
-        });
+        };
+        const callback = result => {
+          const error = browserApi.runtime?.lastError;
+          finish(result, error?.message);
+        };
+        try {
+          const result = browserApi.downloads.getFile(downloadInfo.id, callback);
+          if (result && typeof result.then === 'function') {
+            result.then(file => finish(file)).catch(err => finish(null, err));
+          } else if (result instanceof Blob) {
+            finish(result);
+          }
+        } catch (error) {
+          finish(null, error);
+        }
       });
-      if (file) return file;
+      if (file instanceof Blob) return file;
     } catch (err) {
       console.warn('Firefox downloads.getFile gagal:', err);
     }
