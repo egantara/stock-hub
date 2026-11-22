@@ -328,8 +328,16 @@
     reportStep('Shopee: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') ||
       (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
-    const downloadUrl = link?.href || latestDownload.getAttribute('href') ||
-      latestDownload.getAttribute('data-href') || latestDownload.getAttribute('data-url');
+    const urlFromAttributes = element => {
+      if (!element) return null;
+      return element.href || element.getAttribute('href') ||
+        element.getAttribute('data-href') || element.getAttribute('data-url') ||
+        element.getAttribute('data-download-url') || element.getAttribute('data-url-download');
+    };
+    const downloadUrl = urlFromAttributes(link) ||
+      urlFromAttributes(latestDownload) ||
+      urlFromAttributes(latestDownload.parentElement) ||
+      urlFromAttributes(latestDownload.closest('[data-href], [data-url], [data-download-url]'));
     let fileBase64 = null;
     let fileName = link?.getAttribute('download') || 'shopee-orders.xlsx';
 

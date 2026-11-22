@@ -277,7 +277,22 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
   const downloadUrls = [...new Set([
     downloadInfo?.url,
     downloadInfo?.finalUrl
-  ].filter(Boolean))];
+  ].filter(url => url && !url.startsWith('file://')))];
+
+  // URL pada downloads API juga dicoba lewat tab Shopee; Firefox dapat
+  // memberi URL CDN yang tidak terlihat sebagai href pada tombol.
+  for (const url of downloadUrls) {
+    if (!tabId) break;
+    try {
+      const fetchRes = await sendMessageToTab(tabId, {
+        action: 'FETCH_BLOB_OR_URL',
+        url
+      }, 30000);
+      if (fetchRes?.success && fetchRes.base64) return base64ToBlob(fetchRes.base64);
+    } catch (err) {
+      console.warn('Fetch URL download dari tab gagal:', err);
+    }
+  }
 
   for (const url of downloadUrls) {
     if (tabId) {
