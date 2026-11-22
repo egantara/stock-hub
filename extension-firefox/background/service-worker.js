@@ -516,7 +516,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: false });
+          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
         if (fileBlob.size < 100) {
           throw new Error(`File Tokopedia terlalu kecil (${fileBlob.size} bytes), download report tidak valid.`);
         }
