@@ -43,28 +43,23 @@ export async function detectMarketplace(
     return null;
   }
 
-  const firstRow =
-    rows[0];
+  const firstRow = rows[0];
+  const rowKeys = rows.map(row => new Set(Object.keys(row)));
+  const hasKey = key => rowKeys.some(keys => keys.has(key));
 
   //
   // SHOPEE ORDER
   //
-  if (
-    "No. Pesanan"
-      in firstRow
-  ) {
-
+  if (hasKey("No. Pesanan")) {
     return "SHOPEE";
   }
 
   //
   // TIKTOK ORDER
   //
-  if (
-    "Order ID"
-      in firstRow
-  ) {
-
+  // TikTok exports may contain a description row before the actual header.
+  // Detect the schema across all parsed rows, not only rows[0].
+  if (hasKey("Order ID")) {
     return "TIKTOK";
   }
 
@@ -73,15 +68,11 @@ export async function detectMarketplace(
 //
 if (
 
-  Object.keys(firstRow).includes(
-    "et_title_product_id"
-  )
+  hasKey("et_title_product_id")
 
   ||
 
-  Object.keys(firstRow).includes(
-    "et_title_variation_sku"
-  )
+  hasKey("et_title_variation_sku")
 
 ) {
 
@@ -96,19 +87,8 @@ if (
   // TIKTOK PRODUCT
   //
   if (
-
-    (
-      "product_id"
-        in firstRow
-    )
-
-    ||
-
-    (
-      "seller_sku"
-        in firstRow
-    )
-
+    hasKey("product_id") ||
+    hasKey("seller_sku")
   ) {
 
     return "TIKTOK";
