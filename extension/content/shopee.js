@@ -218,19 +218,20 @@
     reportStep('Shopee: Menunggu kalender diperbarui...');
     const calFresh = document.querySelector('.eds-daterange-picker-panel') ||
       (modal && modal.querySelector('.eds-daterange-picker-panel')) || cal;
-    const leftPanelFresh = calFresh.querySelector('.eds-daterange-picker-panel__body-left') || calFresh;
-    const rightPanelFresh = calFresh.querySelector('.eds-daterange-picker-panel__body-right') || calFresh;
     await sleep(1000);
 
-    // Klik tanggal selesai. Shopee dapat merender tanggal akhir di panel kiri
-    // atau menutup kalender setelah rentang selesai dipilih.
+    // Shopee menggambar ulang panel setelah tanggal mulai dipilih.
+    // Ambil kalender dan panel terbaru setiap kali polling.
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
-    const endPanel = findPanelForDate(
-      calFresh, now.getFullYear(), now.getMonth(), rightPanelFresh
-    );
-    const endMatch = await waitFor(() =>
-      findDayInEdsPanel(endPanel, todayDay), 15000
-    ).catch(() => null);
+    const endMatch = await waitFor(() => {
+      const currentCal = document.querySelector('.eds-daterange-picker-panel') ||
+        (modal && modal.querySelector('.eds-daterange-picker-panel'));
+      if (!currentCal || !isVisible(currentCal)) return null;
+      const left = currentCal.querySelector('.eds-daterange-picker-panel__body-left') || currentCal;
+      const right = currentCal.querySelector('.eds-daterange-picker-panel__body-right') || currentCal;
+      const endPanel = findPanelForDate(currentCal, now.getFullYear(), now.getMonth(), right);
+      return findDayInEdsPanel(endPanel, todayDay) || findDayInEdsPanel(left, todayDay);
+    }, 15000).catch(() => null);
 
     if (endMatch) {
       clickDayTarget(endMatch);
