@@ -145,9 +145,9 @@
 
   function clickDayTarget(match) {
     if (!match) return;
-    // Klik leaf saja. Event klik sudah bubble ke cell; klik cell lagi
-    // membuat Shopee menerima tanggal dua kali dan membalik rentang.
-    simulateClick(match.leaf || match.cell);
+    // Shopee memasang handler pada kotak tanggal, bukan teks angkanya.
+    // Klik kotak tepat sekali agar pilihan kedua benar-benar tercatat.
+    simulateClick(match.cell || match.leaf);
   }
 
   function panelForMonth(panel, year, month) {
