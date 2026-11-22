@@ -204,41 +204,45 @@
     // lain di halaman yang mungkin berasal dari report lama.
     reportStep('Tokopedia: Menunggu laporan dibuat di Export History...');
     const latestDownload = await waitFor(() => {
-      const filenamePattern = /all\s+order-(\d{4}-\d{2}-\d{2}-\d{2}:\d{2})\.csv/i;
+      const filenamePattern = /all\s+order-(\d{4})-(\d{2})-(\d{2})-(\d{2}):(\d{2})(?::(\d{2}))?\.csv/i;
       const panels = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
         .filter(isVisible)
         .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
       for (const panel of panels) {
-        // Export History is ordered newest-first. Lock onto the first report;
-        // if it is loading, return null so polling never falls to older rows.
-        const filenameNode = [...panel.querySelectorAll('*')]
+        const reports = [...panel.querySelectorAll('*')]
           .filter(isVisible)
-          .filter(node => filenamePattern.test((node.textContent || '').trim()))
-          .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
-        if (!filenameNode) continue;
+          .map(node => ({ node, match: (node.textContent || '').trim().match(filenamePattern) }))
+          .filter(item => item.match)
+          .sort((a, b) => (a.node.textContent || '').trim().length - (b.node.textContent || '').trim().length);
+        if (!reports.length) continue;
 
-        let report = filenameNode;
+        // Select the report whose Report name timestamp is closest to now.
+        const report = reports[0];
+        const [, year, month, day, hour, minute, second = '0'] = report.match;
+        const reportTime = new Date(+year, +month - 1, +day, +hour, +minute, +second).getTime();
+        const now = Date.now();
+        const closest = reports.reduce((best, candidate) => {
+          const m = candidate.match;
+          const time = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)).getTime();
+          return Math.abs(time - now) < Math.abs(best.time - now) ? { item: candidate, time } : best;
+        }, { item: report, time: reportTime }).item;
+
+        let row = closest.node;
         let controls = [];
-        for (let depth = 0; report && depth < 15; depth += 1, report = report.parentElement) {
-          const names = (report.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
+        for (let depth = 0; row && depth < 15; depth += 1, row = row.parentElement) {
+          const names = (row.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
           if (names.length !== 1) continue;
-          controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
+          controls = [...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
             .filter(isVisible);
           break;
         }
-
         const action = controls
-          .filter(control => {
-            const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
-            return /^(download|unduh)$/.test(text) || /download|unduh/.test(text);
-          })
+          .filter(control => /^(download|unduh)$/i.test((control.textContent || '').trim()))
           .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
         if (!action) return null;
-
-        const enabled = !action.disabled &&
-          !action.hasAttribute('disabled') &&
-          action.getAttribute('aria-disabled') !== 'true';
-        return enabled ? action : null;
+        return !action.disabled && !action.hasAttribute('disabled') && action.getAttribute('aria-disabled') !== 'true'
+          ? action
+          : null;
       }
       return null;
     }, Infinity, 'Download report terbaru');
@@ -249,7 +253,7 @@
     let fileName = 'tiktok-orders.csv';
     let reportAncestor = latestDownload;
     for (let depth = 0; reportAncestor && depth < 8; depth += 1, reportAncestor = reportAncestor.parentElement) {
-      const match = (reportAncestor.innerText || '').match(/all\s+order-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}\.csv/i);
+      const match = (reportAncestor.innerText || '').match(/all\s+order-\d{4}-\d{2}-\d{2}-\d{2}:\d{2}(?::\d{2})?\.csv/i);
       if (match) {
         fileName = match[0];
         break;
