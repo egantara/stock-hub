@@ -131,14 +131,16 @@
         await sleep(700);
       }
 
-      const quick7 = await waitFor(() => [...document.querySelectorAll(
-        'button, [role="button"], [role="option"], span, div, li'
-      )]
-        .filter(isVisible)
-        .find(el => {
-          const text = (el.textContent || '').trim().toLowerCase();
-          return text === 'last 7 days' || text === '7 hari terakhir';
-        }), 10000).catch(() => null);
+      const quick7 = await waitFor(() => {
+        const candidates = [...document.querySelectorAll('button, [role="button"], [role="option"], span, div, li')]
+          .filter(isVisible)
+          .filter(el => {
+            const text = (el.textContent || '').trim().toLowerCase();
+            return text === 'last 7 days' || text === '7 hari terakhir';
+          });
+        candidates.sort((a, b) => (a.textContent || '').length - (b.textContent || '').length);
+        return candidates[0] || null;
+      }, 10000).catch(() => null);
 
       if (!quick7) {
         throw new Error('Preset Last 7 days tidak ditemukan setelah Time created dibuka.');
