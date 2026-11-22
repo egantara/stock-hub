@@ -239,7 +239,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
 
   // Firefox dapat membaca file lokal selesai lewat downloads.getFile().
   // Ini dipakai hanya sebagai fallback; alur Shopee dan proses klik tetap sama.
-  if (downloadInfo?.id && typeof browserApi.downloads.getFile === 'function') {
+  if (!preferDownload && downloadInfo?.id && typeof browserApi.downloads.getFile === 'function') {
     try {
       const file = await new Promise((resolve, reject) => {
         let settled = false;
@@ -513,7 +513,10 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-        const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
+          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
+        if (fileBlob.size < 100) {
+          throw new Error(`File Tokopedia terlalu kecil (${fileBlob.size} bytes), download report tidak valid.`);
+        }
         broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
         const fileName = exportRes.fileName || downloadInfo?.filename?.split(/[\\/]/).pop() || 'tiktok-orders.csv';
         const fileHead = new Uint8Array(await fileBlob.slice(0, 32).arrayBuffer());
