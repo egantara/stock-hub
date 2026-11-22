@@ -344,16 +344,39 @@
     if (downloadUrl && !downloadUrl.startsWith('javascript:') && !downloadUrl.startsWith('#')) {
       try {
         const res = await fetch(downloadUrl, { credentials: 'include' });
-        if (res.ok) {
-          const blob = await res.blob();
-          fileBase64 = await blobToBase64(blob);
-        }
+        if (res.ok) fileBase64 = await blobToBase64(await res.blob());
       } catch (err) {
         console.warn('Direct fetch Shopee failed; download listener fallback:', err);
       }
     }
 
+    // Tombol Vue tidak memiliki href. Klik tetap dilakukan, lalu cari resource
+    // baru yang dibuat handler Vue dan ambil response-nya dari halaman.
+    const beforeResources = new Set(performance.getEntriesByType('resource').map(entry => entry.name));
     simulateClick(latestDownload);
+
+    if (!fileBase64) {
+      const started = Date.now();
+      while (!fileBase64 && Date.now() - started < 15000) {
+        await sleep(500);
+        const resources = performance.getEntriesByType('resource')
+          .map(entry => entry.name)
+          .filter(url => !beforeResources.has(url))
+          .filter(url => /export|download|report|order|xlsx|excel|file/i.test(url));
+        for (const url of resources.slice(-5)) {
+          try {
+            const res = await fetch(url, { credentials: 'include' });
+            const type = res.headers.get('content-type') || '';
+            if (res.ok && (type.includes('spreadsheet') || type.includes('octet-stream') || type.includes('csv') || url.includes('download'))) {
+              fileBase64 = await blobToBase64(await res.blob());
+              break;
+            }
+          } catch {
+            // Resource bisa berupa metadata; lanjutkan ke resource berikutnya.
+          }
+        }
+      }
+    }
 
     return {
       success: true,
