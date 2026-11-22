@@ -213,8 +213,8 @@
         // if it is loading, return null so polling never falls to older rows.
         const filenameNode = [...panel.querySelectorAll('*')]
           .filter(isVisible)
-          .filter(node => !node.children.length)
-          .find(node => filenamePattern.test(node.textContent || ''));
+          .filter(node => filenamePattern.test((node.textContent || '').trim()))
+          .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
         if (!filenameNode) continue;
 
         let report = filenameNode;
