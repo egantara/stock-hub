@@ -227,15 +227,18 @@
         .sort((a, b) => Math.abs(a.time - now) - Math.abs(b.time - now))[0];
 
       let row = newest.node;
+      const filenameRect = row.getBoundingClientRect();
       for (let depth = 0; row && depth < 15; depth += 1, row = row.parentElement) {
         const names = (row.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
-        if (!names.length) continue;
-        const actionCandidates = [row, ...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
+        if (names.length !== 1) continue;
+        const actions = [...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
           .filter(isVisible)
           .filter(control => /download|unduh/i.test((control.textContent || '').trim()))
-          .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length);
-        const action = actionCandidates[0];
-        if (!action) return null;
+          .map(control => ({ control, rect: control.getBoundingClientRect() }))
+          .filter(({ rect }) => rect.left >= filenameRect.right - 4)
+          .sort((a, b) => (a.rect.left - filenameRect.right) - (b.rect.left - filenameRect.right));
+        const action = actions[0]?.control;
+        if (!action) continue;
         return !action.disabled && !action.hasAttribute('disabled') && action.getAttribute('aria-disabled') !== 'true'
           ? action
           : null;
