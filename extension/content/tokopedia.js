@@ -124,12 +124,13 @@
     if (filterModal) {
       // Time created membuka popover date picker terpisah. Klik field itu
       // dulu, lalu cari preset pada seluruh DOM visible.
-      const timeCreated = findButtonByText('time created', { container: filterModal }) ||
-        findButtonByText('waktu pesanan', { container: filterModal });
-      if (timeCreated) {
-        simulateClick(timeCreated);
-        await sleep(700);
+      const timeCreated = [...filterModal.querySelectorAll('span, button, [role="button"]')]
+        .find(el => ['time created', 'waktu pesanan'].includes((el.textContent || '').trim().toLowerCase()));
+      if (!timeCreated) {
+        throw new Error('Field Time created tidak ditemukan pada Filter.');
       }
+      simulateClick(timeCreated);
+      await sleep(1200);
 
       const quick7 = await waitFor(() => {
         const buttons = [...document.querySelectorAll('button')];
