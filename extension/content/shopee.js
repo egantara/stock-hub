@@ -193,16 +193,35 @@
     reportStep('Shopee: Menunggu kalender diperbarui...');
     const calFresh = document.querySelector('.eds-daterange-picker-panel') ||
       (modal && modal.querySelector('.eds-daterange-picker-panel')) || cal;
+    const leftPanelFresh = calFresh.querySelector('.eds-daterange-picker-panel__body-left') || calFresh;
     const rightPanelFresh = calFresh.querySelector('.eds-daterange-picker-panel__body-right') || calFresh;
     await sleep(1000);
 
-    // Klik tanggal selesai (hari ini selalu di panel kanan)
+    // Klik tanggal selesai. Shopee dapat merender tanggal akhir di panel kiri
+    // atau menutup kalender setelah rentang selesai dipilih.
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
-    const endMatch = await waitFor(() => findDayInEdsPanel(rightPanelFresh, todayDay), 15000).catch(() => {
-      throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan di panel kalender.`);
-    });
-    clickDayTarget(endMatch);
-    await sleep(2500);
+    const endMatch = await waitFor(() =>
+      findDayInEdsPanel(rightPanelFresh, todayDay) ||
+      findDayInEdsPanel(leftPanelFresh, todayDay), 15000
+    ).catch(() => null);
+
+    if (endMatch) {
+      clickDayTarget(endMatch);
+      await sleep(2500);
+    } else {
+      // Jika panel sudah tertutup, tanggal akhir mungkin sudah diterima oleh
+      // komponen date-range. Jangan klik ulang atau menggagalkan Export.
+      const inputText = [
+        modal.innerText || '',
+        ...[...modal.querySelectorAll('input')].map(input => input.value || input.getAttribute('value') || '')
+      ].join(' ').replace(/\s+/g, ' ');
+      const hasStart = inputText.includes(String(startDay));
+      const hasEnd = inputText.includes(String(todayDay));
+      if (!hasStart || !hasEnd) {
+        throw new Error(`Angka tanggal selesai (${todayDay}) tidak ditemukan dan rentang belum lengkap.`);
+      }
+      reportStep(`Shopee: Rentang tanggal ${startDay}-${todayDay} sudah terpilih.`);
+    }
   }
 
   async function triggerShopeeExport() {
