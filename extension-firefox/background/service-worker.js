@@ -337,7 +337,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
   throw new Error(`Download selesai (${name}), tetapi isi file tidak dapat dibaca (${diagnostics}).`);
 }
 
-function waitForDownload(timeoutMs = 60000) {
+function waitForDownload(timeoutMs = 60000, expectedFilename = () => null) {
   return new Promise((resolve, reject) => {
     if (!browserApi?.downloads) {
       return reject(new Error('Downloads API tidak tersedia'));
@@ -355,21 +355,21 @@ function waitForDownload(timeoutMs = 60000) {
     }, timeoutMs);
 
     function onCreated(item) {
-      // Tangkap hanya satu download baru; jangan mengganti id dengan event
-      // lain yang muncul setelah tombol report diklik.
       if (downloadId === null) downloadId = item.id;
     }
 
     function onChanged(delta) {
       if (delta.state?.current === 'complete') {
         const targetId = downloadId || delta.id;
-        cleanup();
         browserApi.downloads.search({ id: targetId }, items => {
-          if (items && items[0]) {
-            resolve(items[0]);
-          } else {
-            findLatestDownload().then(res => resolve(res || null));
-          }
+          const item = items && items[0];
+          if (!item) return;
+          const expected = expectedFilename();
+          const actual = String(item.filename || '').split(/[\\/]/).pop();
+          const matches = !expected || actual === expected || actual.startsWith(`${expected.replace(/\.csv$/i, '')}(`);
+          if (!matches) return;
+          cleanup();
+          resolve(item);
         });
       } else if (downloadId && delta.id === downloadId && delta.state?.current === 'interrupted') {
         cleanup();
@@ -500,7 +500,8 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
           throw new Error('Tab Tokopedia tidak merespon / content script belum siap.');
         }
 
-        const downloadPromise = waitForDownload(120000).catch(err => {
+        let expectedTokopediaFilename = '';
+        const downloadPromise = waitForDownload(120000, () => expectedTokopediaFilename).catch(err => {
           broadcastProgress(`Catatan download Tokopedia: ${err.message}`, 'skipped');
           return null;
         });
@@ -513,6 +514,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         if (!exportRes?.success) {
           throw new Error(exportRes?.error || 'Gagal trigger ekspor Tokopedia');
         }
+        expectedTokopediaFilename = exportRes.fileName || '';
 
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
