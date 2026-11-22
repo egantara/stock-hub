@@ -284,7 +284,9 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
   const downloadUrls = [...new Set([
     downloadInfo?.url,
     downloadInfo?.finalUrl
-  ].filter(url => url && !url.startsWith('file://')))];
+  ].filter(url => url && !url.startsWith('file://')))]
+    // Reject tiny metadata URLs before trying to fetch report content.
+    .filter(url => !/blob:|about:|chrome:|moz-extension:/i.test(url));
 
   // URL pada downloads API juga dicoba lewat tab Shopee; Firefox dapat
   // memberi URL CDN yang tidak terlihat sebagai href pada tombol.
@@ -354,20 +356,25 @@ function waitForDownload(timeoutMs = 60000, expectedFilename = () => null) {
       reject(new Error('Timeout menunggu file unduhan marketplace (60 detik)'));
     }, timeoutMs);
 
+    function matchesExpected(item) {
+      const expected = expectedFilename();
+      if (!expected) return true;
+      const actual = String(item?.filename || '').split(/[\\/]/).pop();
+      return actual === expected || actual.startsWith(`${expected.replace(/\.csv$/i, '')}(`);
+    }
+
     function onCreated(item) {
+      // Ignore downloads from older reports. The expected filename is filled
+      // after the export response returns, so matching happens on completion.
       if (downloadId === null) downloadId = item.id;
     }
 
     function onChanged(delta) {
       if (delta.state?.current === 'complete') {
-        const targetId = downloadId || delta.id;
-        browserApi.downloads.search({ id: targetId }, items => {
+        browserApi.downloads.search({ id: delta.id }, items => {
           const item = items && items[0];
-          if (!item) return;
-          const expected = expectedFilename();
-          const actual = String(item.filename || '').split(/[\\/]/).pop();
-          const matches = !expected || actual === expected || actual.startsWith(`${expected.replace(/\.csv$/i, '')}(`);
-          if (!matches) return;
+          if (!item || !matchesExpected(item)) return;
+          downloadId = delta.id;
           cleanup();
           resolve(item);
         });
