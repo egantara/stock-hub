@@ -326,20 +326,22 @@
     }, 90000, 'tombol Download di Laporan Terakhir');
 
     reportStep('Shopee: Mengunduh file pesanan...');
-    const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
+    const link = latestDownload.closest('a') ||
+      (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
+    const downloadUrl = link?.href || latestDownload.getAttribute('href') ||
+      latestDownload.getAttribute('data-href') || latestDownload.getAttribute('data-url');
     let fileBase64 = null;
-    let fileName = 'shopee-orders.xlsx';
+    let fileName = link?.getAttribute('download') || 'shopee-orders.xlsx';
 
-    if (link && link.href && !link.href.startsWith('javascript:')) {
+    if (downloadUrl && !downloadUrl.startsWith('javascript:') && !downloadUrl.startsWith('#')) {
       try {
-        const res = await fetch(link.href, { credentials: 'include' });
+        const res = await fetch(downloadUrl, { credentials: 'include' });
         if (res.ok) {
           const blob = await res.blob();
           fileBase64 = await blobToBase64(blob);
-          fileName = link.getAttribute('download') || 'shopee-orders.xlsx';
         }
       } catch (err) {
-        console.warn('Direct fetch Shopee failed, falling back to download listener:', err);
+        console.warn('Direct fetch Shopee failed; download listener fallback:', err);
       }
     }
 

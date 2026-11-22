@@ -243,6 +243,14 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
         }
       });
       if (file instanceof Blob) return file;
+      if (file && typeof file.arrayBuffer === 'function') {
+        return new Blob([await file.arrayBuffer()]);
+      }
+      if (file instanceof ArrayBuffer) return new Blob([file]);
+      if (file && ArrayBuffer.isView(file)) return new Blob([file.buffer]);
+      if (file && typeof file === 'object' && file.buffer instanceof ArrayBuffer) {
+        return new Blob([file.buffer]);
+      }
     } catch (err) {
       console.warn('Firefox downloads.getFile gagal:', err);
     }
