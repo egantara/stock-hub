@@ -220,7 +220,34 @@
       }
     }
 
+    const beforeResources = new Set(performance.getEntriesByType('resource').map(entry => entry.name));
     simulateClick(latestDownload);
+
+    // Tombol Download Tokopedia/TikTok sering berupa handler SPA tanpa href.
+    // Ambil response report baru dari halaman sebelum background memakai
+    // metadata download yang bisa menunjuk ke response yang salah.
+    if (!fileBase64) {
+      const started = Date.now();
+      while (!fileBase64 && Date.now() - started < 15000) {
+        await sleep(500);
+        const resources = performance.getEntriesByType('resource')
+          .map(entry => entry.name)
+          .filter(url => !beforeResources.has(url))
+          .filter(url => /export|download|report|order|xlsx|excel|file/i.test(url));
+        for (const url of resources.slice(-5)) {
+          try {
+            const res = await fetch(url, { credentials: 'include' });
+            const type = res.headers.get('content-type') || '';
+            if (res.ok && (type.includes('spreadsheet') || type.includes('octet-stream') || type.includes('csv') || url.includes('download'))) {
+              fileBase64 = await blobToBase64(await res.blob());
+              break;
+            }
+          } catch {
+            // Resource metadata lain; lanjutkan mencari report.
+          }
+        }
+      }
+    }
 
     return {
       success: true,
