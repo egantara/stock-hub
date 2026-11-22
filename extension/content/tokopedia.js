@@ -240,7 +240,7 @@
         !newest.control.hasAttribute('disabled') &&
         newest.control.getAttribute('aria-disabled') !== 'true';
       return enabled && /download|unduh/.test(text) ? newest.control : null;
-    }, 20000, 'Download report terbaru');
+    }, Infinity, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
