@@ -122,27 +122,13 @@
     }, 15000).catch(() => null);
 
     if (filterModal) {
-      // Time created membuka popover date picker terpisah. Klik field itu
-      // dulu, lalu cari preset pada seluruh DOM visible.
-      const findLast7 = () => [...document.querySelectorAll('button')]
+      // Date picker sudah terbuka setelah Filter dibuka. Jangan klik
+      // Time created karena klik itu menutup picker.
+      const quick7 = await waitFor(() => [...document.querySelectorAll('button')]
         .find(button => {
           const text = (button.textContent || '').trim().toLowerCase();
           return text === 'last 7 days' || text === '7 hari terakhir';
-        }) || null;
-
-      // Date picker mungkin sudah terbuka. Jangan klik Time created lagi:
-      // klik kedua menutup picker dan membuat preset tidak ditemukan.
-      let quick7 = findLast7();
-      if (!quick7) {
-        const timeCreatedCandidates = [...filterModal.querySelectorAll('span, button, [role="button"], div')]
-          .filter(isVisible)
-          .filter(el => ['time created', 'waktu pesanan'].includes((el.textContent || '').trim().toLowerCase()));
-        const timeCreated = timeCreatedCandidates[timeCreatedCandidates.length - 1];
-        if (!timeCreated) throw new Error('Field Time created tidak ditemukan pada Filter.');
-        simulateClick(timeCreated);
-        await sleep(1200);
-        quick7 = await waitFor(findLast7, 10000).catch(() => null);
-      }
+        }) || null, 10000).catch(() => null);
 
       if (!quick7) {
         throw new Error('Preset Last 7 days tidak ditemukan setelah Time created dibuka.');
