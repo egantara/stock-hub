@@ -287,7 +287,14 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
   }
 
   const name = downloadInfo?.filename || 'nama file tidak tersedia';
-  throw new Error(`Download selesai (${name}), tetapi URL file tidak dapat dibaca.`);
+  const diagnostics = [
+    `id=${downloadInfo?.id ?? '-'}`,
+    `state=${downloadInfo?.state ?? '-'}`,
+    `url=${downloadInfo?.url ? 'ada' : 'kosong'}`,
+    `finalUrl=${downloadInfo?.finalUrl ? 'ada' : 'kosong'}`,
+    `getFile=${typeof browserApi?.downloads?.getFile === 'function' ? 'ada' : 'tidak-tersedia'}`
+  ].join(', ');
+  throw new Error(`Download selesai (${name}), tetapi isi file tidak dapat dibaca (${diagnostics}).`);
 }
 
 function waitForDownload(timeoutMs = 60000) {
