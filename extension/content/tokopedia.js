@@ -208,54 +208,39 @@
       const panels = [...document.querySelectorAll('[role="dialog"], [class*="modal"], [class*="drawer"], [class*="popover"], body')]
         .filter(isVisible)
         .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
-      const reports = [];
-
       for (const panel of panels) {
-        // Export History is ordered newest-first. Use the first visible report,
-        // not a timestamp heuristic, and keep its action isolated to its row.
-        const filenameNodes = [...panel.querySelectorAll('*')]
+        // Export History is ordered newest-first. Lock onto the first report;
+        // if it is loading, return null so polling never falls to older rows.
+        const filenameNode = [...panel.querySelectorAll('*')]
           .filter(isVisible)
-          .filter(node => filenamePattern.test(node.textContent || ''))
-          .filter(node => !node.children.length);
-        const filenameNode = filenameNodes[0];
+          .filter(node => !node.children.length)
+          .find(node => filenamePattern.test(node.textContent || ''));
         if (!filenameNode) continue;
-        {
-          const match = (filenameNode.textContent || '').match(filenamePattern);
-          if (!match) continue;
 
-          let report = filenameNode;
-          let controls = [];
-          for (let depth = 0; report && depth < 15; depth += 1, report = report.parentElement) {
-            const reportNames = (report.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
-            // Stop at the smallest ancestor containing exactly this report.
-            // Never use a panel that also contains older report buttons.
-            if (reportNames.length === 0) continue;
-            controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
-              .filter(isVisible);
-            const hasAction = controls.some(control => {
-              const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim();
-              return /^(download|unduh)$/i.test(text) || /download|unduh/i.test(text);
-            });
-            if (hasAction) break;
-          }
-          const action = controls
-            .filter(control => {
-              const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
-              return /^(download|unduh)$/.test(text) || /download|unduh/.test(text);
-            })
-            .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
-          if (action) reports.push({ control: action, timestamp: match[1] });
+        let report = filenameNode;
+        let controls = [];
+        for (let depth = 0; report && depth < 15; depth += 1, report = report.parentElement) {
+          const names = (report.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
+          if (names.length !== 1) continue;
+          controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
+            .filter(isVisible);
+          break;
         }
+
+        const action = controls
+          .filter(control => {
+            const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
+            return /^(download|unduh)$/.test(text) || /download|unduh/.test(text);
+          })
+          .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
+        if (!action) return null;
+
+        const enabled = !action.disabled &&
+          !action.hasAttribute('disabled') &&
+          action.getAttribute('aria-disabled') !== 'true';
+        return enabled ? action : null;
       }
-
-      const newest = reports[0];
-      if (!newest) return null;
-
-      const text = `${newest.control.textContent || ''} ${newest.control.getAttribute('aria-label') || ''} ${newest.control.getAttribute('title') || ''}`.trim().toLowerCase();
-      const enabled = !newest.control.disabled &&
-        !newest.control.hasAttribute('disabled') &&
-        newest.control.getAttribute('aria-disabled') !== 'true';
-      return enabled && /download|unduh/.test(text) ? newest.control : null;
+      return null;
     }, Infinity, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
