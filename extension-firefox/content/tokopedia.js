@@ -278,7 +278,10 @@
     }
 
     const beforeResources = new Set(performance.getEntriesByType('resource').map(entry => entry.name));
-    simulateClick(latestDownload);
+    // The visible Download label may be a span/div. Click the nearest actual
+    // interactive ancestor so Tokopedia's handler receives the event.
+    const clickable = latestDownload.closest('button, a, [role="button"], [onclick]') || latestDownload;
+    simulateClick(clickable);
 
     // Tombol Download Tokopedia/TikTok sering berupa handler SPA tanpa href.
     // Ambil response report baru dari halaman sebelum background memakai
