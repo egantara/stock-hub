@@ -150,6 +150,28 @@
     if (cell && cell !== leaf) simulateClick(cell);
   }
 
+  function panelForMonth(panel, year, month) {
+    const text = (panel.innerText || '').toLowerCase();
+    const monthNames = [
+      'januari', 'februari', 'maret', 'april', 'mei', 'juni',
+      'juli', 'agustus', 'september', 'oktober', 'november', 'desember'
+    ];
+    const englishNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    return (text.includes(monthNames[month]) || text.includes(englishNames[month])) &&
+      text.includes(String(year));
+  }
+
+  function findPanelForDate(cal, year, month, fallback) {
+    const panels = [
+      cal.querySelector('.eds-daterange-picker-panel__body-left'),
+      cal.querySelector('.eds-daterange-picker-panel__body-right')
+    ].filter(Boolean);
+    return panels.find(panel => panelForMonth(panel, year, month)) || fallback;
+  }
+
   async function selectManualSevenDayRange(modal) {
     const now = new Date();
     const todayDay = now.getDate();
@@ -179,7 +201,10 @@
     const leftPanel = cal.querySelector('.eds-daterange-picker-panel__body-left') || cal;
     const rightPanel = cal.querySelector('.eds-daterange-picker-panel__body-right') || cal;
 
-    const startPanel = isStartInCurrentMonth ? rightPanel : leftPanel;
+    const startPanel = findPanelForDate(
+      cal, start.getFullYear(), start.getMonth(),
+      isStartInCurrentMonth ? rightPanel : leftPanel
+    );
 
     // Klik tanggal mulai
     reportStep(`Shopee: Memilih tanggal mulai (tgl ${startDay})...`);
@@ -200,9 +225,11 @@
     // Klik tanggal selesai. Shopee dapat merender tanggal akhir di panel kiri
     // atau menutup kalender setelah rentang selesai dipilih.
     reportStep(`Shopee: Memilih tanggal selesai (tgl ${todayDay})...`);
+    const endPanel = findPanelForDate(
+      calFresh, now.getFullYear(), now.getMonth(), rightPanelFresh
+    );
     const endMatch = await waitFor(() =>
-      findDayInEdsPanel(rightPanelFresh, todayDay) ||
-      findDayInEdsPanel(leftPanelFresh, todayDay), 15000
+      findDayInEdsPanel(endPanel, todayDay), 15000
     ).catch(() => null);
 
     if (endMatch) {
