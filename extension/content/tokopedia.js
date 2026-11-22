@@ -122,17 +122,26 @@
     }, 15000).catch(() => null);
 
     if (filterModal) {
-      // Tokopedia/TikTok menyediakan preset di sisi kiri date picker.
-      // Pilih preset ini; jangan mengisi From/To secara manual.
-      const quick7 = [...filterModal.querySelectorAll('button, [role="button"], span, div, li')]
+      // Time created membuka popover date picker terpisah. Klik field itu
+      // dulu, lalu cari preset pada seluruh DOM visible.
+      const timeCreated = findButtonByText('time created', { container: filterModal }) ||
+        findButtonByText('waktu pesanan', { container: filterModal });
+      if (timeCreated) {
+        simulateClick(timeCreated);
+        await sleep(700);
+      }
+
+      const quick7 = await waitFor(() => [...document.querySelectorAll(
+        'button, [role="button"], [role="option"], span, div, li'
+      )]
         .filter(isVisible)
         .find(el => {
           const text = (el.textContent || '').trim().toLowerCase();
           return text === 'last 7 days' || text === '7 hari terakhir';
-        });
+        }), 10000).catch(() => null);
 
       if (!quick7) {
-        throw new Error('Preset Last 7 days tidak ditemukan pada Time created.');
+        throw new Error('Preset Last 7 days tidak ditemukan setelah Time created dibuka.');
       }
 
       simulateClick(quick7);
