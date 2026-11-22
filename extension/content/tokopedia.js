@@ -79,7 +79,7 @@
     return fallbacks[0] || null;
   }
 
-  function waitFor(fn, timeout = 45000) {
+  function waitFor(fn, timeout = 45000, description = 'elemen') {
     return new Promise((resolve, reject) => {
       const started = Date.now();
       const tick = () => {
@@ -89,7 +89,7 @@
         } catch (err) {
           return reject(err);
         }
-        if (Date.now() - started >= timeout) return reject(new Error('Timeout menunggu elemen di Tokopedia.'));
+        if (Date.now() - started >= timeout) return reject(new Error(`Timeout menunggu ${description} di Tokopedia.`));
         setTimeout(tick, 500);
       };
       tick();
@@ -221,7 +221,7 @@
         if (button) return button;
       }
       return null;
-    }, 20000);
+    }, 20000, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
