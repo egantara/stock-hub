@@ -124,8 +124,10 @@
     if (filterModal) {
       // Time created membuka popover date picker terpisah. Klik field itu
       // dulu, lalu cari preset pada seluruh DOM visible.
-      const timeCreated = [...filterModal.querySelectorAll('span, button, [role="button"]')]
-        .find(el => ['time created', 'waktu pesanan'].includes((el.textContent || '').trim().toLowerCase()));
+      const timeCreatedCandidates = [...filterModal.querySelectorAll('span, button, [role="button"], div')]
+        .filter(isVisible)
+        .filter(el => ['time created', 'waktu pesanan'].includes((el.textContent || '').trim().toLowerCase()));
+      const timeCreated = timeCreatedCandidates[timeCreatedCandidates.length - 1];
       if (!timeCreated) {
         throw new Error('Field Time created tidak ditemukan pada Filter.');
       }
