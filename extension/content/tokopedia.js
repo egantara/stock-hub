@@ -205,8 +205,10 @@
         .filter(panel => /export history|riwayat ekspor|export orders/i.test(panel.innerText || ''));
       for (const panel of panels.sort((a, b) => b.innerText.length - a.innerText.length)) {
         const rows = [...panel.querySelectorAll('tr, [role="row"], [class*="row"], li')]
-          .filter(isVisible);
-        // Baris teratas adalah report yang baru dibuat. Tunggu tombolnya aktif.
+          .filter(isVisible)
+          .filter(row => /all\s+order|order.*\d{4}[-/]/i.test(row.innerText || ''));
+        // Abaikan header/container. Report terbaru berada di baris pertama
+        // yang benar-benar memiliki nama file/order.
         const newestRow = rows[0];
         if (!newestRow) continue;
         const button = [...newestRow.querySelectorAll('button, a, [role="button"]')]
