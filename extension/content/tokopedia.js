@@ -218,15 +218,18 @@
 
           let report = filenameNode;
           let controls = [];
-          for (let depth = 0; report && depth < 8; depth += 1, report = report.parentElement) {
-            controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title]')]
+          for (let depth = 0; report && depth < 15; depth += 1, report = report.parentElement) {
+            controls = [...report.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
               .filter(isVisible);
-            if (controls.length) break;
+            if (controls.some(control => /^(download|unduh)$/i.test((control.textContent || '').trim()) ||
+              /download|unduh/i.test(`${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`))) break;
           }
-          const action = controls.find(control => {
-            const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
-            return /download|unduh/.test(text) || control.querySelector('svg, [class*="loading"], [class*="spin"], [class*="loader"]');
-          });
+          const action = controls
+            .filter(control => {
+              const text = `${control.textContent || ''} ${control.getAttribute('aria-label') || ''} ${control.getAttribute('title') || ''}`.trim().toLowerCase();
+              return /download|unduh/.test(text);
+            })
+            .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
           if (action) reports.push({ control: action, timestamp: match[1] });
         }
       }
