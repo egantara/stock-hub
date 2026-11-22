@@ -206,18 +206,20 @@
       for (const panel of panels.sort((a, b) => b.innerText.length - a.innerText.length)) {
         const rows = [...panel.querySelectorAll('tr, [role="row"], [class*="row"], li')]
           .filter(isVisible);
-        const candidates = (rows.length ? rows : [panel]).flatMap(row =>
-          [...row.querySelectorAll('button, a, [role="button"]')].filter(el => {
+        // Baris teratas adalah report yang baru dibuat. Tunggu tombolnya aktif.
+        const newestRow = rows[0];
+        if (!newestRow) continue;
+        const button = [...newestRow.querySelectorAll('button, a, [role="button"]')]
+          .find(el => {
             const text = (el.textContent || '').trim().toLowerCase();
             return (text === 'download' || text === 'unduh') &&
               !el.disabled && !el.hasAttribute('disabled') &&
               el.getAttribute('aria-disabled') !== 'true';
-          })
-        );
-        if (candidates[0]) return candidates[0];
+          });
+        if (button) return button;
       }
       return null;
-    }, 90000);
+    }, 30000);
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));

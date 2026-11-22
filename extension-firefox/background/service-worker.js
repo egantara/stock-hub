@@ -511,7 +511,8 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
         const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes);
         broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
-        const uploadRes = await client.uploadOrderFile(fileBlob, 'tiktok-order.xlsx');
+        const fileName = exportRes.fileName || downloadInfo?.filename?.split(/[\\/]/).pop() || 'tiktok-orders.csv';
+        const uploadRes = await client.uploadOrderFile(fileBlob, fileName);
         if (!uploadRes?.ok) {
           throw new Error(`Upload pesanan Tokopedia ke Stock-Hub gagal: ${uploadRes?.error}`);
         }
