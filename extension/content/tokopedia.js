@@ -27,6 +27,15 @@
     el.click();
   }
 
+  async function isReportBlob(blob) {
+    const type = blob.type || '';
+    if (type.includes('html') || type.includes('json')) return false;
+    const bytes = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+    const zip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+    const csv = type.includes('csv') || type.includes('text');
+    return zip || csv;
+  }
+
   function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -212,8 +221,10 @@
         const res = await fetch(link.href, { credentials: 'include' });
         if (res.ok) {
           const blob = await res.blob();
-          fileBase64 = await blobToBase64(blob);
-          fileName = link.getAttribute('download') || 'tiktok-orders.xlsx';
+          if (await isReportBlob(blob)) {
+            fileBase64 = await blobToBase64(blob);
+            fileName = link.getAttribute('download') || 'tiktok-orders.xlsx';
+          }
         }
       } catch (err) {
         console.warn('Direct fetch Tokopedia failed, falling back to download listener:', err);
@@ -238,9 +249,12 @@
           try {
             const res = await fetch(url, { credentials: 'include' });
             const type = res.headers.get('content-type') || '';
-            if (res.ok && (type.includes('spreadsheet') || type.includes('octet-stream') || type.includes('csv') || url.includes('download'))) {
-              fileBase64 = await blobToBase64(await res.blob());
-              break;
+            if (res.ok) {
+              const blob = await res.blob();
+              if (await isReportBlob(blob)) {
+                fileBase64 = await blobToBase64(blob);
+                break;
+              }
             }
           } catch {
             // Resource metadata lain; lanjutkan mencari report.
