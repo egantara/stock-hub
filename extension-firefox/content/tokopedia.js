@@ -127,7 +127,7 @@
       const findLast7 = () => [...document.querySelectorAll('button')]
         .find(button => {
           const text = (button.textContent || '').trim().toLowerCase();
-          return (text === 'last 7 days' || text === '7 hari terakhir') && isVisible(button);
+          return text === 'last 7 days' || text === '7 hari terakhir';
         }) || null;
 
       // Date picker mungkin sudah terbuka. Jangan klik Time created lagi:
