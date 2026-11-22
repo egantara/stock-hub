@@ -265,8 +265,13 @@
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
-      return findClickableByText('export', { container: modal }) ||
-        findClickableByText('ekspor', { container: modal });
+      const visibleDialogs = [...document.querySelectorAll('[role="dialog"], .shopee-modal, .eds-modal')]
+        .filter(isVisible);
+      const currentModal = visibleDialogs.find(el =>
+        (el.innerText || '').toLowerCase().includes('download semua pesanan')
+      ) || visibleDialogs[visibleDialogs.length - 1] || modal;
+      return findClickableByText('export', { container: currentModal }) ||
+        findClickableByText('ekspor', { container: currentModal });
     }, 15000, 'tombol konfirmasi Export di modal');
     simulateClick(confirmExportBtn);
     await sleep(4000);
