@@ -205,12 +205,12 @@ function findLatestDownload() {
   });
 }
 
-async function obtainFileBlob(tabId, downloadInfo, exportRes) {
-  const sourceName = exportRes?.fileName || downloadInfo?.filename || '';
+async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload = false } = {}) {
+  const sourceName = downloadInfo?.filename || exportRes?.fileName || '';
   const mimeType = /\.csv$/i.test(sourceName)
     ? 'text/csv'
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  if (exportRes?.fileBase64) {
+  if (exportRes?.fileBase64 && !preferDownload) {
     return base64ToBlob(exportRes.fileBase64, mimeType);
   }
 
@@ -292,7 +292,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
         action: 'FETCH_BLOB_OR_URL',
         url
       }, 30000);
-      if (fetchRes?.success && fetchRes.base64) return base64ToBlob(fetchRes.base64);
+      if (fetchRes?.success && fetchRes.base64) return base64ToBlob(fetchRes.base64, mimeType);
     } catch (err) {
       console.warn('Fetch URL download dari tab gagal:', err);
     }
@@ -306,7 +306,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
           url
         }, 30000);
         if (fetchRes?.success && fetchRes.base64) {
-          return base64ToBlob(fetchRes.base64);
+          return base64ToBlob(fetchRes.base64, mimeType);
         }
       } catch (err) {
         console.warn('Tab fetch fallback gagal:', err);
@@ -513,7 +513,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-        const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes);
+        const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
         broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
         const fileName = exportRes.fileName || downloadInfo?.filename?.split(/[\\/]/).pop() || 'tiktok-orders.csv';
         const uploadRes = await client.uploadOrderFile(fileBlob, fileName);
