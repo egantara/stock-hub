@@ -231,10 +231,11 @@
         let controls = [];
         for (let depth = 0; row && depth < 15; depth += 1, row = row.parentElement) {
           const names = (row.innerText || '').match(new RegExp(filenamePattern.source, 'gi')) || [];
-          if (names.length !== 1) continue;
+          if (!names.length) continue;
           controls = [...row.querySelectorAll('button, a, [role="button"], [aria-label], [title], [onclick], div, span')]
             .filter(isVisible);
-          break;
+          const hasDownload = controls.some(control => /download|unduh/i.test((control.textContent || '').trim()));
+          if (hasDownload || depth >= 3) break;
         }
         const action = controls
           .filter(control => /download|unduh/i.test((control.textContent || '').trim()))
