@@ -351,6 +351,7 @@
       success: true,
       fileBase64,
       fileName,
+      fileUrl: downloadUrl || null,
       message: 'File pesanan Shopee berhasil diekspor.'
     };
   }

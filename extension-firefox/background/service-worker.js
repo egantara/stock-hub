@@ -210,6 +210,24 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes) {
     return base64ToBlob(exportRes.fileBase64);
   }
 
+  // Gunakan URL yang ditemukan content script sebelum klik Download.
+  // Firefox boleh memberi URL pada downloads API tetapi tidak memberi API
+  // untuk membaca path lokal hasil download.
+  const exportUrl = exportRes?.fileUrl;
+  if (exportUrl && tabId) {
+    try {
+      const fetchRes = await sendMessageToTab(tabId, {
+        action: 'FETCH_BLOB_OR_URL',
+        url: exportUrl
+      }, 30000);
+      if (fetchRes?.success && fetchRes.base64) {
+        return base64ToBlob(fetchRes.base64);
+      }
+    } catch (err) {
+      console.warn('Fetch URL dari hasil export gagal:', err);
+    }
+  }
+
   // Jika downloadInfo null, cari dari unduhan terbaru di browser
   if (!downloadInfo) {
     downloadInfo = await findLatestDownload();
