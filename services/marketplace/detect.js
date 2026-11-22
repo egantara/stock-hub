@@ -98,6 +98,10 @@ if (
   console.log(
   "FIRST ROW KEYS:",
   Object.keys(firstRow)
-);
+  );
+  console.log(
+    "ALL ROW KEYS:",
+    rowKeys.map(keys => [...keys])
+  );
   return null;
 }
