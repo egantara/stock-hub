@@ -153,11 +153,28 @@ async function waitForTabReady(tabId, maxAttempts = 15) {
       });
       if (ping?.pong) return true;
     } catch {
-      // Belum siap
+      // Tab masih memuat atau content script sedang dipasang ulang.
     }
     await new Promise(r => setTimeout(r, 1000));
   }
   return false;
+}
+
+async function sendMessageToReadyTab(tabId, message, attempts = 3) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const ready = await waitForTabReady(tabId, 5);
+      if (!ready) throw new Error('Content script Shopee belum siap');
+      return await sendMessageToTab(tabId, message);
+    } catch (err) {
+      lastError = err;
+      if (attempt + 1 < attempts) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
+  }
+  throw lastError || new Error('Tidak dapat menghubungi content script Shopee');
 }
 
 function base64ToBlob(base64, mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
@@ -332,7 +349,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         });
 
         broadcastProgress('Meminta Shopee mengekspor pesanan 7 hari...', 'running', 22, 'Shopee: Ekspor');
-        const exportRes = await sendMessageToTab(shopeeTab.id, {
+        const exportRes = await sendMessageToReadyTab(shopeeTab.id, {
           action: 'SHOPEE_EXPORT_ORDERS'
         });
 
