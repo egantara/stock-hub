@@ -40,6 +40,13 @@
     });
   }
 
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' &&
+      (el.offsetWidth > 0 || el.offsetHeight > 0);
+  }
+
   function findButtonByText(targetText, { container = document, exclude = [] } = {}) {
     const cleanTarget = targetText.trim().toLowerCase();
     const buttons = [...container.querySelectorAll('button, [role="button"], a, input[type="button"]')];
@@ -115,25 +122,21 @@
     }, 15000).catch(() => null);
 
     if (filterModal) {
-      const quick7 = findButtonByText('7 hari terakhir', { container: filterModal }) ||
-        findButtonByText('7 hari', { container: filterModal }) ||
-        findButtonByText('last 7 days', { container: filterModal });
+      // Tokopedia/TikTok menyediakan preset di sisi kiri date picker.
+      // Pilih preset ini; jangan mengisi From/To secara manual.
+      const quick7 = [...filterModal.querySelectorAll('button, [role="button"], span, div, li')]
+        .filter(isVisible)
+        .find(el => {
+          const text = (el.textContent || '').trim().toLowerCase();
+          return text === 'last 7 days' || text === '7 hari terakhir';
+        });
 
-      if (quick7) {
-        simulateClick(quick7);
-        await sleep(500);
-      } else {
-        const inputs = filterModal.querySelectorAll('input');
-        if (inputs.length >= 2) {
-          const now = new Date();
-          const start = new Date(now);
-          start.setDate(start.getDate() - 6);
-          const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          setNativeValue(inputs[0], fmt(start));
-          setNativeValue(inputs[1], fmt(now));
-          await sleep(500);
-        }
+      if (!quick7) {
+        throw new Error('Preset Last 7 days tidak ditemukan pada Time created.');
       }
+
+      simulateClick(quick7);
+      await sleep(1000);
 
       // Klik Terapkan / Apply pada filter
       const applyBtn = findButtonByText('terapkan', { container: filterModal }) ||
