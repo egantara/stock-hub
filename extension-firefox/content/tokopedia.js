@@ -237,7 +237,7 @@
           break;
         }
         const action = controls
-          .filter(control => /^(download|unduh)$/i.test((control.textContent || '').trim()))
+          .filter(control => /download|unduh/i.test((control.textContent || '').trim()))
           .sort((a, b) => (a.textContent || '').trim().length - (b.textContent || '').trim().length)[0];
         if (!action) return null;
         return !action.disabled && !action.hasAttribute('disabled') && action.getAttribute('aria-disabled') !== 'true'
