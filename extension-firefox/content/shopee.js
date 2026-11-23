@@ -180,7 +180,6 @@
     // Langsung klik kolom input di bawah Periode Tanggal sesuai instruksi
     reportStep('Shopee: Mengklik kolom input di bawah Periode Tanggal...');
     clickDateRangeInput(modal);
-    await sleep(2000);
 
     // Tunggu panel kalender EDS terbuka dan visible
     reportStep('Shopee: Menunggu kalender terbuka...');
@@ -191,8 +190,6 @@
     }, 20000).catch(() => {
       throw new Error('Panel kalender EDS tidak muncul setelah kolom input diklik.');
     });
-
-    await sleep(1500);
 
     const leftPanel = cal.querySelector('.eds-daterange-picker-panel__body-left') || cal;
     const rightPanel = cal.querySelector('.eds-daterange-picker-panel__body-right') || cal;
@@ -210,13 +207,11 @@
       throw new Error(`Angka tanggal mulai (${startDay}) tidak ditemukan di panel kalender.`);
     });
     clickDayTarget(startMatch);
-    await sleep(2500);
 
     // Kalender render ulang: segarkan referensi panel
     reportStep('Shopee: Menunggu kalender diperbarui...');
     const calFresh = document.querySelector('.eds-daterange-picker-panel') ||
       (modal && modal.querySelector('.eds-daterange-picker-panel')) || cal;
-    await sleep(1000);
 
     // Shopee menggambar ulang panel setelah tanggal mulai dipilih.
     // Ambil kalender dan panel terbaru setiap kali polling.
@@ -235,7 +230,6 @@
 
     if (endMatch) {
       clickDayTarget(endMatch);
-      await sleep(2500);
     } else {
       // Kalender menutup setelah rentang diterima. Lanjutkan ke Export.
       reportStep(`Shopee: Rentang tanggal ${startDay}-${todayDay} diterima.`);
@@ -250,18 +244,15 @@
       return findClickableByText('export') || findClickableByText('ekspor');
     }, 25000, 'tombol Export awal');
     simulateClick(exportButton);
-    await sleep(2000);
 
     reportStep('Shopee: Membuka modal Download Semua Pesanan...');
     const modal = await waitFor(() => {
       const candidates = [...document.querySelectorAll('[role="dialog"], .shopee-modal, div')];
       return candidates.find(el => (el.innerText || '').toLowerCase().includes('download semua pesanan'));
     }, 25000, 'modal Download Semua Pesanan');
-    await sleep(1500);
 
     reportStep('Shopee: Mengatur tanggal di kalender...');
     await selectManualSevenDayRange(modal);
-    await sleep(2000);
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
