@@ -92,7 +92,7 @@ export function createProcessedRow({
 
     String(
       sku || ""
-    ).trim(),
+    ).trim() ? `'${String(sku || "").trim()}` : "",
 
     String(
       marketplace || ""

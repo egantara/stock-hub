@@ -8,6 +8,11 @@ import {
 }
 from "./datetime.js";
 
+function asSheetText(value) {
+  const text = String(value ?? "").trim();
+  return text ? `'${text}` : "";
+}
+
 export function createLogRow({
 
   command,
@@ -34,7 +39,7 @@ export function createLogRow({
 
     command,
 
-    sku,
+    asSheetText(sku),
 
     qty,
 
