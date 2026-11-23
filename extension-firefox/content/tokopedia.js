@@ -17,6 +17,41 @@
     }).catch(() => {});
   }
 
+  function installReportCapture() {
+    let resolveCapture;
+    const captured = new Promise(resolve => { resolveCapture = resolve; });
+    const onMessage = event => {
+      if (event.source !== window || event.data?.source !== 'stockhub-tokopedia-report') return;
+      window.removeEventListener('message', onMessage);
+      resolveCapture(event.data);
+    };
+    window.addEventListener('message', onMessage);
+    const script = document.createElement('script');
+    script.textContent = `(() => {
+      const emit = async (response, url) => {
+        try {
+          const clone = response.clone();
+          const blob = await clone.blob();
+          if (blob.size < 100) return;
+          const text = await blob.slice(0, 65536).text();
+          if (!/(^|[;,\\t])\\s*Order ID\\s*(?:[;,\\t]|$)/im.test(text)) return;
+          const reader = new FileReader();
+          reader.onloadend = () => window.postMessage({ source: 'stockhub-tokopedia-report', base64: reader.result.split(',')[1], url }, '*');
+          reader.readAsDataURL(blob);
+        } catch {}
+      };
+      const originalFetch = window.fetch;
+      window.fetch = async (...args) => { const response = await originalFetch(...args); emit(response, String(args[0])); return response; };
+      const open = XMLHttpRequest.prototype.open;
+      const send = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function(method, url) { this.__stockhubUrl = url; return open.apply(this, arguments); };
+      XMLHttpRequest.prototype.send = function() { this.addEventListener('load', () => { try { emit(new Response(this.response), this.__stockhubUrl); } catch {} }); return send.apply(this, arguments); };
+    })();`;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+    return captured;
+  }
+
   function simulateClick(el) {
     if (!el) return;
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
@@ -247,6 +282,7 @@
     }, Infinity, 'Download report terbaru');
 
     reportStep('Tokopedia: Mengunduh file pesanan...');
+    const reportCapture = installReportCapture();
     const link = latestDownload.closest('a') || (latestDownload.tagName === 'A' ? latestDownload : latestDownload.querySelector('a'));
     let fileBase64 = null;
     let fileName = 'tiktok-orders.csv';
@@ -288,6 +324,14 @@
     // Tombol Download Tokopedia/TikTok sering berupa handler SPA tanpa href.
     // Ambil response report baru dari halaman sebelum background memakai
     // metadata download yang bisa menunjuk ke response yang salah.
+    if (!fileBase64) {
+      const captured = await Promise.race([reportCapture, sleep(15000).then(() => null)]);
+      if (captured?.base64) {
+        fileBase64 = captured.base64;
+        fileName = fileName.replace(/\.csv$/i, '.csv');
+      }
+    }
+
     if (!fileBase64) {
       const started = Date.now();
       while (!fileBase64 && Date.now() - started < 15000) {
