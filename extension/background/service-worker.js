@@ -177,6 +177,16 @@ async function sendMessageToReadyTab(tabId, message, attempts = 3) {
   throw lastError || new Error('Tidak dapat menghubungi content script Shopee');
 }
 
+async function isValidOrderBlob(blob, filename = '') {
+  if (!blob || blob.size < 100) return false;
+  if (/\.csv$/i.test(filename) || (blob.type || '').includes('csv')) {
+    const sample = await blob.slice(0, 65536).text();
+    return /(^|[;,\t])\s*Order ID\s*(?:[;,\t]|$)/im.test(sample);
+  }
+  const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  return head[0] === 0x50 && head[1] === 0x4b;
+}
+
 function base64ToBlob(base64, mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
   const byteChars = atob(base64);
   const byteNumbers = new Uint8Array(byteChars.length);
@@ -214,7 +224,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
     const reportBlob = base64ToBlob(exportRes.fileBase64, mimeType);
     // Tokopedia may return a tiny SPA/metadata response through the page.
     // Never prefer it over the real report download.
-    if (reportBlob.size >= 100) return reportBlob;
+    if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
   }
 
   // Gunakan URL yang ditemukan content script sebelum klik Download.
@@ -229,7 +239,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
       }, 30000);
       if (fetchRes?.success && fetchRes.base64) {
         const reportBlob = base64ToBlob(fetchRes.base64, mimeType);
-        if (reportBlob.size >= 100) return reportBlob;
+        if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
       }
     } catch (err) {
       console.warn('Fetch URL dari hasil export gagal:', err);
@@ -298,7 +308,10 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
         action: 'FETCH_BLOB_OR_URL',
         url
       }, 30000);
-      if (fetchRes?.success && fetchRes.base64) return base64ToBlob(fetchRes.base64, mimeType);
+      if (fetchRes?.success && fetchRes.base64) {
+        const reportBlob = base64ToBlob(fetchRes.base64, mimeType);
+        if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
+      }
     } catch (err) {
       console.warn('Fetch URL download dari tab gagal:', err);
     }
@@ -313,7 +326,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
         }, 30000);
         if (fetchRes?.success && fetchRes.base64) {
           const reportBlob = base64ToBlob(fetchRes.base64, mimeType);
-          if (reportBlob.size >= 100) return reportBlob;
+          if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
         }
       } catch (err) {
         console.warn('Tab fetch fallback gagal:', err);
@@ -324,7 +337,7 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
       const res = await fetch(url);
       if (res.ok) {
         const reportBlob = await res.blob();
-        if (reportBlob.size >= 100) return reportBlob;
+        if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
       }
     } catch (err) {
       console.warn('Background fetch fallback gagal:', err);
