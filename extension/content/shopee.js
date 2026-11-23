@@ -265,19 +265,26 @@
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
-      // Targetkan kontrol tombol langsung; jangan mengambil div/span
-      // pembungkus yang hanya mewarisi teks Export.
-      const controls = [...modal.querySelectorAll('button, [role="button"], a')]
-        .filter(isVisible)
-        .filter(el => {
-          const text = (el.textContent || '').trim().toLowerCase();
-          return (text === 'export' || text === 'ekspor') &&
-            !el.disabled &&
-            !el.hasAttribute('disabled') &&
-            el.getAttribute('aria-disabled') !== 'true';
-        });
-      return controls[controls.length - 1] || null;
-    }, 15000, 'tombol konfirmasi Export di popup Download Semua Pesanan');
+      // Shopee dapat mengganti node modal atau merender label tombol sebagai
+      // teks bersarang/aria-label. Cari kontrol aktif pada modal terbaru,
+      // tanpa mengambil div/span pembungkus sebagai tombol.
+      const containers = [modal, ...[...document.querySelectorAll('[role="dialog"], .shopee-modal, .eds-modal')]
+        .filter(candidate => candidate !== modal && isVisible(candidate))];
+      for (const container of containers) {
+        const controls = [...container.querySelectorAll('button, [role="button"], a')]
+          .filter(isVisible)
+          .filter(el => {
+            const label = [el.textContent, el.getAttribute('aria-label'), el.getAttribute('title')]
+              .filter(Boolean).join(' ').trim().toLowerCase();
+            return /^(export|ekspor)(\s+pesanan)?$/.test(label) &&
+              !el.disabled &&
+              !el.hasAttribute('disabled') &&
+              el.getAttribute('aria-disabled') !== 'true';
+          });
+        if (controls.length) return controls[controls.length - 1];
+      }
+      return null;
+    }, 30000, 'tombol konfirmasi Export di popup Download Semua Pesanan');
     simulateClick(confirmExportBtn);
     await sleep(4000);
 
