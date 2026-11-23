@@ -32,7 +32,7 @@ function writeMessage(value) {
   process.stdout.write(Buffer.concat([header, body]));
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+export function startNativeHost() {
 let input = Buffer.alloc(0);
 process.stdin.on('data', chunk => {
   input = Buffer.concat([input, chunk]);
@@ -54,3 +54,4 @@ process.stdin.on('data', chunk => {
   }
 });
 }
+

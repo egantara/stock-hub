@@ -2,6 +2,8 @@ $ErrorActionPreference = 'Stop'
 $hostName = 'com.stockhub.tokopedia'
 $node = (Get-Command node -ErrorAction Stop).Source
 $helper = (Resolve-Path (Join-Path $PSScriptRoot 'tokopedia-file-helper.js')).Path
+$exePath = Join-Path $PSScriptRoot 'dist\tokopedia-file-helper.exe'
+if (-not (Test-Path $exePath)) { throw "Executable belum dibuat. Jalankan: .\native-host\build-native-host.ps1" }
 $manifestDir = Join-Path $env:APPDATA 'Mozilla\NativeMessagingHosts'
 New-Item -ItemType Directory -Force -Path $manifestDir | Out-Null
 $manifestPath = Join-Path $manifestDir "$hostName.json"
@@ -12,8 +14,7 @@ $registryPaths = @(
 $manifest = [ordered]@{
   name = $hostName
   description = 'Stock-Hub Tokopedia report file reader'
-  path = $node
-  args = @($helper)
+  path = $exePath
   type = 'stdio'
   allowed_extensions = @('stock-hub-sync@extension.local')
 }

@@ -1,6 +1,14 @@
 # Stock-Hub Tokopedia Native Helper
 
-Install once in PowerShell:
+Build and install once in PowerShell:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\native-host\build-native-host.ps1
+.\native-host\install-firefox.ps1
+```
+
+Install only:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass

@@ -1,0 +1,8 @@
+{
+  "main": "native-host/tokopedia-file-helper-entry.cjs",
+  "output": "native-host/dist/tokopedia-file-helper.blob",
+  "disableExperimentalSEAWarning": true,
+  "useSnapshot": false,
+  "useCodeCache": false,
+  "sentinelFuse": "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2"
+}
