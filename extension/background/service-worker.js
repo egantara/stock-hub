@@ -187,6 +187,18 @@ async function isValidOrderBlob(blob, filename = '') {
   return head[0] === 0x50 && head[1] === 0x4b;
 }
 
+async function readFileFromNative(fileName, mimeType, validationName) {
+  if (!fileName) throw new Error('Nama file marketplace tidak tersedia.');
+  const response = await browserApi.runtime.sendNativeMessage('com.stockhub.tokopedia', {
+    action: 'read-download',
+    fileName: String(fileName).split(/[\\/\\\\]/).pop()
+  });
+  if (!response?.ok || !response.base64) throw new Error(response?.error || 'Native helper tidak mengembalikan file.');
+  const blob = base64ToBlob(response.base64, mimeType);
+  if (!await isValidOrderBlob(blob, validationName || fileName)) throw new Error('Native helper mengembalikan file tidak valid.');
+  return { blob, fileName: response.fileName || fileName };
+}
+
 async function readTokopediaFileFromNative(fileName) {
   if (!fileName) throw new Error('Nama file Tokopedia tidak tersedia.');
   const response = await browserApi.runtime.sendNativeMessage('com.stockhub.tokopedia', {
@@ -483,7 +495,18 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
         broadcastProgress('Menunggu file pesanan Shopee...', 'running', 28, 'Shopee: Unduh');
         const downloadInfo = await downloadPromise;
-        const fileBlob = await obtainFileBlob(shopeeTab.id, downloadInfo, exportRes);
+        let fileBlob;
+        try {
+          fileBlob = await obtainFileBlob(shopeeTab.id, downloadInfo, exportRes);
+        } catch (error) {
+          const downloadedName = downloadInfo?.filename?.split(/[\\/]/).pop() || exportRes.fileName || '';
+          const nativeFile = await readFileFromNative(
+            downloadedName,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            downloadedName
+          );
+          fileBlob = nativeFile.blob;
+        }
         broadcastProgress('File pesanan Shopee diterima. Mengunggah ke Stock-Hub...', 'running', 35, 'Shopee: Proses Stok');
         const uploadRes = await client.uploadOrderFile(fileBlob, 'shopee-order.xlsx');
         if (!uploadRes?.ok) {

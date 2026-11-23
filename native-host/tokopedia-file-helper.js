@@ -9,6 +9,10 @@ export function validateCsv(buffer) {
   return /(^|[;,\t])\s*Order ID\s*(?:[;,\t]|$)/im.test(sample);
 }
 
+export function validateXlsx(buffer) {
+  return Buffer.isBuffer(buffer) && buffer.length >= 100 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+}
+
 export function resolveDownloadPath(downloadsDir, fileName) {
   if (typeof fileName !== 'string' || !fileName.toLowerCase().endsWith('.csv') || /[\\/]/.test(fileName)) {
     throw new Error('Nama file report tidak valid.');

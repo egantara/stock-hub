@@ -2,9 +2,12 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-function valid(buffer) {
+function validCsv(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 100) return false;
   return /(^|[;,\t])\s*Order ID\s*(?:[;,\t]|$)/im.test(buffer.subarray(0, 65536).toString('utf8'));
+}
+function validXlsx(buffer) {
+  return Buffer.isBuffer(buffer) && buffer.length >= 100 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
 }
 function safePath(root, name) {
   if (typeof name !== 'string' || !name.toLowerCase().endsWith('.csv') || /[\\/]/.test(name)) throw new Error('Nama file report tidak valid.');
@@ -26,7 +29,8 @@ process.stdin.on('data', chunk => {
       if (message.action !== 'read-download') throw new Error('Action tidak didukung.');
       const filePath = safePath(process.env.STOCKHUB_DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads'), message.fileName);
       const buffer = fs.readFileSync(filePath);
-      if (!valid(buffer)) throw new Error('Report CSV valid tidak ditemukan di Downloads.');
+      const valid = /\.xlsx$/i.test(message.fileName) ? validXlsx(buffer) : validCsv(buffer);
+      if (!valid) throw new Error('Report file valid tidak ditemukan di Downloads.');
       respond({ ok: true, fileName: path.basename(filePath), base64: buffer.toString('base64') });
     } catch (error) { respond({ ok: false, error: error.message }); }
   }
