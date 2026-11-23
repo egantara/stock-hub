@@ -299,16 +299,21 @@ function formatTime(value) {
   return String(value || "").trim();
 }
 
+function displayMarketplace(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return normalized === "TOKOPEDIA" ? "TIKTOK" : normalized;
+}
+
 function normalizeActivityRow(row) {
   if (row.TYPE === "UPLOAD" || row.TYPE === "DOWNLOAD") {
     const label = row.TYPE === "UPLOAD"
-      ? `UPLOAD ${String(row.FILE_TYPE || "").toUpperCase()}`
-      : `DOWNLOAD ${String(row.MARKETPLACE || "").toUpperCase()}`;
+      ? `UPLOAD ORDER ${displayMarketplace(row.MARKETPLACE)}`
+      : `DOWNLOAD ${displayMarketplace(row.MARKETPLACE)}`;
     return {
       command: label,
       sku: "",
       qty: "",
-      marketplace: row.MARKETPLACE || "",
+      marketplace: displayMarketplace(row.MARKETPLACE),
       user: row.USER || "",
       time: formatTime(row.TIMESTAMP || ""),
       activityType: row.TYPE,
@@ -330,6 +335,15 @@ function normalizeActivityRow(row) {
 
 function groupActivities(logs, fileLogs = []) {
   const groups = new Map();
+  const orderItemsByMarketplace = new Map();
+
+  for (const row of logs) {
+    if (row.COMMAND !== "SALES" || !row.SKU) continue;
+    const marketplace = displayMarketplace(row.MARKETPLACE);
+    const items = orderItemsByMarketplace.get(marketplace) || [];
+    items.push({ sku: row.SKU, qty: row.QTY || "" });
+    orderItemsByMarketplace.set(marketplace, items);
+  }
 
   const allRows = [
     ...logs.map(row => ({ _source: "LOG", ...row })),
@@ -346,6 +360,12 @@ function groupActivities(logs, fileLogs = []) {
     }
 
     group.count += 1;
+
+    if (activity.activityType === "UPLOAD" && activity.command.startsWith("UPLOAD ORDER")) {
+      const marketplace = displayMarketplace(activity.marketplace);
+      group.items = orderItemsByMarketplace.get(marketplace) || [];
+      group.count = group.items.length;
+    }
 
     if (activity.sku) {
       group.items.push({

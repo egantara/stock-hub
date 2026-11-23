@@ -1942,9 +1942,9 @@ function toggleTheme() {
           const countLabel = isFileActivity
             ? (item.status === "failed" ? "Failed" : "Success")
             : `${item.count || 0} items processed`;
-          const detail = showDetails && item.items?.length ? `
+          const detail = (showDetails || isFileActivity) && item.items?.length ? `
             <details class="activity-detail">
-              <summary>View ${item.items.length} processed items</summary>
+              <summary>View ${item.items.length} order details</summary>
               <div class="activity-items">${item.items.map(detailItem => `
                 <div class="activity-item">
                   <span>${escapeHtml(detailItem.sku || "-")}</span>
