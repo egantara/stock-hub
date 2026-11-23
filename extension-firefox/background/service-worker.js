@@ -187,6 +187,20 @@ async function isValidOrderBlob(blob, filename = '') {
   return head[0] === 0x50 && head[1] === 0x4b;
 }
 
+async function readTokopediaFileFromNative(fileName) {
+  if (!fileName) throw new Error('Nama file Tokopedia tidak tersedia.');
+  const response = await browserApi.runtime.sendNativeMessage('com.stockhub.tokopedia', {
+    action: 'read-download',
+    fileName: String(fileName).split(/[\\/]/).pop()
+  });
+  if (!response?.ok || !response.base64) throw new Error(response?.error || 'Native helper tidak mengembalikan file Tokopedia.');
+  const blob = base64ToBlob(response.base64, 'text/csv');
+  if (!await isValidOrderBlob(blob, response.fileName || fileName)) {
+    throw new Error('Native helper mengembalikan CSV Tokopedia tidak valid.');
+  }
+  return { blob, fileName: response.fileName || fileName };
+}
+
 function base64ToBlob(base64, mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
   const byteChars = atob(base64);
   const byteNumbers = new Uint8Array(byteChars.length);
@@ -540,12 +554,11 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
         const downloadInfo = await downloadPromise;
 
-          const fileBlob = await obtainFileBlob(tokpedTab.id, downloadInfo, exportRes, { preferDownload: true });
-        if (fileBlob.size < 100) {
-          throw new Error(`File Tokopedia terlalu kecil (${fileBlob.size} bytes), download report tidak valid.`);
-        }
+          const downloadedName = downloadInfo?.filename?.split(/[\\/]/).pop() || exportRes.fileName || '';
+        const nativeFile = await readTokopediaFileFromNative(downloadedName);
+        const fileBlob = nativeFile.blob;
         broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
-        const fileName = exportRes.fileName || downloadInfo?.filename?.split(/[\\/]/).pop() || 'tiktok-orders.csv';
+        const fileName = nativeFile.fileName;
         const fileHead = new Uint8Array(await fileBlob.slice(0, 32).arrayBuffer());
         console.info('TOKOPEDIA UPLOAD SOURCE:', fileName, 'BYTES:', fileBlob.size, 'HEAD:', [...fileHead].map(byte => byte.toString(16).padStart(2, '0')).join(''));
         const uploadRes = await client.uploadOrderFile(fileBlob, fileName);

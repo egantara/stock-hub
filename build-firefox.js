@@ -37,6 +37,7 @@ const firefoxManifest = {
     "<all_urls>",
     "storage",
     "downloads",
+    "nativeMessaging",
     "tabs",
     "https://seller.shopee.co.id/*",
     "https://seller-id.tokopedia.com/*",
