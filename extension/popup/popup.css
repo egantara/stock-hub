@@ -60,6 +60,7 @@ input[type="url"], input[type="text"], input[type="password"] {
 }
 
 input::placeholder { color: #a1a1aa; }
+.field-hint { margin-top: 4px; color: #71717a; font-size: 11px; }
 input:focus-visible { outline: 2px solid #52525b; outline-offset: 1px; border-color: #52525b; }
 
 .primary {

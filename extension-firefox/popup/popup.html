@@ -50,7 +50,8 @@
         <label class="schedule-toggle"><input id="scheduleEnabled" type="checkbox"> Aktif</label>
         <label class="schedule-toggle"><input id="scheduleCatchUp" type="checkbox"> Jalankan jika jadwal terlewat</label>
         <label for="scheduleTime">Jam lokal</label>
-        <input id="scheduleTime" type="time" value="08:00">
+        <input id="scheduleTime" type="text" inputmode="numeric" pattern="([01]\d|2[0-3]):[0-5]\d" maxlength="5" placeholder="HH:mm" value="08:00" aria-describedby="scheduleHint">
+        <div id="scheduleHint" class="field-hint">Format 24 jam, contoh 08:45</div>
         <button id="saveScheduleButton" class="secondary">Simpan jadwal</button>
         <div id="scheduleStatus" class="status" role="status"></div>
       </section>

@@ -172,10 +172,17 @@ function renderHistory(list = []) {
 })();
 
 saveScheduleButton.addEventListener('click', () => {
+  const time = scheduleTime.value.trim();
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    scheduleStatus.className = 'status error';
+    scheduleStatus.textContent = 'Jam harus memakai format 24 jam HH:mm, contoh 08:45.';
+    scheduleTime.focus();
+    return;
+  }
   const schedule = {
     enabled: scheduleEnabled.checked,
     catchUp: scheduleCatchUp.checked,
-    time: scheduleTime.value || '08:00',
+    time,
     options: { shopee: shopeeCheckbox.checked, tokopedia: tokopediaCheckbox.checked }
   };
   storage.set({ scheduledSync: schedule }, () => {
