@@ -552,12 +552,12 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
           );
           fileBlob = nativeFile.blob;
         }
-        broadcastProgress('File pesanan Shopee diterima. Mengunggah ke Stock-Hub...', 'running', 35, 'Shopee: Proses Stok');
+        broadcastProgress('Upload Order Shopee ke Stock-Hub...', 'running', 35, 'Shopee: Upload Order');
         const uploadRes = await client.uploadOrderFile(fileBlob, 'shopee-order.xlsx');
         if (!uploadRes?.ok) {
-          throw new Error(`Upload pesanan ke Stock-Hub gagal: ${uploadRes?.error}`);
+          throw new Error(`Upload Order Shopee ke Stock-Hub gagal: ${uploadRes?.error}`);
         }
-        broadcastProgress('Pesanan Shopee berhasil diproses Stock-Hub.', 'running', 40, 'Shopee: Stok Terpotong');
+        broadcastProgress('Upload Order Shopee berhasil diproses Stock-Hub.', 'running', 40, 'Shopee: Stok Terpotong');
 
         // Ambil stok terbaru format Shopee
         broadcastProgress('Mengambil file pembaruan stok Shopee dari Stock-Hub...', 'running', 44, 'Shopee: Ambil Stok');
@@ -629,15 +629,15 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         if (!expectedName) throw new Error('Nama report Tokopedia terbaru tidak tersedia.');
         const nativeFile = await readTokopediaFileFromNative(expectedName);
         const fileBlob = nativeFile.blob;
-        broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
+        broadcastProgress('Upload Order TikTok ke Stock-Hub...', 'running', 80, 'TikTok: Upload Order');
         const fileName = nativeFile.fileName;
         const fileHead = new Uint8Array(await fileBlob.slice(0, 32).arrayBuffer());
         console.info('TOKOPEDIA UPLOAD SOURCE:', fileName, 'BYTES:', fileBlob.size, 'HEAD:', [...fileHead].map(byte => byte.toString(16).padStart(2, '0')).join(''));
         const uploadRes = await client.uploadOrderFile(fileBlob, fileName);
         if (!uploadRes?.ok) {
-          throw new Error(`Upload pesanan Tokopedia ke Stock-Hub gagal: ${uploadRes?.error}`);
+          throw new Error(`Upload Order TikTok ke Stock-Hub gagal: ${uploadRes?.error}`);
         }
-        broadcastProgress('Pesanan Tokopedia berhasil diproses Stock-Hub.', 'running', 85, 'Tokopedia: Stok Terpotong');
+        broadcastProgress('Upload Order TikTok berhasil diproses Stock-Hub.', 'running', 85, 'TikTok: Stok Terpotong');
 
         // Ambil stok terbaru format TikTok/Tokopedia
         broadcastProgress('Mengambil file pembaruan stok Tokopedia dari Stock-Hub...', 'running', 88, 'Tokopedia: Ambil Stok');
