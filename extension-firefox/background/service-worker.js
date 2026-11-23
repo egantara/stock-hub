@@ -141,6 +141,16 @@ function sendMessageToTab(tabId, message, timeoutMs = 180000) {
   });
 }
 
+async function ensureMarketplaceSession(tab, marketplace, maxAttempts = 15) {
+  const ready = await waitForTabReady(tab.id, maxAttempts);
+  if (!ready) throw new Error(`${marketplace} session tidak terdeteksi. Buka halaman marketplace dan login terlebih dahulu.`);
+  const url = String(tab.url || '').toLowerCase();
+  if (url.includes('/login') || url.includes('/signin') || url.includes('redirect=login') || url.includes('accounts.tokopedia.com') || url.includes('passport')) {
+    throw new Error(`Session ${marketplace} belum login. Login di Firefox lalu coba lagi.`);
+  }
+  return true;
+}
+
 async function waitForTabReady(tabId, maxAttempts = 15) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
@@ -478,6 +488,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         if (!shopeeReady) {
           throw new Error('Tab Shopee tidak merespon / content script belum siap.');
         }
+        await ensureMarketplaceSession(shopeeTab, 'Shopee');
 
         const downloadPromise = waitForDownload(90000).catch(err => {
           broadcastProgress(`Catatan download Shopee: ${err.message}`, 'skipped');
@@ -557,6 +568,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         if (!tokpedReady) {
           throw new Error('Tab Tokopedia tidak merespon / content script belum siap.');
         }
+        await ensureMarketplaceSession(tokpedTab, 'Tokopedia', 20);
 
         let expectedTokopediaFilename = '';
         const downloadPromise = waitForDownload(120000, () => expectedTokopediaFilename).catch(err => {

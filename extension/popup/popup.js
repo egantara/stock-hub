@@ -102,10 +102,26 @@ async function saveSettings(parsed) {
 }
 
 function appendLog(message, status = 'running') {
-  const line = document.createElement('div');
-  line.className = `line ${status}`;
-  line.textContent = message;
-  progress.appendChild(line);
+  const isError = status === 'error' || /gagal|error|belum login|tidak/i.test(message);
+  if (!isError) {
+    const compact = message
+      .replace(/^.*?:\s*/, '')
+      .replace(/\.\.\.$/, '')
+      .trim();
+    const existing = progress.querySelector('.compact-line');
+    if (existing) existing.textContent = compact;
+    else {
+      const line = document.createElement('div');
+      line.className = 'line compact-line running';
+      line.textContent = compact;
+      progress.appendChild(line);
+    }
+  } else {
+    const line = document.createElement('div');
+    line.className = `line ${status}`;
+    line.textContent = message;
+    progress.appendChild(line);
+  }
   progress.scrollTop = progress.scrollHeight;
 }
 
