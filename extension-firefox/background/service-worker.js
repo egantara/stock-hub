@@ -377,9 +377,9 @@ function waitForDownload(timeoutMs = 60000, expectedFilename = () => null) {
     const timer = setTimeout(async () => {
       cleanup();
       // Saat timeout, coba cari download terbaru yang mungkin sudah selesai
-      const latest = await findLatestDownload();
-      if (latest) {
-        return resolve(latest);
+      if (!expectedFilename()) {
+        const latest = await findLatestDownload();
+        if (latest) return resolve(latest);
       }
       reject(new Error('Timeout menunggu file unduhan marketplace (60 detik)'));
     }, timeoutMs);
@@ -549,13 +549,16 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
         if (!exportRes?.success) {
           throw new Error(exportRes?.error || 'Gagal trigger ekspor Tokopedia');
         }
-        expectedTokopediaFilename = exportRes.fileName || '';
+        expectedTokopediaFilename = String(exportRes.fileName || '')
+          .split(/[\\/]/).pop()
+          .replace(/:/g, '_');
 
         broadcastProgress('Menunggu file pesanan Tokopedia...', 'running', 75, 'Tokopedia: Unduh');
-        const downloadInfo = await downloadPromise;
+        await downloadPromise;
 
-          const downloadedName = downloadInfo?.filename?.split(/[\\/]/).pop() || exportRes.fileName || '';
-        const nativeFile = await readTokopediaFileFromNative(downloadedName);
+        const expectedName = String(exportRes.fileName || '').split(/[\\/]/).pop().replace(/:/g, '_');
+        if (!expectedName) throw new Error('Nama report Tokopedia terbaru tidak tersedia.');
+        const nativeFile = await readTokopediaFileFromNative(expectedName);
         const fileBlob = nativeFile.blob;
         broadcastProgress('File Tokopedia diterima. Mengunggah ke Stock-Hub...', 'running', 80, 'Tokopedia: Proses Stok');
         const fileName = nativeFile.fileName;

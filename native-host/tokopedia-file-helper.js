@@ -22,13 +22,7 @@ export function resolveDownloadPath(downloadsDir, fileName) {
 export function findReportFile(downloadsDir, fileName) {
   const exact = resolveDownloadPath(downloadsDir, fileName);
   if (fs.existsSync(exact) && validateCsv(fs.readFileSync(exact))) return exact;
-  const stem = path.basename(fileName, '.csv');
-  const candidates = fs.readdirSync(downloadsDir)
-    .filter(name => name.toLowerCase() === `${stem.toLowerCase()}.csv` || /^.+\(\d+\)\.csv$/i.test(name) && name.toLowerCase().startsWith(`${stem.toLowerCase()}(`))
-    .map(name => resolveDownloadPath(downloadsDir, name))
-    .filter(file => validateCsv(fs.readFileSync(file)))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
-  return candidates[0] || null;
+  return null;
 }
 
 function writeMessage(value) {
