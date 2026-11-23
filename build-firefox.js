@@ -38,6 +38,7 @@ const firefoxManifest = {
     "storage",
     "downloads",
     "nativeMessaging",
+    "alarms",
     "tabs",
     "https://seller.shopee.co.id/*",
     "https://seller-id.tokopedia.com/*",

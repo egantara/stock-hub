@@ -45,6 +45,14 @@
         </div>
       </div>
       <div id="progress" class="progress" role="log" aria-live="polite"></div>
+      <section class="schedule-section">
+        <h2>Sync Terjadwal</h2>
+        <label class="schedule-toggle"><input id="scheduleEnabled" type="checkbox"> Aktif</label>
+        <label for="scheduleTime">Jam lokal</label>
+        <input id="scheduleTime" type="time" value="08:00">
+        <button id="saveScheduleButton" class="secondary">Simpan jadwal</button>
+        <div id="scheduleStatus" class="status" role="status"></div>
+      </section>
       <section class="history-section">
         <h2>Riwayat Terakhir</h2>
         <div id="historyList" class="history-list"></div>

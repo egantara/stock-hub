@@ -23,6 +23,33 @@ function persistSyncSession() {
 const SHOPEE_ORDER_URL = 'https://seller.shopee.co.id/portal/sale/order';
 const SHOPEE_UPLOAD_URL = 'https://seller.shopee.co.id/portal/product-mass/mass-update/upload';
 const TOKOPEDIA_ORDER_URL = 'https://seller-id.tokopedia.com/order?selected_sort=6&tab=all';
+const SYNC_ALARM = 'stockhub-scheduled-sync';
+
+async function setupScheduledSync() {
+  if (!browserApi?.alarms) return;
+  const settings = await new Promise(resolve => browserApi.storage.local.get(['scheduledSync'], resolve));
+  const schedule = settings.scheduledSync;
+  await browserApi.alarms.clear(SYNC_ALARM);
+  if (!schedule?.enabled || !/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time)) return;
+  const [hour, minute] = schedule.time.split(':').map(Number);
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(hour, minute, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  await browserApi.alarms.create(SYNC_ALARM, { when: next.getTime(), periodInMinutes: 1440 });
+}
+
+if (browserApi?.alarms?.onAlarm) {
+  browserApi.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name !== SYNC_ALARM || stateManager.isSyncing()) return;
+    browserApi.storage.local.get(['scheduledSync'], settings => {
+      const options = settings.scheduledSync?.options || { shopee: true, tokopedia: true };
+      runSync(options);
+    });
+  });
+}
+
+setupScheduledSync().catch(() => {});
 const TOKOPEDIA_UPLOAD_URL = 'https://seller-id.tokopedia.com/product/batch/edit-prods?entry-from=manage&shop_region=ID';
 
 function safeSendMessage(payload) {
@@ -652,6 +679,11 @@ if (browserApi?.runtime?.onMessage) {
   browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'GET_SYNC_SESSION') {
       sendResponse({ session: activeSyncSession });
+      return true;
+    }
+    if (message.action === 'SET_SCHEDULE') {
+      setupScheduledSync();
+      sendResponse({ ok: true });
       return true;
     }
     if (message.action === 'START_SYNC') {

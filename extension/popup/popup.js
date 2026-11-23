@@ -32,6 +32,10 @@ const userInput = document.getElementById('stockhubUser');
 const keyInput = document.getElementById('stockhubKey');
 const shopeeCheckbox = document.getElementById('shopeeEnabled');
 const tokopediaCheckbox = document.getElementById('tokopediaEnabled');
+const scheduleEnabled = document.getElementById('scheduleEnabled');
+const scheduleTime = document.getElementById('scheduleTime');
+const saveScheduleButton = document.getElementById('saveScheduleButton');
+const scheduleStatus = document.getElementById('scheduleStatus');
 
 function showView(view) {
   if (view === 'settings') {
@@ -158,7 +162,27 @@ function renderHistory(list = []) {
 
 (async () => {
   renderHistory(await getHistory());
+  if (storage) storage.get(['scheduledSync'], items => {
+    const schedule = items.scheduledSync || {};
+    scheduleEnabled.checked = !!schedule.enabled;
+    scheduleTime.value = schedule.time || '08:00';
+  });
 })();
+
+saveScheduleButton.addEventListener('click', () => {
+  const schedule = {
+    enabled: scheduleEnabled.checked,
+    time: scheduleTime.value || '08:00',
+    options: { shopee: shopeeCheckbox.checked, tokopedia: tokopediaCheckbox.checked }
+  };
+  storage.set({ scheduledSync: schedule }, () => {
+    scheduleStatus.className = 'status success';
+    scheduleStatus.textContent = schedule.enabled
+      ? `Jadwal aktif setiap hari pukul ${schedule.time}. Firefox harus tetap terbuka.`
+      : 'Jadwal dimatikan.';
+    runtime?.sendMessage({ action: 'SET_SCHEDULE' });
+  });
+});
 
 saveButton.addEventListener('click', async () => {
   const raw = {
