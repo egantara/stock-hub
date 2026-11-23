@@ -14,7 +14,8 @@ $manifest = [ordered]@{
   type = 'stdio'
   allowed_extensions = @('stock-hub-sync@extension.local')
 }
-$manifest | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 $manifestPath
+$manifestJson = $manifest | ConvertTo-Json -Depth 4
+[IO.File]::WriteAllText($manifestPath, $manifestJson, [Text.UTF8Encoding]::new($false))
 New-Item -Path $registryPath -Force | Out-Null
 Set-ItemProperty -Path $registryPath -Name '(default)' -Value $manifestPath
 Write-Host "Installed $hostName"
