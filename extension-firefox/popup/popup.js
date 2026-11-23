@@ -33,6 +33,7 @@ const keyInput = document.getElementById('stockhubKey');
 const shopeeCheckbox = document.getElementById('shopeeEnabled');
 const tokopediaCheckbox = document.getElementById('tokopediaEnabled');
 const scheduleEnabled = document.getElementById('scheduleEnabled');
+const scheduleCatchUp = document.getElementById('scheduleCatchUp');
 const scheduleTime = document.getElementById('scheduleTime');
 const saveScheduleButton = document.getElementById('saveScheduleButton');
 const scheduleStatus = document.getElementById('scheduleStatus');
@@ -165,6 +166,7 @@ function renderHistory(list = []) {
   if (storage) storage.get(['scheduledSync'], items => {
     const schedule = items.scheduledSync || {};
     scheduleEnabled.checked = !!schedule.enabled;
+    scheduleCatchUp.checked = schedule.catchUp !== false;
     scheduleTime.value = schedule.time || '08:00';
   });
 })();
@@ -172,6 +174,7 @@ function renderHistory(list = []) {
 saveScheduleButton.addEventListener('click', () => {
   const schedule = {
     enabled: scheduleEnabled.checked,
+    catchUp: scheduleCatchUp.checked,
     time: scheduleTime.value || '08:00',
     options: { shopee: shopeeCheckbox.checked, tokopedia: tokopediaCheckbox.checked }
   };

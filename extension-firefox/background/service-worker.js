@@ -37,6 +37,13 @@ async function setupScheduledSync() {
   next.setHours(hour, minute, 0, 0);
   if (next <= now) next.setDate(next.getDate() + 1);
   await browserApi.alarms.create(SYNC_ALARM, { when: next.getTime(), periodInMinutes: 1440 });
+
+  const scheduledAt = new Date(now);
+  scheduledAt.setHours(hour, minute, 0, 0);
+  const lastRunAt = Number(schedule.lastRunAt || 0);
+  if (schedule.catchUp !== false && now >= scheduledAt && lastRunAt < scheduledAt.getTime() && !stateManager.isSyncing()) {
+    runSync({ ...(schedule.options || { shopee: true, tokopedia: true }), _scheduled: true });
+  }
 }
 
 if (browserApi?.alarms?.onAlarm) {
@@ -44,7 +51,7 @@ if (browserApi?.alarms?.onAlarm) {
     if (alarm.name !== SYNC_ALARM || stateManager.isSyncing()) return;
     browserApi.storage.local.get(['scheduledSync'], settings => {
       const options = settings.scheduledSync?.options || { shopee: true, tokopedia: true };
-      runSync(options);
+      runSync({ ...options, _scheduled: true });
     });
   });
 }
@@ -667,6 +674,12 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
 
     const summary = formatSummary(results);
     const anySuccess = results.shopee.success || results.tokopedia.success;
+    if (options._scheduled && anySuccess) {
+      await new Promise(resolve => browserApi.storage.local.get(['scheduledSync'], items => {
+        const schedule = items.scheduledSync || {};
+        browserApi.storage.local.set({ scheduledSync: { ...schedule, lastRunAt: Date.now() } }, resolve);
+      }));
+    }
     broadcastComplete(anySuccess, summary);
   } catch (err) {
     broadcastComplete(false, `Sinkronisasi gagal: ${err.message}`);
