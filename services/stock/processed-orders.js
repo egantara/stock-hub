@@ -3,6 +3,10 @@ import {
 }
 from "../utils/datetime.js";
 
+function normalizeSku(value) {
+  return String(value || "").trim().replace(/^'+/, "");
+}
+
 export function buildProcessedSet(
   rows
 ) {
@@ -21,9 +25,7 @@ export function buildProcessedSet(
       ).trim();
 
     const sku =
-      String(
-        row.SKU || ""
-      ).trim();
+      normalizeSku(row.SKU);
 
     if (
       !orderId ||
@@ -52,7 +54,7 @@ export function isProcessed({
 
   return processedSet.has(
 
-    `${String(orderId).trim()}|${String(sku).trim()}`
+    `${String(orderId).trim()}|${normalizeSku(sku)}`
 
   );
 }
@@ -69,7 +71,7 @@ export function addProcessedToSet({
 
   processedSet.add(
 
-    `${String(orderId).trim()}|${String(sku).trim()}`
+    `${String(orderId).trim()}|${normalizeSku(sku)}`
 
   );
 }
@@ -92,7 +94,7 @@ export function createProcessedRow({
 
     String(
       sku || ""
-    ).trim() ? `'${String(sku || "").trim()}` : "",
+    ).trim(),
 
     String(
       marketplace || ""

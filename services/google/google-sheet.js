@@ -188,8 +188,7 @@ function preserveSkuText(rows, sheetName) {
   if (skuIndex < 0) return rows;
   return rows.map(row => row.map((value, index) => {
     if (index === skuIndex && value !== null && value !== undefined && value !== "") {
-      const text = String(value).trim();
-      return text ? `'${text}` : text;
+      return String(value).trim().replace(/^'+/, "");
     }
     return value;
   }));
@@ -225,7 +224,7 @@ export async function appendRows({
         sheetName,
 
       valueInputOption:
-        "USER_ENTERED",
+        "RAW",
 
       requestBody: {
 

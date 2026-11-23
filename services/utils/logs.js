@@ -9,8 +9,7 @@ import {
 from "./datetime.js";
 
 function asSheetText(value) {
-  const text = String(value ?? "").trim();
-  return text ? `'${text}` : "";
+  return String(value ?? "").trim();
 }
 
 export function createLogRow({
