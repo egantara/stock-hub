@@ -228,7 +228,8 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
         url: exportUrl
       }, 30000);
       if (fetchRes?.success && fetchRes.base64) {
-        return base64ToBlob(fetchRes.base64, mimeType);
+        const reportBlob = base64ToBlob(fetchRes.base64, mimeType);
+        if (reportBlob.size >= 100) return reportBlob;
       }
     } catch (err) {
       console.warn('Fetch URL dari hasil export gagal:', err);
@@ -311,7 +312,8 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
           url
         }, 30000);
         if (fetchRes?.success && fetchRes.base64) {
-          return base64ToBlob(fetchRes.base64, mimeType);
+          const reportBlob = base64ToBlob(fetchRes.base64, mimeType);
+          if (reportBlob.size >= 100) return reportBlob;
         }
       } catch (err) {
         console.warn('Tab fetch fallback gagal:', err);
@@ -321,7 +323,8 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
     try {
       const res = await fetch(url);
       if (res.ok) {
-        return await res.blob();
+        const reportBlob = await res.blob();
+        if (reportBlob.size >= 100) return reportBlob;
       }
     } catch (err) {
       console.warn('Background fetch fallback gagal:', err);
