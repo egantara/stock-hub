@@ -256,18 +256,22 @@
 
     reportStep('Shopee: Mengonfirmasi ekspor pesanan...');
     const confirmExportBtn = await waitFor(() => {
-      // Shopee dapat mengganti node modal atau merender label tombol sebagai
-      // teks bersarang/aria-label. Cari kontrol aktif pada modal terbaru,
-      // tanpa mengambil div/span pembungkus sebagai tombol.
-      const containers = [modal, ...[...document.querySelectorAll('[role="dialog"], .shopee-modal, .eds-modal')]
-        .filter(candidate => candidate !== modal && isVisible(candidate))];
+      // Shopee dapat mengganti node modal atau memakai label seperti
+      // "Export Pesanan" / "Export Data" dengan teks bersarang.
+      const containers = [
+        ...[...document.querySelectorAll('[role="dialog"], .shopee-modal, .eds-modal')]
+          .filter(isVisible),
+        modal
+      ];
       for (const container of containers) {
         const controls = [...container.querySelectorAll('button, [role="button"], a')]
           .filter(isVisible)
           .filter(el => {
             const label = [el.textContent, el.getAttribute('aria-label'), el.getAttribute('title')]
-              .filter(Boolean).join(' ').trim().toLowerCase();
-            return /^(export|ekspor)(\s+pesanan)?$/.test(label) &&
+              .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            const isExportControl = /\b(export|ekspor)\b/.test(label) &&
+              !/cancel|batal|close|tutup/.test(label);
+            return isExportControl &&
               !el.disabled &&
               !el.hasAttribute('disabled') &&
               el.getAttribute('aria-disabled') !== 'true';
@@ -275,7 +279,18 @@
         if (controls.length) return controls[controls.length - 1];
       }
       return null;
-    }, 30000, 'tombol konfirmasi Export di popup Download Semua Pesanan');
+    }, 30000, 'tombol konfirmasi Export di popup Download Semua Pesanan').catch(err => {
+      const visibleControls = [...document.querySelectorAll('button, [role="button"], a')]
+        .filter(isVisible)
+        .map(el => [el.textContent, el.getAttribute('aria-label'), el.getAttribute('title')]
+          .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(0, 12);
+      if (visibleControls.length) {
+        err.message += ` Tombol terlihat: ${visibleControls.join(' | ')}`;
+      }
+      throw err;
+    });
     simulateClick(confirmExportBtn);
     await sleep(4000);
 
