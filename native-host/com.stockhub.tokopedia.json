@@ -2,6 +2,7 @@
   "name": "com.stockhub.tokopedia",
   "description": "Stock-Hub Tokopedia report file reader",
   "path": "C:\\Program Files\\nodejs\\node.exe",
+  "args": ["C:\\path\\to\\tokopedia-file-helper.js"],
   "type": "stdio",
   "allowed_extensions": ["stock-hub-sync@extension.local"]
 }

@@ -8,6 +8,7 @@ $manifest = [ordered]@{
   name = $hostName
   description = 'Stock-Hub Tokopedia report file reader'
   path = $node
+  args = @($helper)
   type = 'stdio'
   allowed_extensions = @('stock-hub-sync@extension.local')
 }
