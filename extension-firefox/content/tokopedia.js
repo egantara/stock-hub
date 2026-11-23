@@ -289,9 +289,8 @@
     // Ambil response report baru dari halaman sebelum background memakai
     // metadata download yang bisa menunjuk ke response yang salah.
     if (!fileBase64) {
-      const started = Date.now();
-      while (!fileBase64 && Date.now() - started < 15000) {
-        await sleep(500);
+      while (!fileBase64) {
+        await sleep(1000);
         const resources = performance.getEntriesByType('resource')
           .map(entry => entry.name)
           .filter(url => !beforeResources.has(url))

@@ -222,9 +222,10 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   if (exportRes?.fileBase64) {
     const reportBlob = base64ToBlob(exportRes.fileBase64, mimeType);
-    // Tokopedia may return a tiny SPA/metadata response through the page.
-    // Never prefer it over the real report download.
     if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
+  }
+  if (preferDownload) {
+    throw new Error(`Download selesai (${sourceName || 'report'}), tetapi Firefox tidak dapat membaca file lokal; response CSV asli belum tersedia.`);
   }
 
   // Gunakan URL yang ditemukan content script sebelum klik Download.
