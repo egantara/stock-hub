@@ -224,9 +224,6 @@ async function obtainFileBlob(tabId, downloadInfo, exportRes, { preferDownload =
     const reportBlob = base64ToBlob(exportRes.fileBase64, mimeType);
     if (await isValidOrderBlob(reportBlob, sourceName)) return reportBlob;
   }
-  if (preferDownload) {
-    throw new Error(`Download selesai (${sourceName || 'report'}), tetapi Firefox tidak dapat membaca file lokal; response CSV asli belum tersedia.`);
-  }
 
   // Gunakan URL yang ditemukan content script sebelum klik Download.
   // Firefox boleh memberi URL pada downloads API tetapi tidak memberi API
