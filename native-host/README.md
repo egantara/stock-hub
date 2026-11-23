@@ -15,4 +15,4 @@ Requirements:
 - Firefox extension ID: `stock-hub-sync@extension.local`.
 - Extension reloaded after installation.
 
-The installer writes the Native Messaging manifest as UTF-8 without a BOM, which is required by Firefox. The helper reads only the expected CSV from the current user's `Downloads` directory. It does not read cookies, browser profiles, or marketplace sessions.
+The installer writes the Native Messaging manifest as UTF-8 without a BOM, which is required by Firefox, and registers both current-user Windows registry views. The helper reads only the expected CSV from the current user's `Downloads` directory. It does not read cookies, browser profiles, or marketplace sessions.
