@@ -7,7 +7,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\native-host\install-firefox.ps1
 ```
 
-Restarting Windows does not require reinstalling. Firefox starts the helper automatically during Tokopedia Sync.
+Restarting Windows does not require reinstalling. Firefox starts the helper automatically during Tokopedia Sync. The installer registers the manifest both in the standard AppData location and in the current-user Firefox registry key, which is required by Firefox on Windows.
 
 Requirements:
 
