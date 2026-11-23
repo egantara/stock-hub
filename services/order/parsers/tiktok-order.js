@@ -17,7 +17,8 @@ export async function parseTiktokOrder(
     XLSX.utils.sheet_to_json(
       worksheet,
       {
-        defval: ""
+        defval: "",
+        raw: false
       }
     );
 

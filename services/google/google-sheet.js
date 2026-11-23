@@ -183,6 +183,18 @@ export async function appendRow({
 
 }
 
+function preserveSkuText(rows, sheetName) {
+  const skuIndex = sheetName === "LOG" ? 3 : sheetName === "PROCESSED_ORDERS" ? 1 : -1;
+  if (skuIndex < 0) return rows;
+  return rows.map(row => row.map((value, index) => {
+    if (index === skuIndex && value !== null && value !== undefined && value !== "") {
+      const text = String(value).trim();
+      return text ? `'${text}` : text;
+    }
+    return value;
+  }));
+}
+
 export async function appendRows({
 
   google,
@@ -218,7 +230,7 @@ export async function appendRows({
       requestBody: {
 
         values:
-          rows
+          preserveSkuText(rows, sheetName)
 
       }
 
