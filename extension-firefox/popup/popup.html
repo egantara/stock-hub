@@ -49,9 +49,20 @@
         <h2>Sync Terjadwal</h2>
         <label class="schedule-toggle"><input id="scheduleEnabled" type="checkbox"> Aktif</label>
         <label class="schedule-toggle"><input id="scheduleCatchUp" type="checkbox"> Jalankan jika jadwal terlewat</label>
-        <label for="scheduleTime">Jam lokal</label>
-        <input id="scheduleTime" type="text" inputmode="numeric" pattern="([01]\d|2[0-3]):[0-5]\d" maxlength="5" placeholder="HH:mm" value="08:00" aria-describedby="scheduleHint">
-        <div id="scheduleHint" class="field-hint">Format 24 jam, contoh 08:45</div>
+        <label for="scheduleStartTime">Jam mulai</label>
+        <input id="scheduleStartTime" type="text" inputmode="numeric" pattern="([01]\d|2[0-3]):[0-5]\d" maxlength="5" placeholder="HH:mm" value="08:00">
+        <label for="scheduleEndTime">Jam selesai</label>
+        <input id="scheduleEndTime" type="text" inputmode="numeric" pattern="([01]\d|2[0-3]):[0-5]\d" maxlength="5" placeholder="HH:mm" value="22:00">
+        <label for="scheduleInterval">Update setiap</label>
+        <select id="scheduleInterval">
+          <option value="15">15 menit</option>
+          <option value="30">30 menit</option>
+          <option value="60" selected>1 jam</option>
+          <option value="120">2 jam</option>
+          <option value="180">3 jam</option>
+          <option value="360">6 jam</option>
+        </select>
+        <div class="field-hint">Format jam 24 jam. Jam selesai selalu ikut update terakhir.</div>
         <button id="saveScheduleButton" class="secondary">Simpan jadwal</button>
         <div id="scheduleStatus" class="status" role="status"></div>
       </section>

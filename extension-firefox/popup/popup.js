@@ -34,7 +34,9 @@ const shopeeCheckbox = document.getElementById('shopeeEnabled');
 const tokopediaCheckbox = document.getElementById('tokopediaEnabled');
 const scheduleEnabled = document.getElementById('scheduleEnabled');
 const scheduleCatchUp = document.getElementById('scheduleCatchUp');
-const scheduleTime = document.getElementById('scheduleTime');
+const scheduleStartTime = document.getElementById('scheduleStartTime');
+const scheduleEndTime = document.getElementById('scheduleEndTime');
+const scheduleInterval = document.getElementById('scheduleInterval');
 const saveScheduleButton = document.getElementById('saveScheduleButton');
 const scheduleStatus = document.getElementById('scheduleStatus');
 
@@ -167,28 +169,35 @@ function renderHistory(list = []) {
     const schedule = items.scheduledSync || {};
     scheduleEnabled.checked = !!schedule.enabled;
     scheduleCatchUp.checked = schedule.catchUp !== false;
-    scheduleTime.value = schedule.time || '08:00';
+    scheduleStartTime.value = schedule.startTime || schedule.time || '08:00';
+    scheduleEndTime.value = schedule.endTime || '22:00';
+    scheduleInterval.value = String(schedule.intervalMinutes || 60);
   });
 })();
 
 saveScheduleButton.addEventListener('click', () => {
-  const time = scheduleTime.value.trim();
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+  const startTime = scheduleStartTime.value.trim();
+  const endTime = scheduleEndTime.value.trim();
+  const startMinutes = startTime.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  const endMinutes = endTime.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!startMinutes || !endMinutes || (Number(endMinutes[1]) * 60 + Number(endMinutes[2])) < (Number(startMinutes[1]) * 60 + Number(startMinutes[2]))) {
     scheduleStatus.className = 'status error';
-    scheduleStatus.textContent = 'Jam harus memakai format 24 jam HH:mm, contoh 08:45.';
-    scheduleTime.focus();
+    scheduleStatus.textContent = 'Jam mulai/selesai harus valid, dan jam selesai tidak boleh sebelum jam mulai.';
+    scheduleStartTime.focus();
     return;
   }
   const schedule = {
     enabled: scheduleEnabled.checked,
     catchUp: scheduleCatchUp.checked,
-    time,
+    startTime,
+    endTime,
+    intervalMinutes: Number(scheduleInterval.value),
     options: { shopee: shopeeCheckbox.checked, tokopedia: tokopediaCheckbox.checked }
   };
   storage.set({ scheduledSync: schedule }, () => {
     scheduleStatus.className = 'status success';
     scheduleStatus.textContent = schedule.enabled
-      ? `Jadwal aktif setiap hari pukul ${schedule.time}. Firefox harus tetap terbuka.`
+      ? `Jadwal aktif ${schedule.startTime}-${schedule.endTime}, setiap ${schedule.intervalMinutes} menit. Firefox harus tetap terbuka.`
       : 'Jadwal dimatikan.';
     runtime?.sendMessage({ action: 'SET_SCHEDULE' });
   });

@@ -25,32 +25,55 @@ const SHOPEE_UPLOAD_URL = 'https://seller.shopee.co.id/portal/product-mass/mass-
 const TOKOPEDIA_ORDER_URL = 'https://seller-id.tokopedia.com/order?selected_sort=6&tab=all';
 const SYNC_ALARM = 'stockhub-scheduled-sync';
 
-async function setupScheduledSync() {
+function parseScheduleTime(value) {
+  const match = String(value || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+}
+
+function getScheduleSlots(schedule, date = new Date()) {
+  const start = parseScheduleTime(schedule.startTime || schedule.time);
+  const end = parseScheduleTime(schedule.endTime || schedule.time);
+  const interval = Math.max(1, Number(schedule.intervalMinutes || 60));
+  if (start === null || end === null || end < start) return [];
+  const slots = [];
+  for (let minutes = start; minutes <= end; minutes += interval) slots.push(minutes);
+  if (slots.at(-1) !== end) slots.push(end);
+  return slots.map(minutes => {
+    const slot = new Date(date);
+    slot.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+    return slot;
+  });
+}
+
+async function setupScheduledSync(skipCatchUp = false) {
   if (!browserApi?.alarms) return;
   const settings = await new Promise(resolve => browserApi.storage.local.get(['scheduledSync'], resolve));
   const schedule = settings.scheduledSync;
   await browserApi.alarms.clear(SYNC_ALARM);
-  if (!schedule?.enabled || !/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time)) return;
-  const [hour, minute] = schedule.time.split(':').map(Number);
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(hour, minute, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  await browserApi.alarms.create(SYNC_ALARM, { when: next.getTime(), periodInMinutes: 1440 });
+  if (!schedule?.enabled) return;
 
-  const scheduledAt = new Date(now);
-  scheduledAt.setHours(hour, minute, 0, 0);
+  const now = new Date();
+  const slots = getScheduleSlots(schedule, now);
+  if (!slots.length) return;
+  const currentSlot = slots.find(slot => slot > now);
+  const startSlot = slots[0];
   const lastRunAt = Number(schedule.lastRunAt || 0);
-  if (schedule.catchUp !== false && now >= scheduledAt && lastRunAt < scheduledAt.getTime() && !stateManager.isSyncing()) {
+  const missedToday = now >= startSlot && lastRunAt < startSlot.getTime();
+
+  if (!skipCatchUp && schedule.catchUp !== false && missedToday && !stateManager.isSyncing()) {
     runSync({ ...(schedule.options || { shopee: true, tokopedia: true }), _scheduled: true });
   }
+
+  const next = currentSlot || getScheduleSlots(schedule, new Date(now.getTime() + 86400000))[0];
+  if (next) await browserApi.alarms.create(SYNC_ALARM, { when: next.getTime() });
 }
 
 if (browserApi?.alarms?.onAlarm) {
   browserApi.alarms.onAlarm.addListener(alarm => {
     if (alarm.name !== SYNC_ALARM || stateManager.isSyncing()) return;
     browserApi.storage.local.get(['scheduledSync'], settings => {
-      const options = settings.scheduledSync?.options || { shopee: true, tokopedia: true };
+      const schedule = settings.scheduledSync || {};
+      const options = schedule.options || { shopee: true, tokopedia: true };
       runSync({ ...options, _scheduled: true });
     });
   });
@@ -685,6 +708,7 @@ async function runSync(options = { shopee: true, tokopedia: true }) {
     broadcastComplete(false, `Sinkronisasi gagal: ${err.message}`);
   } finally {
     stateManager.finish();
+    if (options._scheduled) setupScheduledSync(true).catch(() => {});
   }
 }
 
