@@ -127,6 +127,7 @@ function broadcastComplete(success, summary) {
   activeSyncSession.stepText = success ? 'Selesai' : 'Gagal';
   activeSyncSession.success = success;
   activeSyncSession.summary = summary;
+  activeSyncSession.logs.push({ message: summary, status: success ? 'success' : 'error' });
   persistSyncSession();
   recordHistoryInStorage(success, summary);
 

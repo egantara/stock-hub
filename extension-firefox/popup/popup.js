@@ -149,12 +149,27 @@ function renderHistory(list = []) {
   for (const item of list) {
     const row = document.createElement('div');
     row.className = 'history-item';
+    row.title = item.summary || '';
     const stamp = document.createElement('span');
     stamp.textContent = formatTimestampWIB(item.timestamp);
+    const summary = document.createElement('span');
+    summary.className = 'history-summary';
+    summary.style.color = '#71717a';
+    summary.style.fontSize = '10px';
+    summary.style.maxWidth = '180px';
+    summary.style.overflow = 'hidden';
+    summary.style.textOverflow = 'ellipsis';
+    summary.style.whiteSpace = 'nowrap';
+    const cleanSummary = String(item.summary || '').replace(/^[✅❌]\s*/, '');
+    summary.textContent = cleanSummary.includes('Shopee dan Tokopedia')
+      ? 'Shopee & Tokopedia'
+      : (cleanSummary || (item.success ? 'Berhasil' : 'Gagal'));
+
     const status = document.createElement('span');
     status.className = `status-tag ${item.success ? 'ok' : 'fail'}`;
     status.textContent = item.success ? '✅' : '❌';
     row.appendChild(stamp);
+    row.appendChild(summary);
     row.appendChild(status);
     historyList.appendChild(row);
   }
@@ -310,11 +325,11 @@ async function restoreActiveSync() {
       const sess = items.activeSyncSession;
       if (!sess) return resolve();
 
-      if (Array.isArray(sess.logs) && sess.logs.length) {
-        progress.innerHTML = '';
-        for (const log of sess.logs) {
-          appendLog(log.message, log.status);
-        }
+      if (sess.summary) {
+        appendLog(sess.summary, sess.success ? 'success' : 'error');
+      } else if (Array.isArray(sess.logs) && sess.logs.length) {
+        const last = sess.logs[sess.logs.length - 1];
+        appendLog(last.message, last.status);
       }
 
       if (sess.isSyncing) {
