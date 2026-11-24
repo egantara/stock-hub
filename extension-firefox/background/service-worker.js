@@ -1,6 +1,7 @@
 import { StockhubClient, getSettings } from '../lib/stockhub-api.js';
 import { SyncStateManager, formatSummary } from './orchestrator-state.js';
 import { blobToBase64 } from '../lib/dom-helpers.js';
+import { addHistoryEntry } from '../lib/history.js';
 
 const browserApi = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 const stateManager = new SyncStateManager();
@@ -111,6 +112,15 @@ function broadcastProgress(message, status = 'running', percent = null, stepText
   });
 }
 
+function recordHistoryInStorage(success, summary) {
+  if (!browserApi?.storage?.local) return;
+  browserApi.storage.local.get(['syncHistory'], items => {
+    const prev = items.syncHistory || [];
+    const updated = addHistoryEntry(prev, { success, summary });
+    browserApi.storage.local.set({ syncHistory: updated });
+  });
+}
+
 function broadcastComplete(success, summary) {
   activeSyncSession.isSyncing = false;
   activeSyncSession.percent = 100;
@@ -118,6 +128,7 @@ function broadcastComplete(success, summary) {
   activeSyncSession.success = success;
   activeSyncSession.summary = summary;
   persistSyncSession();
+  recordHistoryInStorage(success, summary);
 
   safeSendMessage({
     action: 'SYNC_COMPLETE',

@@ -172,6 +172,10 @@ function renderHistory(list = []) {
     scheduleStartTime.value = schedule.startTime || schedule.time || '08:00';
     scheduleEndTime.value = schedule.endTime || '22:00';
     scheduleInterval.value = String(schedule.intervalMinutes || 60);
+    if (schedule.enabled) {
+      scheduleStatus.className = 'status success';
+      scheduleStatus.textContent = `Jadwal aktif ${scheduleStartTime.value}-${scheduleEndTime.value}, setiap ${scheduleInterval.value} menit. Firefox harus tetap terbuka.`;
+    }
   });
 })();
 
@@ -292,12 +296,7 @@ if (runtime && runtime.onMessage) {
       appendLog(msg.summary, msg.success ? 'success' : 'error');
       updateProgressBar(100, msg.success ? 'Selesai' : 'Gagal', msg.success ? 'success' : 'error');
       syncButton.disabled = false;
-      getHistory().then(prev => {
-        const updated = addHistoryEntry(prev, {
-          success: msg.success,
-          summary: msg.summary
-        });
-        saveHistory(updated);
+      getHistory().then(updated => {
         renderHistory(updated);
       });
     }

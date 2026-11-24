@@ -25,7 +25,7 @@ copyRecursive(srcDir, targetDir);
 const firefoxManifest = {
   manifest_version: 2,
   name: "Stock-Hub Sync",
-  version: "1.0.1",
+  version: "1.0.2",
   description: "Sinkronisasi stok otomatis antara Shopee, Tokopedia, dan Stock-Hub",
   browser_specific_settings: {
     gecko: {
